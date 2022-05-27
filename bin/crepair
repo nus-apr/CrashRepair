@@ -1,0 +1,4 @@
+#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+check_pypy3=$(pypy3 --help &> /dev/null)
+python3.8 "$(dirname $SCRIPT_DIR)/Repair.py" "$@"

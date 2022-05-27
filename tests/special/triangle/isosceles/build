@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+PROGRAM=test
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+CRepair_CC="$(realpath ../../main/crepair-cc)"
+
+if [ -f "$PROGRAM" ]; then
+   make clean
+fi
+
+rm -rf klee-*
+
+CC="$CRepair_CC" make -e
+extract-bc "$PROGRAM"
