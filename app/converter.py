@@ -4,15 +4,10 @@
 
 import sys
 import os
-from app.common.utilities import error_exit, execute_command
-from app.tools import logger
-
-SYMBOLIC_CONVERTER = "gen-bout"
-BINARY_CONVERTER = "extract-bc"
+from app import utilities
 
 
 def convert_cast_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_list = list()
     type_node = ast_node['children'][0]
     type_value = type_node['value']
@@ -21,16 +16,13 @@ def convert_cast_expr(ast_node, only_string=False):
         data_type = str(type_node['data_type'])
     param_node = ast_node['children'][1]
     param_node_type = param_node['type']
-
     var_name = "(" + type_value + ") " + get_node_value(param_node)
-
     if only_string:
         return var_name
     return var_name, var_list
 
 
 def convert_paren_node_to_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_name = ""
     var_list = list()
     value = ""
@@ -46,7 +38,6 @@ def convert_paren_node_to_expr(ast_node, only_string=False):
 
 
 def convert_unary_node_to_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_name = ""
     var_list = list()
     # print(ast_node)
@@ -74,7 +65,6 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
 
 
 def convert_conditional_op_to_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_name = ""
     condition_exp = convert_binary_node_to_expr(ast_node['children'][0], True)
     true_node = ast_node['children'][1]
@@ -127,13 +117,12 @@ def get_node_value(ast_node):
     else:
         print(ast_type)
         print(ast_node)
-        error_exit("Unhandled node type in convert ast node")
+        utilities.error_exit("Unhandled node type in convert ast node")
 
     return ast_value
 
 
 def convert_binary_node_to_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_name = ""
     var_list = list()
     # print(ast_node)
@@ -197,14 +186,13 @@ def convert_array_iterator(iterator_node, only_string=False):
         var_name = "[" + iterator_value + "]"
     else:
         print(iterator_node)
-        error_exit("Unknown iterator type for convert_array_iterator")
+        utilities.error_exit("Unknown iterator type for convert_array_iterator")
     if only_string:
         return var_name
     return var_name, var_list
 
 
 def convert_array_subscript(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_list = list()
     var_name = ""
     var_data_type = ""
@@ -254,14 +242,13 @@ def convert_array_subscript(ast_node, only_string=False):
         print(array_type)
         print(array_node)
         print(ast_node)
-        error_exit("Unknown data type for array_subscript")
+        utilities.error_exit("Unknown data type for array_subscript")
     if only_string:
         return var_name
     return var_name, var_data_type, var_list
 
 
 def convert_call_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     var_name = ""
     function_name = ""
     operand_list = list()
@@ -279,7 +266,7 @@ def convert_call_expr(ast_node, only_string=False):
         operand_count = 0
     else:
         print(ast_node)
-        error_exit("unknown decl type in convert_call_expr")
+        utilities.error_exit("unknown decl type in convert_call_expr")
 
     for i in range(1, operand_count):
         operand_node = ast_node['children'][i]
@@ -320,7 +307,7 @@ def convert_call_expr(ast_node, only_string=False):
 
 
 def convert_member_expr(ast_node, only_string=False):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+   
     var_list = list()
     var_name = ""
     var_data_type = ""
@@ -400,7 +387,7 @@ def convert_member_expr(ast_node, only_string=False):
             break
         else:
             print(ast_node)
-            error_exit("unhandled exception at membership expr -> str")
+            utilities.error_exit("unhandled exception at membership expr -> str")
         if len(child_node['children']) > 0:
             child_node = child_node['children'][0]
         else:
@@ -410,32 +397,8 @@ def convert_member_expr(ast_node, only_string=False):
     return var_name, var_data_type, var_list
 
 
-def convert_poc_to_ktest(poc_path, ktest_path):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
-    concrete_file = open(poc_path, 'rb')
-    bit_size = os.fstat(concrete_file.fileno()).st_size
-    convert_command = SYMBOLIC_CONVERTER + " --sym-file " + poc_path
-    execute_command(convert_command)
-    move_command = "mv file.bout " + ktest_path
-    execute_command(move_command)
-    return bit_size
-
-
-def convert_binary_to_llvm(binary_path):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
-    binary_name = str(binary_path).split("/")[-1]
-    binary_directory = "/".join(str(binary_path).split("/")[:-1])
-    remove_command = "rm " + binary_path + ".bc"
-    # print(remove_command)
-    execute_command(remove_command)
-    extract_command = BINARY_CONVERTER + " " + binary_path
-    # print(extract_command)
-    execute_command(extract_command)
-    return binary_directory, binary_name
-
 
 def convert_node_to_str(ast_node):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     node_str = ""
     node_type = str(ast_node['type'])
     if node_type in ["DeclStmt", "DeclRefExpr", "VarDecl"]:
@@ -449,7 +412,6 @@ def convert_node_to_str(ast_node):
 
 
 def convert_macro_list_to_dict(string_list):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     macro_list = dict()
     for macro_def in string_list:
         macro_name = str(macro_def).split(" ")[1]
@@ -460,7 +422,6 @@ def convert_macro_list_to_dict(string_list):
 
 
 def convert_dict_to_array(ast_tree):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
     node_array = dict()
     for ast_node in ast_tree['children']:
         child_id = int(ast_node['id'])

@@ -108,7 +108,7 @@ def main():
         time_info[definitions.KEY_DURATION_TOTAL] = str(total_duration)
         emitter.end(time_info, is_error)
         logger.end(time_info, is_error)
-        logger.store()
+        logger.store_logs()
         parallel.pool.terminate()
         parallel.pool.join()
         # os.system("ps -aux | grep 'cpr' | awk '{print $2}' | xargs kill -9")
@@ -117,7 +117,7 @@ def main():
         time_info[definitions.KEY_DURATION_TOTAL] = str(total_duration)
         emitter.end(time_info, is_error)
         logger.end(time_info, is_error)
-        logger.store()
+        logger.store_logs()
     except Exception as e:
         is_error = True
         emitter.error("Runtime Error")
@@ -130,7 +130,7 @@ def main():
         time_info[definitions.KEY_DURATION_TOTAL] = str(total_duration)
         emitter.end(time_info, is_error)
         logger.end(time_info, is_error)
-        logger.store()
+        logger.store_logs()
         if is_error:
             exit(1)
         exit(0)

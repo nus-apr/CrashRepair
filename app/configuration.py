@@ -449,8 +449,7 @@ def collect_test_list():
                     expected_file_abs_path = expected_output_dir + "/" + expected_output_file
                     expected_file_rel_path = str(expected_file_abs_path).replace(values.CONF_PATH_PROJECT + "/", "")
                     values.LIST_TEST_OUTPUT.append(expected_file_rel_path)
-        else:
-            error_exit("No expected output is given (at least one is required)")
+
 
     if values.CONF_TEST_INPUT_DIR:
         test_file_dir = values.CONF_TEST_INPUT_DIR

@@ -314,8 +314,8 @@ def build_verify(project_path):
 def build_asan(project_path):
     global CC, CXX, CXX_FLAGS, C_FLAGS, LD_FLAGS
     clean_project(project_path)
-    CC = "clang-7"
-    CXX = "clang++-7"
+    CC = "clang"
+    CXX = "clang++"
     CXX_FLAGS = "'-g -O0 -static'"
     C_FLAGS = "'-g -O0 -static'"
     config_project(project_path)

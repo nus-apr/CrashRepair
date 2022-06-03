@@ -90,6 +90,7 @@ RUN pypy3 -m easy_install funcy
 RUN pypy3 -m easy_install six
 RUN pypy3 -m easy_install numpy==1.19.1
 RUN pypy3 -m easy_install wllvm
+RUN python3 -m easy_install wllvm
 
 # ARG CACHEBUST=1
 # RUN git clone https://github.com/rshariffdeen/CPR.git /CPR

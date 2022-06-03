@@ -23,6 +23,7 @@ FILE_MAIN_LOG = ""
 FILE_ERROR_LOG = DIRECTORY_LOG_BASE + "/log-error"
 FILE_LAST_LOG = DIRECTORY_LOG_BASE + "/log-latest"
 FILE_MAKE_LOG = DIRECTORY_LOG_BASE + "/log-make"
+FILE_CRASH_LOG = DIRECTORY_LOG_BASE + "/log-crash"
 FILE_COMMAND_LOG = DIRECTORY_LOG_BASE + "/log-command"
 FILE_STANDARD_FUNCTION_LIST = DIRECTORY_DATA + "/standard-function-list"
 FILE_STANDARD_MACRO_LIST = DIRECTORY_DATA + "/standard-macro-list"
@@ -141,3 +142,9 @@ STYLE_FORMAT_COMMAND = "clang-format -style=LLVM "
 
 crash_word_list = ["abort", "core dumped", "crashed", "exception"]
 error_word_list = ["runtime error", "buffer-overflow", "unsigned integer overflow"]
+
+CRASH_TYPE_DIV_ZERO = 1
+CRASH_TYPE_INT_MUL_OVERFLOW = 2
+CRASH_TYPE_INT_ADD_OVERFLOW = 3
+CRASH_TYPE_INT_SUB_OVERFLOW = 4
+CRASH_TYPE_BUFFER_OVERFLOW = 5

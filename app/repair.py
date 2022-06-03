@@ -398,7 +398,7 @@ def run_cpr(program_path, patch_list):
                     assert exit_code == 0
                     # set location of bug/crash
                     values.IS_CRASH = False
-                    latest_crash_loc = reader.collect_crash_point(values.get_file_message_log())
+                    latest_crash_loc, _ = reader.collect_crash_point(values.get_file_message_log())
                     if not oracle.is_loc_in_trace(values.CONF_LOC_PATCH):
                         continue
                     if latest_crash_loc:

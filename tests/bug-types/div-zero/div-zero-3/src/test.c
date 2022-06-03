@@ -1,23 +1,16 @@
 #include <stdio.h>
 
-
-
 int main(int argc, char *argv[]) {
   int varA = atoi(argv[1]);
   int varB = atoi(argv[2]);
-  int res, z;
-  if (__trident_choice("L9", "bool", (int[]){varA, varB}, (char*[]){"x", "y"}, 2, (int*[]){}, (char*[]){}, 0))  {
-      return -1;
-  }
+  int res, div;
 
   if (varA > 5)
-    z = varA - 1;
+    div = varA - 1;
   else
-    z = varA + 2;
-
-  z = varA * varB;
-  TRIDENT_OUTPUT("obs", "i32", z);
-  res = 1000 / z;
+    div = varA + 2;
+  div = varA * varB;
+  res = 1000 / div;
   return 0;
 }
 

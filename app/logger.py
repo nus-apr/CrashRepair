@@ -26,15 +26,16 @@ def create():
     with open(definitions.FILE_COMMAND_LOG, 'w+') as command_log:
         command_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
 
+def store_log_file(log_file_path):
+    if os.path.isfile(log_file_path):
+        copyfile(log_file_path, definitions.DIRECTORY_LOG + "/" + log_file_path.split("/")[-1])
 
-def store():
+def store_logs():
     copyfile(definitions.FILE_MAIN_LOG, definitions.DIRECTORY_LOG + "/log-latest")
-    if os.path.isfile(definitions.FILE_COMMAND_LOG):
-        copyfile(definitions.FILE_COMMAND_LOG, definitions.DIRECTORY_LOG + "/log-command")
-    if os.path.isfile(definitions.FILE_ERROR_LOG):
-        copyfile(definitions.FILE_ERROR_LOG, definitions.DIRECTORY_LOG + "/log-error")
-    if os.path.isfile(definitions.FILE_MAKE_LOG):
-        copyfile(definitions.FILE_MAKE_LOG, definitions.DIRECTORY_LOG + "/log-make")
+    store_log_file(definitions.FILE_COMMAND_LOG)
+    store_log_file(definitions.FILE_ERROR_LOG)
+    store_log_file(definitions.FILE_MAKE_LOG)
+    store_log_file(definitions.FILE_CRASH_LOG)
 
 
 def log(log_message):

@@ -4,6 +4,7 @@ import re
 from app import emitter, definitions, values
 from six.moves import cStringIO
 import os
+import io
 from pysmt.smtlib.parser import SmtLibParser
 
 
@@ -149,7 +150,7 @@ def collect_trace(file_path, project_path):
         if not set(values.CONF_LOC_LIST_CRASH).isdisjoint(list_trace):
             emitter.note("\t\t[note] a crash location detected in trace")
             values.COUNT_HIT_CRASH_LOC = values.COUNT_HIT_CRASH_LOC + 1
-    is_crash = collect_crash_point(values.get_file_message_log())
+    is_crash, _ = collect_crash_point(values.get_file_message_log())
     if is_crash:
         values.IS_CRASH = True
         values.COUNT_HIT_CRASH = values.COUNT_HIT_CRASH + 1
@@ -210,14 +211,19 @@ def collect_crash_point(trace_file_path):
         extract the location of the crash instruction
      """
     crash_location = ""
+    crash_reason = ""
+    crash_type = -1
     if os.path.exists(trace_file_path):
         with open(trace_file_path, 'r') as trace_file:
             for read_line in trace_file:
                 if "KLEE: ERROR:" in read_line:
                     read_line = read_line.replace("KLEE: ERROR: ", "")
                     crash_location = read_line.split(": ")[0]
+                    crash_reason = read_line.split(": ")[-1]
                     break
-    return crash_location
+    if "divide by zero" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_DIV_ZERO
+    return crash_location, crash_type
 
 
 def collect_exploit_return_code(output_file_path):
@@ -236,16 +242,26 @@ def collect_exploit_return_code(output_file_path):
     return return_code
 
 
-def collect_exploit_output(output_file_path):
+def collect_exploit_output(log_file_path):
     """
         This function will read the output log of a program execution
-        and extract the output text
+        and extract the crash location, crash type and crash instruction address
     """
-    output = ""
-    if os.path.exists(output_file_path):
-        with open(output_file_path, 'r') as output_file:
+    crash_loc = ""
+    crash_type = ""
+    crash_address = ""
+    crash_function = ""
+    if os.path.exists(log_file_path):
+        with open(log_file_path, 'r') as output_file:
             output = output_file.readlines()
-    return output
+            crash_loc = output[0].strip().split(": ")[0]
+            crash_type = output[0].strip().split(": ")[-1]
+            for line in output[1:]:
+                if "#0" in line:
+                    crash_address = line.strip().split(" ")[1]
+                    crash_function = line.strip().split(" in ")[-1].split(" ")[0]
+                    break
+    return crash_loc, crash_type, crash_address, crash_function
 
 
 def collect_stack_info(trace_file_path):
@@ -299,3 +315,10 @@ def collect_specification(spec_file_path):
         with open(spec_file_path, 'r') as spec_file:
             spec_lines = spec_file.readlines()
     return spec_lines
+
+
+def read_ast_tree(json_file):
+    with io.open(json_file, 'r', encoding='utf8', errors="ignore") as f:
+        ast_json = json.loads(f.read())
+    return ast_json['root']
+

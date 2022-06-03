@@ -1,8 +1,6 @@
 /* util.c */
 #include "util.h"
-#ifndef TRIDENT_OUTPUT
-#define TRIDENT_OUTPUT(id, typestr, value) value
-#endif
+
 
 int rand_seed=10;
 
