@@ -144,11 +144,6 @@ def extract_crash_information(binary_path, argument_list, log_path):
     test_command += "{} {} > {} 2>&1".format(binary_path, binary_input, log_path)
     utilities.execute_command(test_command, False)
     c_loc, c_type, c_address, c_func_name = reader.collect_exploit_output(log_path)
-    emitter.highlight("\t\t[info] crash type: {}".format(c_type))
-    emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
-    emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
-    emitter.highlight("\t\t[info] crash address: {}".format(c_address))
-
     emitter.normal("\textracting source ast")
     ast_diff_bin = "/CrashRepair/bin/ast-diff"
     src_dir = values.CONF_PATH_PROJECT + "/src/"
@@ -158,8 +153,20 @@ def extract_crash_information(binary_path, argument_list, log_path):
     utilities.execute_command(generate_ast_command)
     ast_tree = reader.read_ast_tree(ast_file_path)
     function_node_list = extract_function_node_list(ast_tree)
+    if not c_func_name:
+        _, line_num, _ = c_loc.split(":")
+        for func_name, func_node in function_node_list.items():
+            func_line_range = range(func_node["start line"], func_node["end line"])
+            if int(line_num) in func_line_range:
+                c_func_name = func_name
+                break
     crash_func_ast = function_node_list[c_func_name]
     cfc = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
+
+    emitter.highlight("\t\t[info] crash type: {}".format(c_type))
+    emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
+    emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
+    emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
 
 
@@ -168,7 +175,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
     cfc = None
     src_file, line_num, column_num = crash_loc.split(":")
     if crash_type == "division by zero":
-        binaryop_list = extract_binaryop_node_list(func_ast, "/")
+        binaryop_list = extract_binaryop_node_list(func_ast, ["/"])
         div_op_ast = None
         for binaryop in binaryop_list.values():
             if int(line_num) == binaryop["start line"]:
@@ -181,6 +188,26 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
             utilities.error_exit("Unable to generate crash free constraint")
         divisor_ast = div_op_ast["children"][1]
         cfc = converter.convert_node_to_str(divisor_ast) + " != 0"
+    elif crash_type == "signed integer overflow":
+        binaryop_list = extract_binaryop_node_list(func_ast, ["*", "+", "-"])
+        crash_op_str = None
+        crash_op_ast = None
+        for binary_op_str, binary_op_ast in binaryop_list.items():
+            if int(line_num) == binary_op_ast["start line"]:
+                col_range = range(binary_op_ast["start column"], binary_op_ast["end column"])
+                if int(column_num) in col_range:
+                    crash_op_ast = binary_op_ast
+                    crash_op_str = binary_op_str
+                    break
+        if crash_op_ast is None:
+            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            utilities.error_exit("Unable to generate crash free constraint")
+        op_a_ast = crash_op_ast["children"][0]
+        op_b_ast = crash_op_ast["children"][1]
+        op_a_str = converter.convert_node_to_str(op_a_ast)
+        op_b_str = converter.convert_node_to_str(op_b_ast)
+        crash_op_converter = {"*": "/", "+": "-", "-": "+"}
+        cfc = "{} <= INT_MAX {} {}".format(op_a_str, crash_op_converter[crash_op_str], op_b_str)
     else:
         emitter.error("\t[error] unknown crash type")
         utilities.error_exit("Unable to generate crash free constraint")
@@ -398,20 +425,20 @@ def extract_typeloc_node_list(ast_node):
     return typeloc_node_list
 
 
-def extract_binaryop_node_list(ast_node, type=None):
+def extract_binaryop_node_list(ast_node, filter_list=None):
     binaryop_node_list = dict()
     node_type = str(ast_node["type"])
     if node_type in ["BinaryOperator"]:
         identifier = str(ast_node['value'])
-        if type:
-            if type == identifier:
+        if filter_list:
+            if identifier in filter_list:
                 binaryop_node_list[identifier] = ast_node
         else:
             binaryop_node_list[identifier] = ast_node
 
     if len(ast_node['children']) > 0:
         for child_node in ast_node['children']:
-            child_binaryop_node_list = extract_binaryop_node_list(child_node, type)
+            child_binaryop_node_list = extract_binaryop_node_list(child_node, filter_list)
             binaryop_node_list.update(child_binaryop_node_list)
     return binaryop_node_list
 

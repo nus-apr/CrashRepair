@@ -249,13 +249,13 @@ def collect_exploit_output(log_file_path):
     """
     crash_loc = ""
     crash_type = ""
-    crash_address = ""
+    crash_address = None
     crash_function = ""
     if os.path.exists(log_file_path):
         with open(log_file_path, 'r') as output_file:
             output = output_file.readlines()
             crash_loc = output[0].strip().split(": ")[0]
-            crash_type = output[0].strip().split(": ")[-1]
+            crash_type = output[0].strip().split(": ")[2]
             for line in output[1:]:
                 if "#0" in line:
                     crash_address = line.strip().split(" ")[1]

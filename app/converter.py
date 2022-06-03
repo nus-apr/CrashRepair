@@ -407,7 +407,11 @@ def convert_node_to_str(ast_node):
         operator = str(ast_node['value'])
         right_operand = convert_node_to_str(ast_node['children'][1])
         left_operand = convert_node_to_str(ast_node['children'][0])
-        return left_operand + " " + operator + " " + right_operand
+        node_str = left_operand + " " + operator + " " + right_operand
+    elif str(ast_node['type']) == "UnaryOperator":
+        operator = str(ast_node['value'])
+        child_operand = convert_node_to_str(ast_node['children'][0])
+        node_str = operator + child_operand
     return node_str
 
 
