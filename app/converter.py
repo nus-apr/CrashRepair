@@ -118,7 +118,6 @@ def get_node_value(ast_node):
         print(ast_type)
         print(ast_node)
         utilities.error_exit("Unhandled node type in convert ast node")
-
     return ast_value
 
 
@@ -398,14 +397,14 @@ def convert_member_expr(ast_node, only_string=False):
 
 
 
-def convert_node_to_str(ast_node):
+def convert_node_to_str(ast_node, only_string=False):
     node_str = ""
     node_type = str(ast_node['type'])
     if node_type in ["DeclStmt", "DeclRefExpr", "VarDecl"]:
         node_str = str(ast_node['value'])
     if str(ast_node['type']) == "BinaryOperator":
         operator = str(ast_node['value'])
-        right_operand = convert_node_to_str(ast_node['children'][1])
+        right_operand = convert_node_to_str(ast_node['children'][1], only_string)
         left_operand = convert_node_to_str(ast_node['children'][0])
         node_str = left_operand + " " + operator + " " + right_operand
     elif str(ast_node['type']) == "UnaryOperator":

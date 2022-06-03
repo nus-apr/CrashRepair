@@ -161,18 +161,145 @@ def extract_crash_information(binary_path, argument_list, log_path):
                 c_func_name = func_name
                 break
     crash_func_ast = function_node_list[c_func_name]
-    cfc = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
-
+    cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
+    var_name_list = [x[0] for x in var_list]
     emitter.highlight("\t\t[info] crash type: {}".format(c_type))
     emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
+    emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
 
+
+def extract_var_dec_list(ast_node):
+    var_list = list()
+    child_count = len(ast_node['children'])
+    node_type = ast_node['type']
+
+    if node_type in ["ParmVarDecl"]:
+        var_name = str(ast_node['identifier'])
+        var_type = str(ast_node['data_type'])
+        line_number = int(ast_node['end line'])
+        var_list.append((var_name, line_number, var_type))
+        return var_list
+
+    if node_type in ["VarDecl"]:
+        var_name = str(ast_node['identifier'])
+        var_type = str(ast_node['data_type'])
+        line_number = int(ast_node['end line'])
+        var_list.append((var_name, line_number, var_type))
+        return var_list
+    if child_count:
+        for child_node in ast_node['children']:
+            var_list = var_list + list(set(extract_var_dec_list(child_node)))
+    return list(set(var_list))
+
+
+def extract_var_ref_list(ast_node):
+    var_list = list()
+    child_count = len(ast_node['children'])
+    node_type = ast_node['type']
+
+    if node_type in ["ReturnStmt"]:
+        return var_list
+    if node_type == "BinaryOperator":
+        insert_line_number = int(ast_node['end line'])
+        node_value = ast_node['value']
+        if node_value == "=":
+            left_side = ast_node['children'][0]
+            right_side = ast_node['children'][1]
+            right_var_list = extract_var_ref_list(right_side)
+            left_var_list = extract_var_ref_list(left_side)
+            operands_var_list = right_var_list + left_var_list
+            for var_name, line_number, var_type in operands_var_list:
+                var_list.append((str(var_name), insert_line_number, str(var_type)))
+            return var_list
+    if node_type == "UnaryOperator":
+        insert_line_number = int(ast_node['end line'])
+        node_value = ast_node['value']
+        if node_value == "&":
+            child_node = ast_node['children'][0]
+            child_var_list = extract_var_ref_list(child_node)
+            for var_name, line_number, var_type in child_var_list:
+                var_list.append(("&" + str(var_name), insert_line_number, var_type))
+            return var_list
+    if node_type == "DeclRefExpr":
+        line_number = int(ast_node['start line'])
+        if "ref_type" in ast_node.keys():
+            ref_type = str(ast_node['ref_type'])
+            if ref_type == "FunctionDecl":
+                return var_list
+        var_name = str(ast_node['value'])
+        # print(ast_node)
+        if 'data_type' in ast_node.keys():
+            var_type = str(ast_node['data_type'])
+        else:
+            var_type = "macro"
+        var_list.append((var_name, line_number, var_type))
+    if node_type == "ArraySubscriptExpr":
+        var_name, var_type, auxilary_list = converter.convert_array_subscript(ast_node)
+        line_number = int(ast_node['start line'])
+        var_list.append((str(var_name), line_number, var_type))
+        for aux_var_name, aux_var_type in auxilary_list:
+            var_list.append((str(aux_var_name), line_number, aux_var_type))
+        return var_list
+    if node_type in ["MemberExpr"]:
+        var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
+        line_number = int(ast_node['start line'])
+        var_list.append((str(var_name), line_number, var_type))
+        for aux_var_name, aux_var_type in auxilary_list:
+            var_list.append((str(aux_var_name), line_number, aux_var_type))
+        return var_list
+    if node_type in ["ForStmt", "WhileStmt"]:
+        body_node = ast_node['children'][child_count - 1]
+        insert_line = body_node['start line']
+        for i in range(0, child_count - 1):
+            condition_node = ast_node['children'][i]
+            condition_node_var_list = extract_var_ref_list(condition_node)
+            for var_name, line_number, var_type in condition_node_var_list:
+                var_list.append((str(var_name), insert_line, var_type))
+        var_list = var_list + extract_var_ref_list(body_node)
+        return var_list
+    # if node_type in ["CaseStmt"]:
+    #     return var_list
+    if node_type in ["IfStmt"]:
+        condition_node = ast_node['children'][0]
+        body_node = ast_node['children'][1]
+        insert_line = body_node['start line']
+        condition_node_var_list = extract_var_ref_list(condition_node)
+        for var_name, line_number, var_type in condition_node_var_list:
+            var_list.append((str(var_name), insert_line, var_type))
+        var_list = var_list + extract_var_ref_list(body_node)
+        return var_list
+    if node_type in ["SwitchStmt"]:
+        condition_node = ast_node['children'][0]
+        body_node = ast_node['children'][1]
+        insert_line = body_node['start line']
+        condition_node_var_list = extract_var_ref_list(condition_node)
+        for var_name, line_number, var_type in condition_node_var_list:
+            var_list.append((str(var_name), insert_line, var_type))
+        var_list = var_list + extract_var_ref_list(body_node)
+        return var_list
+    if child_count:
+        for child_node in ast_node['children']:
+            var_list = var_list + list(set(extract_var_ref_list(child_node)))
+    return list(set(var_list))
+
+
+def extract_var_list(ast_node):
+    var_dec_list = extract_var_dec_list(ast_node)
+    var_ref_list = extract_var_ref_list(ast_node)
+    variable_list = list(set(var_ref_list + var_dec_list))
+    for child_node in ast_node['children']:
+        child_var_dec_list = extract_var_dec_list(child_node)
+        child_var_ref_list = extract_var_ref_list(child_node)
+        variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
+    return variable_list
 
 
 def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
     cfc = None
+    var_list = []
     src_file, line_num, column_num = crash_loc.split(":")
     if crash_type == "division by zero":
         binaryop_list = extract_binaryop_node_list(func_ast, ["/"])
@@ -187,6 +314,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
             emitter.error("\t[error] unable to find division operator")
             utilities.error_exit("Unable to generate crash free constraint")
         divisor_ast = div_op_ast["children"][1]
+        var_list = extract_var_list(divisor_ast)
         cfc = converter.convert_node_to_str(divisor_ast) + " != 0"
     elif crash_type == "signed integer overflow":
         binaryop_list = extract_binaryop_node_list(func_ast, ["*", "+", "-"])
@@ -208,10 +336,11 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
         op_b_str = converter.convert_node_to_str(op_b_ast)
         crash_op_converter = {"*": "/", "+": "-", "-": "+"}
         cfc = "{} <= INT_MAX {} {}".format(op_a_str, crash_op_converter[crash_op_str], op_b_str)
+        var_list = extract_var_list(crash_op_ast)
     else:
         emitter.error("\t[error] unknown crash type")
         utilities.error_exit("Unable to generate crash free constraint")
-    return cfc
+    return cfc, var_list
 
 def extract_child_id_list(ast_node):
     id_list = list()
