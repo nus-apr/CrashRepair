@@ -364,7 +364,7 @@ def generate_model(formula):
            Arguments:
                formula: smtlib formatted formula
     """
-    emitter.debug("extracting z3 model")
+    # emitter.normal("\textracting z3 model")
     model = get_model(formula)
     if model is None:
         return None
@@ -1158,3 +1158,60 @@ def generate_formula_from_patch(patch):
             pass  # FIXME: do I need to handle it somehow?
     substituted_patch = patch_constraint.substitute(program_substitution)
     return substituted_patch
+
+
+
+def generate_z3_code_for_expr(var_expr, var_name, bit_size):
+    var_name = var_name + "_" + str(bit_size)
+    if bit_size == 64:
+        zero = "x0000000000000000"
+    else:
+        zero = "x00000000"
+    code = "(set-logic QF_AUFBV )\n"
+    code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
+    code += "(declare-fun " + var_name + "() (_ BitVec " + str(bit_size) + "))\n"
+    # code += "(declare-fun b () (_ BitVec " + str(bit_size) + "))\n"
+    code += "(assert (= " + var_name + " " + var_expr + "))\n"
+    # code += "(assert (not (= b #" + zero + ")))\n"
+    code += "(assert  (not (= " + var_name + " #" + zero + ")))\n"
+    code += "(check-sat)"
+    return code
+
+
+def generate_z3_code_for_var(var_expr, var_name):
+    var_name = str(var_name).replace("->", "")
+    var_name = str(var_name).replace("[", "-")
+    var_name = str(var_name).replace("]", "-")
+    count_64 = int(var_expr.count("64)"))
+    count_bracket = int(var_expr.count(")"))
+    extend_32_count = int(var_expr.count("extend 32)"))
+    extend_56_count = int(var_expr.count("extend 56)"))
+
+    if count_bracket == 1:
+        if count_64 == 1:
+            code = generate_z3_code_for_expr(var_expr, var_name, 64)
+        else:
+            code = generate_z3_code_for_expr(var_expr, var_name, 32)
+
+    elif extend_56_count > 0:
+        code = generate_z3_code_for_expr(var_expr, var_name, 64)
+
+    elif extend_32_count > 0:
+        if "extend 32" in var_expr.split(") ")[0]:
+            code = generate_z3_code_for_expr(var_expr, var_name, 64)
+        elif " 64" in var_expr.split(") ")[0]:
+            code = generate_z3_code_for_expr(var_expr, var_name, 64)
+        else:
+            # print(var_expr)
+            var_expr = "((_ zero_extend 32) " + var_expr + " )"
+            code = generate_z3_code_for_expr(var_expr, var_name, 64)
+    else:
+        try:
+            var_expr_new = "((_ zero_extend 32) " + var_expr + " )"
+            code = generate_z3_code_for_expr(var_expr_new, var_name, 64)
+            parser = SmtLibParser()
+            script = parser.get_script(cStringIO(code))
+            formula = script.get_last_formula()
+        except Exception as exception:
+            code = generate_z3_code_for_expr(var_expr, var_name, 64)
+    return code

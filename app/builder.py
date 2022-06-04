@@ -15,13 +15,13 @@ LD_FLAGS = "-L/CrashRepair/lib -ltrident_runtime  -lkleeRuntest"
 
 
 def config_project(project_path, is_llvm, custom_config_command=None):
-    emitter.normal("\tconfiguring program")
+    emitter.normal("\t\tconfiguring program")
     dir_command = "cd " + project_path + ";"
    
     config_command = None
     if custom_config_command is not None:
         if custom_config_command == "skip":
-            emitter.warning("\t[warning] skipping configuration")
+            emitter.warning("\t\t[warning] skipping configuration")
             return
         else:
             if os.path.exists(project_path + "/" + "aclocal.m4"):
@@ -164,7 +164,7 @@ def apply_flags(build_command):
 
 
 def build_project(project_path, build_command=None):
-    emitter.normal("\tbuilding program")
+    emitter.normal("\t\tcompiling program")
     dir_command = "cd " + project_path + ";"
     if build_command is None:
         build_command = "CC=" + CC + " CXX=" + CXX + " "
@@ -195,9 +195,8 @@ def build_project(project_path, build_command=None):
 
 def build_normal():
     global CC, CXX, CXX_FLAGS, C_FLAGS, LD_FLAGS
-
-    emitter.sub_title("Building Program")
-    emitter.normal("\tsetting environment variables")
+    emitter.normal("\tbuilding program")
+    emitter.normal("\t\tsetting environment variables")
     execute_command("export CREPAIR_CC=" + definitions.DIRECTORY_TOOLS + "/crepair-cc")
     execute_command("export CREPAIR_CXX=" + definitions.DIRECTORY_TOOLS + "/crepair-cxx")
 
@@ -367,7 +366,7 @@ def soft_restore_project(project_path):
 
 
 def clean_project(project_path, binary_path):
-    emitter.normal("\tcleaning files")
+    emitter.normal("\t\tcleaning files")
     binary_dir_path = "/".join(str(binary_path).split("/")[:-1])
 
     if values.CONF_COMMAND_BUILD != "skip":

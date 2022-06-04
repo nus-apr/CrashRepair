@@ -62,15 +62,15 @@ def clean_files():
         execute_command(clean_command)
 
 
-def backup_file(file_path, backup_name):
+def backup_file(file_path, backup_path):
     logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
-    backup_command = "cp " + file_path + " " + definitions.DIRECTORY_BACKUP + "/" + backup_name
+    backup_command = "cp " + file_path + " " + backup_path
     execute_command(backup_command)
 
 
-def restore_file(file_path, backup_name):
+def restore_file(file_path, backup_path):
     logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
-    restore_command = "cp " + definitions.DIRECTORY_BACKUP + "/" + backup_name + " " + file_path
+    restore_command = "cp " + backup_path + " " + file_path
     execute_command(restore_command)
 
 

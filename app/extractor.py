@@ -3,7 +3,7 @@ from six.moves import cStringIO
 from pysmt.shortcuts import And
 import os
 import json
-from app import emitter, utilities, reader, values, converter
+from app import emitter, utilities, reader, values, converter, generator
 from pathlib import Path
 from pysmt.smtlib.parser import SmtLibParser
 
@@ -136,6 +136,15 @@ def extract_child_expressions(patch_tree):
             child_list = [patch_tree]
     return child_list
 
+def extract_ast_json(source_dir, source_file_path):
+    ast_diff_bin = "/CrashRepair/bin/ast-diff"
+    ast_file_path = source_file_path + ".ast"
+    generate_ast_command = "cd {} && {} -ast-dump-json {} > {}".format(source_dir, ast_diff_bin, source_file_path,
+                                                                       ast_file_path)
+    utilities.execute_command(generate_ast_command)
+    ast_tree = reader.read_ast_tree(ast_file_path)
+    return ast_tree
+
 
 def extract_crash_information(binary_path, argument_list, log_path):
     emitter.normal("\textracting crash information")
@@ -144,14 +153,9 @@ def extract_crash_information(binary_path, argument_list, log_path):
     test_command += "{} {} > {} 2>&1".format(binary_path, binary_input, log_path)
     utilities.execute_command(test_command, False)
     c_loc, c_type, c_address, c_func_name = reader.collect_exploit_output(log_path)
-    emitter.normal("\textracting source ast")
-    ast_diff_bin = "/CrashRepair/bin/ast-diff"
     src_dir = values.CONF_PATH_PROJECT + "/src/"
     src_path = src_dir + c_loc.split(":")[0]
-    ast_file_path = src_path + ".ast"
-    generate_ast_command = "cd {} && {} -ast-dump-json {} > {}".format(src_dir, ast_diff_bin, src_path, ast_file_path)
-    utilities.execute_command(generate_ast_command)
-    ast_tree = reader.read_ast_tree(ast_file_path)
+    ast_tree = extract_ast_json(src_dir, src_path)
     function_node_list = extract_function_node_list(ast_tree)
     if not c_func_name:
         _, line_num, _ = c_loc.split(":")
@@ -169,7 +173,7 @@ def extract_crash_information(binary_path, argument_list, log_path):
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
-
+    return src_path, var_list
 
 def extract_var_dec_list(ast_node):
     var_list = list()
@@ -199,7 +203,6 @@ def extract_var_ref_list(ast_node):
     var_list = list()
     child_count = len(ast_node['children'])
     node_type = ast_node['type']
-
     if node_type in ["ReturnStmt"]:
         return var_list
     if node_type == "BinaryOperator":
@@ -224,7 +227,7 @@ def extract_var_ref_list(ast_node):
                 var_list.append(("&" + str(var_name), insert_line_number, var_type))
             return var_list
     if node_type == "DeclRefExpr":
-        line_number = int(ast_node['start line'])
+        line_number = int(ast_node['start line']) - 1
         if "ref_type" in ast_node.keys():
             ref_type = str(ast_node['ref_type'])
             if ref_type == "FunctionDecl":
@@ -315,7 +318,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
             utilities.error_exit("Unable to generate crash free constraint")
         divisor_ast = div_op_ast["children"][1]
         var_list = extract_var_list(divisor_ast)
-        cfc = converter.convert_node_to_str(divisor_ast) + " != 0"
+        cfc = converter.get_node_value(divisor_ast) + " != 0"
     elif crash_type == "signed integer overflow":
         binaryop_list = extract_binaryop_node_list(func_ast, ["*", "+", "-"])
         crash_op_str = None
@@ -585,3 +588,50 @@ def extract_unaryop_node_list(ast_node):
             unaryop_node_list.update(child_unaryop_node_list)
     return unaryop_node_list
 
+
+def extract_keys_from_model(model):
+    byte_list = list()
+    k_list = ""
+    for dec in model:
+        if hasattr(model[dec], "num_entries"):
+            k_list = model[dec].as_list()
+            if dec.name() == "A-data":
+                break
+    for pair in k_list:
+        if type(pair) == list:
+            byte_list.append(int(str(pair[0])))
+    return byte_list
+
+
+def extract_input_bytes_used(sym_expr):
+    # print(sym_expr)
+    model_a = ""
+    try:
+        model_a = generator.generate_model(sym_expr)
+    except Exception:
+        emitter.debug("\t\t[warning] exception in generating model")
+    # print("model-a")
+    # print(model_a)
+    input_byte_list = list()
+    if model_a is not None:
+        input_byte_list = extract_keys_from_model(model_a)
+        if not input_byte_list:
+            script_lines = str(sym_expr).split("\n")
+            value_line = script_lines[3]
+            if "A-data" in value_line:
+                tokens = value_line.split("A-data")
+                if len(tokens) > 2:
+                    for token in tokens[1:]:
+                        byte_index = ((token.split(")")[0]).split("bv")[1]).split(" ")[0]
+                        input_byte_list.append(int(byte_index))
+                    emitter.debug("\t\t\twarning: manual inspection of bytes")
+                elif len(tokens) == 2:
+                    byte_index = ((tokens[1].split(")")[0]).split("bv")[1]).split(" ")[0]
+                    input_byte_list.append(int(byte_index))
+                else:
+                   utilities.error_exit("unexpected error in extracting input bytes")
+    # print("input byte list")
+    # print(input_byte_list)
+    if input_byte_list:
+        input_byte_list.sort()
+    return input_byte_list

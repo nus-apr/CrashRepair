@@ -322,3 +322,64 @@ def read_ast_tree(json_file):
         ast_json = json.loads(f.read())
     return ast_json['root']
 
+
+
+def read_symbolic_expressions(trace_file_path):
+    emitter.normal("\treading symbolic expressions")
+    var_expr_map = dict()
+    if os.path.exists(trace_file_path):
+        with open(trace_file_path, 'r') as trace_file:
+            for line in trace_file:
+                if '[var-expr]' in line:
+                    line = line.split("[var-expr] ")[-1]
+                    var_name, var_expr = line.split(":")
+                    var_expr = var_expr.replace("\n", "")
+                    if var_name not in var_expr_map.keys():
+                        var_expr_map[var_name] = dict()
+                        var_expr_map[var_name]['expr_list'] = list()
+                    var_expr_map[var_name]['expr_list'] .append(var_expr)
+                if '[var-type]' in line:
+                    line = line.split("[var-type]: ")[-1]
+                    var_name = line.split(":")[0]
+                    var_type = line.split(":")[1]
+                    var_type = var_type.replace("\n", "")
+                    var_expr_map[var_name]['data_type'] = var_type
+    return var_expr_map
+
+
+def read_concrete_values(trace_file_path):
+    emitter.normal("\t\t\tcollecting variable values")
+    var_value_map = dict()
+    if os.path.exists(trace_file_path):
+        with open(trace_file_path, 'r') as trace_file:
+            for line in trace_file:
+                if '[var-expr]' in line:
+                    line = line.split("[var-expr] ")[-1]
+                    var_name, var_value = line.split(":")
+                    var_value = var_value.replace("\n", "")
+                    var_value = var_value.split(" ")[1]
+                    if var_name not in var_value_map.keys():
+                        var_value_map[var_name] = dict()
+                        var_value_map[var_name]['value_list'] = list()
+                    var_value_map[var_name]['value_list'].append(var_value)
+                if '[var-type]' in line:
+                    line = line.split("[var-type]: ")[-1]
+                    var_name = line.split(":")[0]
+                    var_type = line.split(":")[1]
+                    var_type = var_type.replace("\n", "")
+                    var_value_map[var_name]['data_type'] = var_type
+    return var_value_map
+
+def read_taint_values(taint_log_path):
+    emitter.normal("\t\tcollecting taint values")
+    taint_map = dict()
+    if os.path.exists(taint_log_path):
+        with open(taint_log_path, 'r') as taint_file:
+            for line in taint_file:
+                if 'KLEE: TaintTrack:' in line:
+                    line = line.split("KLEE: TaintTrack: ")[-1]
+                    source_loc, taint_value = line.split(": ")
+                    if source_loc not in taint_map.keys():
+                        taint_map[source_loc] = []
+                    taint_map[source_loc].append(taint_value)
+    return taint_map
