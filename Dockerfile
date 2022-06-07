@@ -92,6 +92,8 @@ RUN pypy3 -m easy_install numpy==1.19.1
 RUN pypy3 -m easy_install wllvm
 RUN python3 -m easy_install wllvm
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y  --no-install-recommends --force-yes \
+    clang-tidy
 # ARG CACHEBUST=1
 # RUN git clone https://github.com/rshariffdeen/CPR.git /CPR
 ADD . /CrashRepair
