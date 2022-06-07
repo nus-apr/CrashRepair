@@ -28,8 +28,9 @@ def fix_localization(input_byte_list, taint_log_path):
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
         source_mapping[source_path].add(line_number)
+
+    tainted_function_list = collections.OrderedDict()
     for source_path in source_mapping:
-        tainted_function_list = collections.OrderedDict()
         tainted_line_list = source_mapping[source_path]
         source_dir = values.CONF_PATH_PROJECT + "/src/"
         ast_tree = extractor.extract_ast_json(source_dir, source_path)
