@@ -49,9 +49,11 @@ def fix_localization(input_byte_list, taint_log_path):
         function_list = tainted_function_list[source_path]
         for func_name in function_list:
             func_line_list = function_list[func_name]
-            for line in func_line_list:
+            for line in sorted(func_line_list):
                 source_line = source_path + ":" + str(line)
                 observed_tainted_bytes = line_to_byte_map[source_line]
+                if not observed_tainted_bytes:
+                    continue
                 if set(input_byte_list) <= set(observed_tainted_bytes):
                     fix_locations.append(source_line)
                     break
