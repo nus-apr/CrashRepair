@@ -11,7 +11,7 @@ from app import emitter, reader, utilities, generator, extractor, values
 def fix_localization(input_byte_list, taint_log_path):
     emitter.normal("\tcomputing fix locations")
     fix_locations = []
-    line_to_byte_map = dict()
+    line_to_byte_map = collections.OrderedDict()
     taint_map = reader.read_taint_values(taint_log_path)
     for taint_loc in taint_map:
         taint_value_list = taint_map[taint_loc]
@@ -22,15 +22,14 @@ def fix_localization(input_byte_list, taint_log_path):
                 line_to_byte_map[taint_loc] = set()
             line_to_byte_map[taint_loc].update(set(input_bytes))
 
-    source_mapping = dict()
+    source_mapping = collections.OrderedDict()
     for taint_loc in taint_map:
         source_path, line_number = taint_loc.split(":")
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
         source_mapping[source_path].add(line_number)
-
     for source_path in source_mapping:
-        tainted_function_list = dict()
+        tainted_function_list = collections.OrderedDict()
         tainted_line_list = source_mapping[source_path]
         source_dir = values.CONF_PATH_PROJECT + "/src/"
         ast_tree = extractor.extract_ast_json(source_dir, source_path)
@@ -57,6 +56,9 @@ def fix_localization(input_byte_list, taint_log_path):
                 if set(input_byte_list) <= set(observed_tainted_bytes):
                     fix_locations.append(source_line)
                     break
-
-    for fix_loc in fix_locations:
+    sorted_fix_locations = []
+    for loc in taint_map.keys():
+        if loc in fix_locations:
+            sorted_fix_locations.append(loc)
+    for fix_loc in sorted_fix_locations:
         emitter.highlight("\t\t[fix-loc] {}".format(fix_loc))

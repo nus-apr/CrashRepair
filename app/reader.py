@@ -6,6 +6,7 @@ from six.moves import cStringIO
 import os
 import io
 from pysmt.smtlib.parser import SmtLibParser
+from collections import OrderedDict
 
 
 def read_json(file_path):
@@ -376,7 +377,7 @@ def read_concrete_values(trace_file_path):
 
 def read_taint_values(taint_log_path):
     emitter.normal("\t\tcollecting taint values")
-    taint_map = dict()
+    taint_map = OrderedDict()
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
             for line in taint_file:
