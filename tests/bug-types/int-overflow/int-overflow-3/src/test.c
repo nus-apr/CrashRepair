@@ -1,15 +1,26 @@
 #include <stdio.h>
 #include <limits.h>
 
-void bad(int m, int n) {
-  int z = 4;
-  z = -m - n;
+
+int sub(int a, int b){
+  int res;
+  res = -b - a;
+  return res;
 }
 
+void read_file(char *file_path, char *buffer) {
+  FILE *fp = fopen(file_path, "r");
+  fread(buffer, sizeof(int), 1, fp);
+  fclose(fp);
+}
 
 int main(int argc, char *argv[]) {
-  int x = atoi(argv[1]);
-  int a = INT_MAX ;
-  bad(x, a);
+  int res;
+  char buffer[10];
+  read_file(argv[1], &buffer);
+  int x = buffer[1];
+  int y = INT_MAX;
+  printf("%d\n", x);
+  res = sub(x,y);
   return 0;
 }
