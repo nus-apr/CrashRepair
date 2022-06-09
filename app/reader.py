@@ -250,7 +250,7 @@ def collect_klee_crash_info(trace_file_path):
                     crash_src_file, crash_line, crash_column, crash_inst_address = crash_location_info.split(":")
                     crash_reason = read_line.split(": ")[-1]
                     break
-    if "overflow on division or remainder" in crash_reason:
+    if "overflow on division or remainder" in crash_reason or "divide by zero" in crash_reason:
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
     elif "overflow on multiplication" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_MUL_OVERFLOW

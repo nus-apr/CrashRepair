@@ -136,7 +136,8 @@ def extract_child_expressions(patch_tree):
             child_list = [patch_tree]
     return child_list
 
-def extract_ast_json(source_dir, source_file_path):
+def extract_ast_json(source_file_path):
+    source_dir = "/".join(source_file_path.split("/")[:-1])
     ast_diff_bin = "/CrashRepair/bin/ast-diff"
     ast_file_path = source_file_path + ".ast"
     generate_ast_command = "cd {} && {} -ast-dump-json {} > {}".format(source_dir, ast_diff_bin, source_file_path,
@@ -150,8 +151,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     emitter.normal("\textracting crash information")
     binary_input = " ".join(argument_list)
     c_type, c_file, c_line, c_column, c_address = reader.collect_klee_crash_info(klee_log_path)
-    src_dir = dir(c_file)
-    ast_tree = extract_ast_json(src_dir, c_file)
+    ast_tree = extract_ast_json(c_file)
     function_node_list = extract_function_node_list(ast_tree)
     c_func_name = None
     for func_name, func_node in function_node_list.items():
@@ -188,7 +188,7 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     c_loc, c_type, c_address, c_func_name = reader.collect_exploit_output(log_path)
     src_dir = values.CONF_DIR_EXPERIMENT + "/src/"
     src_path = src_dir + c_loc.split(":")[0]
-    ast_tree = extract_ast_json(src_dir, src_path)
+    ast_tree = extract_ast_json(src_path)
     function_node_list = extract_function_node_list(ast_tree)
     if not c_func_name:
         _, line_num, _ = c_loc.split(":")

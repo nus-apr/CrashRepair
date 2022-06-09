@@ -33,7 +33,7 @@ def fix_localization(input_byte_list, taint_log_path):
     for source_path in source_mapping:
         tainted_line_list = source_mapping[source_path]
         source_dir = values.CONF_DIR_EXPERIMENT + "/src/"
-        ast_tree = extractor.extract_ast_json(source_dir, source_path)
+        ast_tree = extractor.extract_ast_json(source_path)
         function_node_list = extractor.extract_function_node_list(ast_tree)
         for func_name, func_node in function_node_list.items():
             func_range = range(func_node["start line"], func_node["end line"])
