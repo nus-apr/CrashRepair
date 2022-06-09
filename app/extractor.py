@@ -163,7 +163,14 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     c_loc = ":".join([c_file, c_line, c_column])
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
     var_name_list = [x[0] for x in var_list]
-    emitter.highlight("\t\t[info] crash type: {}".format(c_type))
+    c_details = ""
+    if c_type == definitions.CRASH_TYPE_DIV_ZERO:
+        c_details = "division by zero"
+    elif c_type == definitions.CRASH_TYPE_INT_MUL_OVERFLOW:
+        c_details = "integer multiplication overflow"
+    else:
+        c_details = "unknown"
+    emitter.highlight("\t\t[info] crash type: {}".format(c_details))
     emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
