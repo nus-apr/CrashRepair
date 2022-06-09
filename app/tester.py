@@ -113,17 +113,25 @@ def test():
             # print(sym_expr_list)
             for sym_expr in sym_expr_list:
                 sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-                input_byte_list = extractor.extract_input_bytes_used(sym_expr_code)
-                input_bytes = [str(i) for i in input_byte_list]
-                emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(input_bytes)))
+                tainted_byte_list = extractor.extract_input_bytes_used(sym_expr_code)
+                if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
+                    input_byte_list = [sym_expr.strip().split(" ")[1]]
+                    break
+                input_byte_list = input_byte_list + tainted_byte_list
+            input_byte_list = list(set(input_byte_list))
+            input_bytes = [str(i) for i in input_byte_list]
+            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(input_bytes)))
         builder.build_normal()
         extractor.extract_byte_code(program_path)
-        if not os.path.isfile(program_path + ".bc"):
-            app.utilities.error_exit("Unable to generate bytecode for " + program_path)
-        values.ARGUMENT_LIST = generalized_arg_list
-        klee_taint_out_dir = output_dir_path + "/klee-out-taint-" + str(test_case_id - 1)
-        exit_code = run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
-                                           klee_taint_out_dir)
+        if not crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
+            if not os.path.isfile(program_path + ".bc"):
+                app.utilities.error_exit("Unable to generate bytecode for " + program_path)
+            values.ARGUMENT_LIST = generalized_arg_list
+            klee_taint_out_dir = output_dir_path + "/klee-out-taint-" + str(test_case_id - 1)
+            exit_code = run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
+                                               klee_taint_out_dir)
 
-        taint_log_path = klee_taint_out_dir + "/taint.log"
+            taint_log_path = klee_taint_out_dir + "/taint.log"
+        else:
+            taint_log_path = klee_concolic_out_dir + "/taint.log"
         localizer.fix_localization(input_byte_list, taint_log_path)

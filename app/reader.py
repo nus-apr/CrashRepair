@@ -226,6 +226,8 @@ def collect_crash_point(trace_file_path):
                     break
     if "divide by zero" in crash_reason:
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
+    elif "out of bound pointer" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_BUFFER_OVERFLOW
     return crash_location, crash_type
 
 
@@ -254,6 +256,8 @@ def collect_klee_crash_info(trace_file_path):
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
     elif "overflow on multiplication" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
+    elif "out of bound pointer" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_BUFFER_OVERFLOW
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
 
 
@@ -278,25 +282,33 @@ def collect_exploit_output(log_file_path):
         This function will read the output log of a program execution
         and extract the crash location, crash type and crash instruction address
     """
-    crash_loc = ""
-    crash_type = ""
+    crash_loc = None
+    crash_type = None
+    crash_id = None
     crash_address = None
-    crash_function = ""
+    crash_function = None
     if os.path.exists(log_file_path):
         with open(log_file_path, 'r') as output_file:
             output = output_file.readlines()
-            if "runtime error" in output[0]:
-                crash_loc = output[0].strip().split(": ")[0]
-                crash_type = output[0].strip().split(": ")[2]
-            for line in output[1:]:
+            for line in output:
+                if "runtime error" in line:
+                    crash_loc = line.strip().split(": ")[0]
+                    crash_type = line.strip().split(": ")[2]
+                elif "AddressSanitizer" in line:
+                    crash_type = line.strip().split(": ")[2].split(" ")[0]
                 if "#0" in line:
                     crash_address = line.strip().split(" ")[1]
                     crash_function = line.strip().split(" in ")[-1].split(" ")[0]
                     if crash_loc is None:
-                        crash_loc = line.split(" ")[-1]
-
+                        crash_loc = line.split(" ")[-1].strip().replace("\n","")
                     break
-    return crash_loc, crash_type, crash_address, crash_function
+    if "division by zero" in crash_type:
+        crash_id = definitions.CRASH_TYPE_DIV_ZERO
+    elif "overflow on multiplication" in crash_type:
+        crash_id = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
+    elif "buffer-overflow" in crash_type:
+        crash_id = definitions.CRASH_TYPE_BUFFER_OVERFLOW
+    return crash_loc, crash_id, crash_address, crash_function
 
 
 def collect_stack_info(trace_file_path):
@@ -361,7 +373,7 @@ def read_ast_tree(json_file):
 
 def read_symbolic_expressions(trace_file_path):
     emitter.normal("\treading symbolic expressions")
-    var_expr_map = dict()
+    var_expr_map = OrderedDict()
     if os.path.exists(trace_file_path):
         with open(trace_file_path, 'r') as trace_file:
             for line in trace_file:

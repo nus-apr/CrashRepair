@@ -168,6 +168,8 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
         c_details = "division by zero"
     elif c_type == definitions.CRASH_TYPE_INT_MUL_OVERFLOW:
         c_details = "integer multiplication overflow"
+    elif c_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
+        c_details = "buffer overflow"
     else:
         c_details = "unknown"
     emitter.highlight("\t\t[info] crash type: {}".format(c_details))
@@ -186,8 +188,9 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     test_command += "{} {} > {} 2>&1".format(binary_path, binary_input, log_path)
     utilities.execute_command(test_command, False)
     c_loc, c_type, c_address, c_func_name = reader.collect_exploit_output(log_path)
+    print(c_loc, c_type, c_address, c_func_name)
     src_dir = values.CONF_DIR_EXPERIMENT + "/src/"
-    src_path = src_dir + c_loc.split(":")[0]
+    src_path = c_loc.split(":")[0]
     ast_tree = extract_ast_json(src_path)
     function_node_list = extract_function_node_list(ast_tree)
     if not c_func_name:
@@ -340,7 +343,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
     if crash_type == definitions.CRASH_TYPE_DIV_ZERO :
         binaryop_list = extract_binaryop_node_list(func_ast, ["/"])
         div_op_ast = None
-        for binaryop in binaryop_list.values():
+        for binaryop in binaryop_list:
             if int(line_num) == binaryop["start line"]:
                 col_range = range(binaryop["start column"], binaryop["end column"])
                 if int(column_num) in col_range:
@@ -358,7 +361,8 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
         binaryop_list = extract_binaryop_node_list(func_ast, ["*", "+", "-"])
         crash_op_str = None
         crash_op_ast = None
-        for binary_op_str, binary_op_ast in binaryop_list.items():
+        for binary_op_ast in binaryop_list:
+            binary_op_str = binary_op_ast["value"]
             if int(line_num) == binary_op_ast["start line"]:
                 col_range = range(binary_op_ast["start column"], binary_op_ast["end column"])
                 if int(column_num) in col_range:
@@ -375,8 +379,33 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
         crash_op_converter = {"*": "/", "+": "-", "-": "+"}
         cfc = "{} <= INT_MAX {} {}".format(op_a_str, crash_op_converter[crash_op_str], op_b_str)
         var_list = extract_var_list(crash_op_ast)
+    elif crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
+        binaryop_list = extract_binaryop_node_list(func_ast, ["="])
+        assign_op_ast = None
+        for binaryop in binaryop_list:
+            if int(line_num) == binaryop["start line"]:
+                col_range = range(binaryop["start column"], binaryop["end column"])
+                if int(column_num) in col_range:
+                    assign_op_ast = binaryop
+                    break
+        target_ast = None
+        if assign_op_ast is None:
+            array_access_node_list = extract_array_subscript_node_list(func_ast)
+            for array_node in array_access_node_list:
+                if int(line_num) == array_node["start line"]:
+                    col_range = range(array_node["start column"], array_node["end column"])
+                    if int(column_num) in col_range:
+                        target_ast = array_node
+                        break
+        else:
+            target_ast = assign_op_ast["children"][0]
+        if target_ast is None:
+            emitter.error("\t[error] unable to find memory access operator")
+            utilities.error_exit("Unable to generate crash free constraint")
+        var_list = extract_var_list(target_ast)
+        cfc = converter.get_node_value(target_ast) + " != 0"
     else:
-        emitter.error("\t[error] unknown crash type")
+        emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
     return cfc, var_list
 
@@ -593,21 +622,33 @@ def extract_typeloc_node_list(ast_node):
 
 
 def extract_binaryop_node_list(ast_node, filter_list=None):
-    binaryop_node_list = dict()
+    binaryop_node_list = list()
     node_type = str(ast_node["type"])
     if node_type in ["BinaryOperator"]:
         identifier = str(ast_node['value'])
         if filter_list:
             if identifier in filter_list:
-                binaryop_node_list[identifier] = ast_node
+                binaryop_node_list.append(ast_node)
         else:
-            binaryop_node_list[identifier] = ast_node
+            binaryop_node_list.append(ast_node)
 
     if len(ast_node['children']) > 0:
         for child_node in ast_node['children']:
             child_binaryop_node_list = extract_binaryop_node_list(child_node, filter_list)
-            binaryop_node_list.update(child_binaryop_node_list)
+            binaryop_node_list = binaryop_node_list + child_binaryop_node_list
     return binaryop_node_list
+
+
+def extract_array_subscript_node_list(ast_node):
+    array_node_list = list()
+    node_type = str(ast_node["type"])
+    if node_type in ["ArraySubscriptExpr"]:
+        array_node_list.append(ast_node)
+    if len(ast_node['children']) > 0:
+        for child_node in ast_node['children']:
+            child_array_node_list = extract_array_subscript_node_list(child_node)
+            array_node_list = array_node_list + child_array_node_list
+    return array_node_list
 
 
 def extract_unaryop_node_list(ast_node):
@@ -619,7 +660,7 @@ def extract_unaryop_node_list(ast_node):
 
     if len(ast_node['children']) > 0:
         for child_node in ast_node['children']:
-            child_unaryop_node_list = extract_binaryop_node_list(child_node)
+            child_unaryop_node_list = extract_unaryop_node_list(child_node)
             unaryop_node_list.update(child_unaryop_node_list)
     return unaryop_node_list
 

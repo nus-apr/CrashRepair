@@ -17,18 +17,18 @@ def fix_localization(input_byte_list, taint_log_path):
         taint_value_list = taint_map[taint_loc]
         for taint_value in taint_value_list:
             sym_expr_code = generator.generate_z3_code_for_var(taint_value, "TAINT")
-            input_bytes = extractor.extract_input_bytes_used(sym_expr_code)
+            tainted_bytes = extractor.extract_input_bytes_used(sym_expr_code)
+            if not tainted_bytes and len(taint_value) > 16:
+                tainted_bytes = [taint_value.split(" ")[1]]
             if taint_loc not in line_to_byte_map:
                 line_to_byte_map[taint_loc] = set()
-            line_to_byte_map[taint_loc].update(set(input_bytes))
-
+            line_to_byte_map[taint_loc].update(set(tainted_bytes))
     source_mapping = collections.OrderedDict()
     for taint_loc in taint_map:
         source_path, line_number = taint_loc.split(":")
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
         source_mapping[source_path].add(line_number)
-
     tainted_function_list = collections.OrderedDict()
     for source_path in source_mapping:
         tainted_line_list = source_mapping[source_path]
