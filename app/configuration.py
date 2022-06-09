@@ -122,8 +122,8 @@ def read_conf_file():
         configuration_list = [i.strip() for i in conf_file.readlines()]
 
     for configuration in configuration_list:
-        if definitions.CONF_PATH_PROJECT in configuration:
-            values.CONF_PATH_PROJECT = configuration.replace(definitions.CONF_PATH_PROJECT, '')
+        if definitions.CONF_DIR_EXPERIMENT in configuration:
+            values.CONF_DIR_EXPERIMENT = configuration.replace(definitions.CONF_DIR_EXPERIMENT, '')
         elif definitions.CONF_BINARY_PATH in configuration:
             values.CONF_PATH_PROGRAM = configuration.replace(definitions.CONF_BINARY_PATH, '')
         elif definitions.CONF_COMMAND_BUILD in configuration:
@@ -139,35 +139,35 @@ def read_conf_file():
         elif definitions.CONF_SEED_FILE in configuration:
             seed_file_path = configuration.replace(definitions.CONF_SEED_FILE, '')
             if not os.path.isfile(seed_file_path):
-                seed_file_path = values.CONF_PATH_PROJECT + "/" + seed_file_path
+                seed_file_path = values.CONF_DIR_EXPERIMENT + "/" + seed_file_path
                 if not os.path.isfile(seed_file_path):
                     error_exit("Seed file " + seed_file_path + " not found")
             values.CONF_SEED_FILE = seed_file_path
         elif definitions.CONF_TEST_INPUT_FILE in configuration:
             test_file_path = configuration.replace(definitions.CONF_TEST_INPUT_FILE, '')
             if not os.path.isfile(test_file_path):
-                test_file_path = values.CONF_PATH_PROJECT + "/" + test_file_path
+                test_file_path = values.CONF_DIR_EXPERIMENT + "/" + test_file_path
                 if not os.path.isfile(test_file_path):
                     error_exit("Seed file " + test_file_path + " not found")
             values.CONF_TEST_INPUT_FILE = test_file_path
         elif definitions.CONF_SEED_DIR in configuration:
             seed_dir_path = configuration.replace(definitions.CONF_SEED_DIR, '')
             if not os.path.isdir(seed_dir_path):
-                seed_dir_path = values.CONF_PATH_PROJECT + "/" + seed_dir_path
+                seed_dir_path = values.CONF_DIR_EXPERIMENT + "/" + seed_dir_path
                 if not os.path.isdir(seed_dir_path):
                     error_exit("Seed dir " + seed_dir_path + " not found")
             values.CONF_SEED_DIR = seed_dir_path
         elif definitions.CONF_TEST_OUTPUT_DIR in configuration:
             output_dir_path = configuration.replace(definitions.CONF_TEST_OUTPUT_DIR, '')
             if not os.path.isdir(output_dir_path):
-                output_dir_path = values.CONF_PATH_PROJECT + "/" + output_dir_path
+                output_dir_path = values.CONF_DIR_EXPERIMENT + "/" + output_dir_path
                 if not os.path.isdir(output_dir_path):
                     error_exit("Seed dir " + output_dir_path + " not found")
             values.CONF_TEST_OUTPUT_DIR = output_dir_path
         elif definitions.CONF_TEST_INPUT_DIR in configuration:
             input_dir_path = configuration.replace(definitions.CONF_TEST_INPUT_DIR, '')
             if not os.path.isdir(input_dir_path):
-                input_dir_path = values.CONF_PATH_PROJECT + "/" + input_dir_path
+                input_dir_path = values.CONF_DIR_EXPERIMENT + "/" + input_dir_path
                 if not os.path.isdir(input_dir_path):
                     error_exit("Seed dir " + input_dir_path + " not found")
             values.CONF_TEST_INPUT_DIR = input_dir_path
@@ -187,7 +187,7 @@ def read_conf_file():
             values.CONF_SEED_LIST = processed_list
         elif definitions.CONF_PATH_SPECIFICATION in configuration:
             values.CONF_PATH_SPECIFICATION = configuration.replace(definitions.CONF_PATH_SPECIFICATION, '')
-            assertion_file_path = values.CONF_PATH_PROJECT + "/" + values.CONF_PATH_SPECIFICATION
+            assertion_file_path = values.CONF_DIR_EXPERIMENT + "/" + values.CONF_PATH_SPECIFICATION
             values.SPECIFICATION_TXT = reader.collect_specification(assertion_file_path)
         elif definitions.CONF_CUSTOM_COMP_LIST in configuration:
             values.CONF_CUSTOM_COMP_LIST = configuration.replace(definitions.CONF_CUSTOM_COMP_LIST, '').split(",")
@@ -204,14 +204,19 @@ def read_conf_file():
             values.CONF_LOC_BUG = configuration.replace(definitions.CONF_LOC_BUG, '')
         elif definitions.CONF_LOC_PATCH in configuration:
             values.CONF_LOC_PATCH = configuration.replace(definitions.CONF_LOC_PATCH, '')
-        elif definitions.CONF_PATH_POC in configuration:
-            values.CONF_PATH_POC = configuration.replace(definitions.CONF_PATH_POC, '')
-            if not os.path.isfile(values.CONF_PATH_POC):
-                poc_path = values.CONF_PATH_PROJECT + "/" + values.CONF_PATH_POC
-                if os.path.isfile(poc_path):
-                    values.CONF_PATH_POC = poc_path
-                else:
-                    error_exit("Test file " + values.CONF_PATH_POC + " not found")
+        elif definitions.CONF_POC_LIST in configuration:
+            list_str = configuration.replace(definitions.CONF_POC_LIST, '')
+            poc_list = list_str.replace("[", "").replace("]", "").split(",")
+            updated_poc_list = []
+            for poc_file in poc_list:
+                if not os.path.isfile(poc_file):
+                    poc_path = values.CONF_DIR_EXPERIMENT + "/" + poc_file
+                    if os.path.isfile(poc_path):
+                        poc_path= poc_path
+                    else:
+                        error_exit("Test file " + poc_path + " not found")
+                updated_poc_list.append(poc_path)
+            values.CONF_POC_LIST = updated_poc_list
         elif definitions.CONF_LOW_BOUND in configuration:
             values.CONF_LOW_BOUND = int(configuration.replace(definitions.CONF_LOW_BOUND, ''))
         elif definitions.CONF_MAX_BOUND in configuration:
@@ -288,21 +293,21 @@ def read_conf_file():
             values.CONF_SEED_SUITE_ID_LIST = str(configuration).replace(definitions.CONF_SEED_SUITE_ID_LIST, "").split(",")
         elif definitions.CONF_TEST_SUITE_CONFIG in configuration:
             config_path = configuration.replace(definitions.CONF_TEST_SUITE_CONFIG, "")
-            config_path = values.CONF_PATH_PROJECT + "/" + config_path
+            config_path = values.CONF_DIR_EXPERIMENT + "/" + config_path
             if os.path.isfile(config_path):
                 values.CONF_TEST_SUITE_CONFIG = reader.read_json(config_path)
             else:
                 error_exit("Test suite configuration file not found at " + str(config_path))
         elif definitions.CONF_SEED_SUITE_CONFIG in configuration:
             config_path = configuration.replace(definitions.CONF_SEED_SUITE_CONFIG, "")
-            config_path = values.CONF_PATH_PROJECT + "/" + config_path
+            config_path = values.CONF_DIR_EXPERIMENT + "/" + config_path
             if os.path.isfile(config_path):
                 values.CONF_SEED_SUITE_CONFIG = reader.read_json(config_path)
             else:
                 error_exit("Seed suite configuration file not found at " + str(config_path))
         elif definitions.CONF_TEST_BINARY_CONFIG_FILE in configuration:
             config_path = configuration.replace(definitions.CONF_TEST_BINARY_CONFIG_FILE, "")
-            config_path = values.CONF_PATH_PROJECT + "/" + config_path
+            config_path = values.CONF_DIR_EXPERIMENT + "/" + config_path
             if os.path.isfile(config_path):
                 with open(config_path, "r") as conf_file:
                     values.CONF_TEST_BINARY_LIST = [x.strip().replace("\n", "") for x in conf_file.readlines()]
@@ -310,7 +315,7 @@ def read_conf_file():
                 error_exit("Test binary configuration file not found at " + str(config_path))
         elif definitions.CONF_SEED_BINARY_CONFIG_FILE in configuration:
             config_path = configuration.replace(definitions.CONF_SEED_BINARY_CONFIG_FILE, "")
-            config_path = values.CONF_PATH_PROJECT + "/" + config_path
+            config_path = values.CONF_DIR_EXPERIMENT + "/" + config_path
             if os.path.isfile(config_path):
                 with open(config_path, "r") as conf_file:
                     values.CONF_SEED_BINARY_LIST = [x.strip().replace("\n", "") for x in conf_file.readlines()]
@@ -322,9 +327,9 @@ def read_conf_file():
         exit()
     if values.CONF_DIR_SRC:
         if "/" != values.CONF_DIR_SRC[0]:
-            values.CONF_DIR_SRC = values.CONF_PATH_PROJECT + "/" + values.CONF_DIR_SRC
+            values.CONF_DIR_SRC = values.CONF_DIR_EXPERIMENT + "/" + values.CONF_DIR_SRC
     else:
-        values.CONF_DIR_SRC = values.CONF_PATH_PROJECT
+        values.CONF_DIR_SRC = values.CONF_DIR_EXPERIMENT
 
     if values.CONF_PATH_PROGRAM:
         if "/" != values.CONF_PATH_PROGRAM[0]:
@@ -335,7 +340,7 @@ def load_component_list():
     emitter.normal("loading custom/general components")
     # base_list = ["equal.smt2", "not-equal.smt2", "less-than.smt2", "less-or-equal.smt2"]
     base_list = []
-    if definitions.DIRECTORY_TESTS in values.CONF_PATH_PROJECT:
+    if definitions.DIRECTORY_TESTS in values.CONF_DIR_EXPERIMENT:
         base_list = []
     gen_comp_files = []
     os.chdir(definitions.DIRECTORY_COMPONENTS)
@@ -356,7 +361,7 @@ def load_component_list():
     general_components = synthesis.load_components(gen_comp_files)
 
     proj_comp_files = []
-    os.chdir(values.CONF_PATH_PROJECT)
+    os.chdir(values.CONF_DIR_EXPERIMENT)
     for component_name in values.CONF_CUSTOM_COMP_LIST:
         proj_comp_files.append(Path(component_name))
         emitter.note("\tloading component: " + str(component_name))
@@ -447,7 +452,7 @@ def collect_test_list():
             for expected_output_file in file_list:
                 if ".smt2" in expected_output_file:
                     expected_file_abs_path = expected_output_dir + "/" + expected_output_file
-                    expected_file_rel_path = str(expected_file_abs_path).replace(values.CONF_PATH_PROJECT + "/", "")
+                    expected_file_rel_path = str(expected_file_abs_path).replace(values.CONF_DIR_EXPERIMENT + "/", "")
                     values.LIST_TEST_OUTPUT.append(expected_file_rel_path)
 
 
@@ -462,12 +467,11 @@ def collect_test_list():
             # if not values.CONF_PATH_POC:
             #     values.CONF_PATH_POC = test_abs_path
             values.LIST_TEST_FILES[test_file_index] = test_abs_path
-    elif values.CONF_PATH_POC:
-        test_file = values.CONF_PATH_POC
-        test_file_index = test_file
-        # if "." in test_file:
-        #     test_file_index = str(test_file).split(".")[0]
-        values.LIST_TEST_FILES[test_file_index] = values.CONF_PATH_POC
+    elif values.CONF_POC_LIST:
+        test_file_index = 0
+        for poc_file in values.CONF_POC_LIST:
+            values.LIST_TEST_FILES[test_file_index] = poc_file
+            test_file_index = test_file_index + 1
 
 
     test_input_list = values.LIST_TEST_INPUT

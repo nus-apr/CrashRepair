@@ -33,10 +33,9 @@ FILE_PATCH_RANK_INDEX = ""
 FILE_TRIDENT_LIB_BCA = DIRECTORY_LIB + "/libtrident_runtime.bca"
 
 # ------------------- Configuration --------------------
-
-CONF_PATH_PROJECT = "project_path:"
+CONF_DIR_EXPERIMENT = "dir_exp:"
 CONF_PATH_SPECIFICATION = "spec_path:"
-CONF_PATH_POC = "poc_path:"
+CONF_POC_LIST = "poc_list:"
 CONF_COMMAND_CONFIG = "config_command:"
 CONF_COMMAND_BUILD = "build_command:"
 CONF_BINARY_PATH = "binary_path:"

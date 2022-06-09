@@ -46,15 +46,15 @@ def test():
             program_path = values.CONF_PATH_PROGRAM
         emitter.highlight("\tUsing Binary: " + str(program_path))
 
-        c_src_file, var_list = extractor.extract_crash_information(program_path, argument_list, definitions.FILE_CRASH_LOG)
+        # c_src_file, var_list = extractor.extract_sanitizer_information(program_path, argument_list, definitions.FILE_CRASH_LOG)
         extractor.extract_byte_code(program_path)
-
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
         exit_code = run_concrete_execution(program_path + ".bc", argument_list, True, klee_concrete_out_dir)
         assert exit_code == 0
         # set location of bug/crash
         values.IS_CRASH = False
+        c_src_file, var_list = extractor.extract_crash_information(program_path, argument_list, values.get_file_message_log())
         latest_crash_loc, crash_type = reader.collect_crash_point(values.get_file_message_log())
         # if oracle.is_loc_in_trace(values.CONF_LOC_PATCH):
         #     values.USEFUL_SEED_ID_LIST.append(test_case_id)
@@ -103,6 +103,7 @@ def test():
         # assert exit_code == 0
         expr_trace_log = klee_concolic_out_dir + "/expr.log"
         var_info = reader.read_symbolic_expressions(expr_trace_log)
+        input_byte_list = []
         for var_name in var_info:
             sym_expr_list = var_info[var_name]["expr_list"]
             # value_list = var_info[var_name]["value_list"]

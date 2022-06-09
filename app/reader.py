@@ -219,12 +219,42 @@ def collect_crash_point(trace_file_path):
             for read_line in trace_file:
                 if "KLEE: ERROR:" in read_line:
                     read_line = read_line.replace("KLEE: ERROR: ", "")
-                    crash_location = read_line.split(": ")[0]
+                    crash_location_info = read_line.split(": ")[0]
+                    src_file, line, column, assembly_offset = crash_location_info.split(":")
+                    crash_location = src_file + ":" + line
                     crash_reason = read_line.split(": ")[-1]
                     break
     if "divide by zero" in crash_reason:
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
     return crash_location, crash_type
+
+
+def collect_klee_crash_info(trace_file_path):
+    """
+        This function will read the output log of a klee concolic execution and
+        extract information about the crash
+     """
+    crash_location = None
+    crash_src_file = None
+    crash_line = None
+    crash_column = None
+    crash_inst_address = None
+    crash_reason = ""
+    crash_type = -1
+    if os.path.exists(trace_file_path):
+        with open(trace_file_path, 'r') as trace_file:
+            for read_line in trace_file:
+                if "KLEE: ERROR:" in read_line:
+                    read_line = read_line.replace("KLEE: ERROR: ", "")
+                    crash_location_info = read_line.split(": ")[0]
+                    crash_src_file, crash_line, crash_column, crash_inst_address = crash_location_info.split(":")
+                    crash_reason = read_line.split(": ")[-1]
+                    break
+    if "overflow on division or remainder" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_DIV_ZERO
+    elif "overflow on multiplication" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
+    return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
 
 
 def collect_exploit_return_code(output_file_path):

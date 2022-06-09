@@ -3,7 +3,7 @@ from six.moves import cStringIO
 from pysmt.shortcuts import And
 import os
 import json
-from app import emitter, utilities, reader, values, converter, generator
+from app import emitter, utilities, reader, values, converter, generator, definitions
 from pathlib import Path
 from pysmt.smtlib.parser import SmtLibParser
 
@@ -146,14 +146,40 @@ def extract_ast_json(source_dir, source_file_path):
     return ast_tree
 
 
-def extract_crash_information(binary_path, argument_list, log_path):
+def extract_crash_information(binary_path, argument_list, klee_log_path):
+    emitter.normal("\textracting crash information")
+    binary_input = " ".join(argument_list)
+    c_type, c_file, c_line, c_column, c_address = reader.collect_klee_crash_info(klee_log_path)
+    src_dir = dir(c_file)
+    ast_tree = extract_ast_json(src_dir, c_file)
+    function_node_list = extract_function_node_list(ast_tree)
+    c_func_name = None
+    for func_name, func_node in function_node_list.items():
+        func_line_range = range(func_node["start line"], func_node["end line"])
+        if int(c_line) in func_line_range:
+            c_func_name = func_name
+            break
+    crash_func_ast = function_node_list[c_func_name]
+    c_loc = ":".join([c_file, c_line, c_column])
+    cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
+    var_name_list = [x[0] for x in var_list]
+    emitter.highlight("\t\t[info] crash type: {}".format(c_type))
+    emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
+    emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
+    emitter.highlight("\t\t[info] crash address: {}".format(c_address))
+    emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
+    emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
+    return c_file, var_list
+
+
+def extract_sanitizer_information(binary_path, argument_list, log_path):
     emitter.normal("\textracting crash information")
     binary_input = " ".join(argument_list)
     test_command = "LD_LIBRARY_PATH=\"/CrashRepair/lib/;/klee/build/lib\" "
     test_command += "{} {} > {} 2>&1".format(binary_path, binary_input, log_path)
     utilities.execute_command(test_command, False)
     c_loc, c_type, c_address, c_func_name = reader.collect_exploit_output(log_path)
-    src_dir = values.CONF_PATH_PROJECT + "/src/"
+    src_dir = values.CONF_DIR_EXPERIMENT + "/src/"
     src_path = src_dir + c_loc.split(":")[0]
     ast_tree = extract_ast_json(src_dir, src_path)
     function_node_list = extract_function_node_list(ast_tree)
@@ -304,7 +330,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
     cfc = None
     var_list = []
     src_file, line_num, column_num = crash_loc.split(":")
-    if crash_type == "division by zero":
+    if crash_type == definitions.CRASH_TYPE_DIV_ZERO :
         binaryop_list = extract_binaryop_node_list(func_ast, ["/"])
         div_op_ast = None
         for binaryop in binaryop_list.values():
@@ -319,7 +345,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
         divisor_ast = div_op_ast["children"][1]
         var_list = extract_var_list(divisor_ast)
         cfc = converter.get_node_value(divisor_ast) + " != 0"
-    elif crash_type == "signed integer overflow":
+    elif crash_type in [definitions.CRASH_TYPE_INT_MUL_OVERFLOW,
+                        definitions.CRASH_TYPE_INT_ADD_OVERFLOW,
+                        definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, ["*", "+", "-"])
         crash_op_str = None
         crash_op_ast = None

@@ -287,7 +287,7 @@ def run_cegis(program_path, project_path, patch_list):
             model = generator.generate_model(violation_check)
             # print(model)
             arg_list = values.ARGUMENT_LIST
-            poc_path = values.CONF_PATH_POC
+            poc_path = values.CONF_POC_LIST
             values.FILE_POC_GEN = definitions.DIRECTORY_OUTPUT + "/violation-" + str(values.ITERATION_NO)
             gen_path = values.FILE_POC_GEN
             input_arg_list, input_var_list = generator.generate_new_input(violation_check, arg_list, poc_path, gen_path)

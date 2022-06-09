@@ -130,7 +130,7 @@ OPTIONS_REDUCE_METHOD = {0: "cpr", 1: "cegis"}
 
 
 # ------------------ Configuration Values ---------------
-CONF_PATH_PROJECT = ""
+CONF_DIR_EXPERIMENT = ""
 CONF_PATH_SPECIFICATION = ""
 CONF_PATH_PROGRAM = ""
 CONF_COMMAND_CONFIG = None
@@ -147,7 +147,7 @@ CONF_DIR_SRC = ""
 CONF_LOC_BUG = ""
 CONF_LOC_LIST_CRASH = []
 CONF_LOC_PATCH = ""
-CONF_PATH_POC = ""
+CONF_POC_LIST = []
 CONF_PATH_SEED = ""
 CONF_LOW_BOUND = ""
 CONF_MAX_BOUND = ""
