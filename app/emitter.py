@@ -39,8 +39,13 @@ def write(print_message, print_color, new_line=True, prefix=None, indent_level=0
         sys.stdout.flush()
 
 
+def header(header):
+    write("\n" + "="*100 + "\n\n\t" + header + "\n" + "="*100+"\n", CYAN)
+    logger.information(title)
+
+
 def title(title):
-    write("\n" + "="*100 + "\n\n\t" + title + "\n" + "="*100+"\n", CYAN)
+    write("\n\n\t" + title + "\n" + "="*100+"\n", CYAN)
     logger.information(title)
 
 
@@ -171,7 +176,8 @@ def end(time_info, is_error=False):
         statistics("\nRun time statistics:\n-----------------------\n")
         statistics("Startup: " + str(time_info[definitions.KEY_DURATION_BOOTSTRAP].format()) + " minutes")
         statistics("Build: " + str(time_info[definitions.KEY_DURATION_BUILD]) + " minutes")
-        statistics("Analysis: " + str(time_info[definitions.KEY_DURATION_INITIALIZATION]) + " minutes")
+        statistics("Analysis: " + str(time_info[definitions.KEY_DURATION_ANALYSIS]) + " minutes")
+        statistics("Localization: " + str(time_info[definitions.KEY_DURATION_LOCALIZATION]) + " minutes")
         # statistics("Synthesis: " + str(values.TIME_TO_GENERATE) + " minutes")
         # statistics("Explore: " + format(values.TIME_TO_EXPLORE, ".3f") + " minutes")
         # statistics("Refine: " + format(values.TIME_TO_REDUCE, ".3f") + " minutes")

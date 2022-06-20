@@ -7,7 +7,7 @@ import multiprocessing as mp
 import app.configuration
 import app.utilities
 from app import emitter, logger, definitions, values, builder, repair, \
-    configuration, tester, parallel, extractor,  oracle
+    configuration, analyzer, parallel, localizer,  oracle
 
 start_time = 0
 time_info = {
@@ -48,7 +48,7 @@ def shutdown(signum, frame):
 
 
 def bootstrap(arg_list):
-    emitter.title("Starting " + values.TOOL_NAME + " (C Crash Repair) ")
+    emitter.header("Starting " + values.TOOL_NAME + " (C Crash Repair) ")
     emitter.sub_title("Loading Configurations")
     configuration.read_conf(arg_list)
     configuration.read_conf_file()
@@ -74,13 +74,16 @@ def run(arg_list):
     time_info[definitions.KEY_DURATION_BOOTSTRAP] = str(duration)
 
     time_check = time.time()
-    if not values.CONF_SKIP_TEST:
-        tester.test()
+    input_byte_list, taint_log_path = analyzer.analyze()
     duration = format((time.time() - time_check) / 60, '.3f')
-    time_info[definitions.KEY_DURATION_INITIALIZATION] = str(duration)
+    time_info[definitions.KEY_DURATION_ANALYSIS] = str(duration)
 
-    if values.CONF_ONLY_TEST:
-        return
+    time_check = time.time()
+    localizer.fix_localization(input_byte_list, taint_log_path)
+    duration = format((time.time() - time_check) / 60, '.3f')
+    time_info[definitions.KEY_DURATION_LOCALIZATION] = str(duration)
+
+
     # time_check = time.time()
     # repair.run(values.CONF_PATH_PROJECT, values.CONF_PATH_PROGRAM)
     # duration = format(((time.time() - time_check) / 60 - float(values.TIME_TO_GENERATE)), '.3f')

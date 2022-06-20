@@ -418,7 +418,7 @@ def read_concrete_values(trace_file_path):
     return var_value_map
 
 def read_taint_values(taint_log_path):
-    emitter.normal("\t\tcollecting taint values")
+    emitter.normal("\tcollecting taint values")
     taint_map = OrderedDict()
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:

@@ -6,12 +6,11 @@ from app import emitter, utilities, definitions, values, builder, repair, \
 from app.concolic import run_concrete_execution, run_concolic_execution
 
 
-def test():
+def analyze():
     emitter.title("Analyzing Program")
     test_input_list = values.LIST_TEST_INPUT
     second_var_list = list()
     output_dir_path = definitions.DIRECTORY_OUTPUT
-    emitter.sub_title("Running Test-Suite")
     test_case_id = 0
     seed_id = 0
     count_seeds = len(values.LIST_SEED_INPUT)
@@ -27,12 +26,13 @@ def test():
                 seed_file = arg
             else:
                 generalized_arg_list.append(arg)
-
-        emitter.sub_sub_title("Test Case #" + str(test_case_id))
+        emitter.sub_title("Test Case #" + str(test_case_id))
         emitter.highlight("\tUsing Arguments: " + str(generalized_arg_list))
         emitter.highlight("\tUsing Input File: " + str(seed_file))
         emitter.debug("input list in test case:" + argument_list)
         argument_list = app.configuration.extract_input_arg_list(argument_list)
+
+        emitter.sub_sub_title("Running Sanitized Analysis")
         if not values.CONF_SKIP_BUILD:
             builder.build_normal()
             if values.CONF_PATH_PROGRAM:
@@ -67,6 +67,7 @@ def test():
         if crash_type == definitions.CRASH_TYPE_DIV_ZERO:
             emitter.information("\t\t\t[info] identified crash type: divide by zero")
 
+        emitter.sub_sub_title("Running Concolic Analysis")
         instrumentor.instrument_klee_var_expr(c_src_file, var_list)
         builder.build_normal()
         utilities.restore_file(c_src_file, c_src_file + ".bk")
@@ -121,6 +122,8 @@ def test():
             input_byte_list = list(set(input_byte_list))
             input_bytes = [str(i) for i in input_byte_list]
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(input_bytes)))
+
+        emitter.sub_sub_title("Running Taint Analysis")
         builder.build_normal()
         extractor.extract_byte_code(program_path)
         if not crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
@@ -134,4 +137,8 @@ def test():
             taint_log_path = klee_taint_out_dir + "/taint.log"
         else:
             taint_log_path = klee_concolic_out_dir + "/taint.log"
-        localizer.fix_localization(input_byte_list, taint_log_path)
+        taint_map = reader.read_taint_values(taint_log_path)
+        for taint_loc in taint_map:
+
+            emitter.highlight("\t[taint-loc] {}".format(taint_loc))
+        return input_byte_list, taint_map

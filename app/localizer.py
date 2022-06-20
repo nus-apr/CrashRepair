@@ -8,11 +8,10 @@ import collections
 from app import emitter, reader, utilities, generator, extractor, values
 
 
-def fix_localization(input_byte_list, taint_log_path):
-    emitter.normal("\tcomputing fix locations")
+def generate_fix_locations(input_byte_list, taint_map):
+    emitter.sub_title("Generating Fix Locations")
     fix_locations = []
     line_to_byte_map = collections.OrderedDict()
-    taint_map = reader.read_taint_values(taint_log_path)
     for taint_loc in taint_map:
         taint_value_list = taint_map[taint_loc]
         for taint_value in taint_value_list:
@@ -61,5 +60,11 @@ def fix_localization(input_byte_list, taint_log_path):
     for loc in taint_map.keys():
         if loc in fix_locations:
             sorted_fix_locations.append(loc)
-    for fix_loc in sorted_fix_locations:
-        emitter.highlight("\t\t[fix-loc] {}".format(fix_loc))
+    return sorted_fix_locations
+
+
+def fix_localization(input_byte_list, taint_map):
+    emitter.title("Fix Localization")
+    fix_locations = generate_fix_locations(input_byte_list, taint_map)
+    for fix_loc in fix_locations:
+        emitter.highlight("\t[fix-loc] {}".format(fix_loc))
