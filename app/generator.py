@@ -1215,3 +1215,54 @@ def generate_z3_code_for_var(var_expr, var_name):
         except Exception as exception:
             code = generate_z3_code_for_expr(var_expr, var_name, 64)
     return code
+
+def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
+    lines_a = sym_expr_a.split("\n")
+    var_dec_a = lines_a[2]
+    sym_expr_a = lines_a[3]
+    lines_b = sym_expr_b.split("\n")
+    var_dec_b = lines_b[2]
+    sym_expr_b = lines_b[3]
+    var_name_a = str(var_dec_a.split(" ")[1]).replace("()", "")
+    var_name_b = str(var_dec_b.split(" ")[1]).replace("()", "")
+
+    if "_64" in var_name_a:
+        if "_32" in var_name_b:
+            sym_expr_b = sym_expr_b.replace(var_name_b, var_name_b + "_64_b")
+            var_dec_b = var_dec_b.replace(var_name_b, var_name_b + "_64_b")
+            var_name_b = var_name_b + "_64_b"
+            var_dec_b = var_dec_b.replace("_ BitVec 32", "_ BitVec 64")
+            var_expr_b_tokens = sym_expr_b.split(" ")
+            var_expr_b_tokens[3] = "((_ zero_extend 32)" + var_expr_b_tokens[3]
+            sym_expr_b = " ".join(var_expr_b_tokens)
+            sym_expr_b += ")"
+
+    if "_64" in var_name_b:
+        if "_32" in var_name_a:
+            sym_expr_a = sym_expr_a.replace(var_name_a, var_name_a + "_64_a")
+            var_dec_a = var_dec_a.replace(var_name_a, var_name_a + "_64_a")
+            var_name_a = var_name_a + "_64_a"
+            var_dec_a = var_dec_a.replace("_ BitVec 32", "_ BitVec 64")
+            var_expr_a_tokens = sym_expr_a.split(" ")
+            var_expr_a_tokens[3] = "((_ zero_extend 32)" + var_expr_a_tokens[3]
+            sym_expr_a = " ".join(var_expr_a_tokens)
+            sym_expr_a += ")"
+
+    if var_name_a == var_name_b:
+        sym_expr_b = sym_expr_b.replace(var_name_b, var_name_b + "_b")
+        var_dec_b = var_dec_b.replace(var_name_b, var_name_b + "_b")
+        var_name_b = var_name_b + "_b"
+        sym_expr_a = sym_expr_a.replace(var_name_a, var_name_a + "_a")
+        var_dec_a = var_dec_a.replace(var_name_a, var_name_a + "_a")
+        var_name_a = var_name_a + "_a"
+
+    code = "(set-logic QF_AUFBV )\n"
+    code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
+    code += var_dec_a + "\n"
+    code += var_dec_b + "\n"
+    code += sym_expr_a + "\n"
+    code += sym_expr_b + "\n"
+    code += "(assert (= " + var_name_a + " " + var_name_b + "))\n"
+    code += "(check-sat)"
+    return code
+

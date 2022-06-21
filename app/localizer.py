@@ -1,19 +1,20 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 import sys
 import os
 import collections
-from app import emitter, reader, utilities, generator, extractor, values
+from app import emitter, oracle, utilities, generator, extractor, values
 
 
 def generate_fix_locations(input_byte_list, taint_map):
     emitter.sub_title("Generating Fix Locations")
-    fix_locations = []
+    fix_locations = dict()
     line_to_byte_map = collections.OrderedDict()
-    for taint_loc in taint_map:
-        taint_value_list = taint_map[taint_loc]
+    for taint_info in taint_map:
+        src_file, line, col, inst_addr = taint_info.split(":")
+        taint_loc = ":".join([src_file, line])
+        taint_value_list = taint_map[taint_info]
         for taint_value in taint_value_list:
             sym_expr_code = generator.generate_z3_code_for_var(taint_value, "TAINT")
             tainted_bytes = extractor.extract_input_bytes_used(sym_expr_code)
@@ -24,7 +25,7 @@ def generate_fix_locations(input_byte_list, taint_map):
             line_to_byte_map[taint_loc].update(set(tainted_bytes))
     source_mapping = collections.OrderedDict()
     for taint_loc in taint_map:
-        source_path, line_number = taint_loc.split(":")
+        source_path, line_number, _, _ = taint_loc.split(":")
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
         source_mapping[source_path].add(line_number)
@@ -54,17 +55,84 @@ def generate_fix_locations(input_byte_list, taint_map):
                 if not observed_tainted_bytes:
                     continue
                 if set(input_byte_list) <= set(observed_tainted_bytes):
-                    fix_locations.append(source_line)
+                    fix_locations[source_line] = func_name
                     break
     sorted_fix_locations = []
-    for loc in taint_map.keys():
-        if loc in fix_locations:
-            sorted_fix_locations.append(loc)
+    cached_list = []
+    for taint_info in taint_map.keys():
+        src_file, line, col, inst_addr = taint_info.split(":")
+        taint_loc = ":".join([src_file, line])
+        if taint_loc in fix_locations and taint_loc not in cached_list:
+            sorted_fix_locations.append((fix_locations[taint_loc], taint_loc))
+            cached_list.append(taint_loc)
     return sorted_fix_locations
 
 
-def fix_localization(input_byte_list, taint_map):
+def localize_cfc(fix_loc, cfc_info, taint_map):
+    localized_cfc = None
+    taint_info_at_loc = dict()
+    src_file, line = fix_loc.split(":")
+    crash_loc = cfc_info["loc"]
+    cfc_expr = cfc_info["expr"]
+    cfc_var_info_list = cfc_info["var-info"]
+    if crash_loc == fix_loc:
+        return cfc_expr
+    func_name, function_ast = extractor.extract_func_ast(src_file, line)
+    function_range = range(function_ast["start line"], function_ast["end line"])
+    var_info_list = extractor.extract_var_list(function_ast)
+    var_taint_list = dict()
+    for taint_info in taint_map:
+        c_file, line, col, inst_add = taint_info.split(":")
+        taint_value_list = taint_map[taint_info]
+        if src_file != c_file:
+            continue
+        if int(line) not in function_range:
+            continue
+        for var_info in var_info_list:
+            var_name, v_line, v_col, v_type = var_info
+            if int(v_col) == int(col) and int(v_line) == int(line):
+                var_info_index = (var_name, v_line, v_col)
+                if var_info_index not in var_taint_list:
+                    var_taint_list[var_info_index] = taint_value_list
+    candidate_var_list = dict()
+    for crash_var_name in cfc_var_info_list:
+        crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
+        for crash_var_expr in crash_var_expr_list:
+            crash_var_sym_expr_code = generator.generate_z3_code_for_var(crash_var_expr, crash_var_name)
+            crash_var_input_byte_list = extractor.extract_input_bytes_used(crash_var_sym_expr_code)
+            for var_taint_info in var_taint_list:
+                var_name, v_line, v_col = var_taint_info
+                var_expr_list = var_taint_list[var_taint_info]
+                for var_expr in var_expr_list:
+                    var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
+                    var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+                    if var_input_byte_list == crash_var_input_byte_list:
+                        z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
+                                                                                crash_var_sym_expr_code)
+                        if oracle.is_var_expr_equal(z3_eq_code):
+                            if crash_var_name not in candidate_var_list:
+                                candidate_var_list[crash_var_name] = set()
+                            candidate_var_list[crash_var_name].add((var_name, v_line))
+
+    cfc_tokens = cfc_expr.split(" ")
+    localized_tokens = []
+    for c_t in cfc_tokens:
+        c_t = c_t.replace("(", "").replace(")", "")
+        if c_t in candidate_var_list:
+            candidate_list = candidate_var_list[c_t]
+            candidate_var = list(candidate_list)[0][0]
+            localized_tokens.append(candidate_var)
+        else:
+            localized_tokens.append(c_t)
+    localized_cfc = " ".join(localized_tokens)
+    return localized_cfc
+
+
+def fix_localization(input_byte_list, taint_map, cfc_info):
     emitter.title("Fix Localization")
     fix_locations = generate_fix_locations(input_byte_list, taint_map)
-    for fix_loc in fix_locations:
-        emitter.highlight("\t[fix-loc] {}".format(fix_loc))
+
+    for func_name, fix_loc in fix_locations:
+        emitter.sub_sub_title("[fix-loc] {}()".format(func_name))
+        localized_cfc = localize_cfc(fix_loc, cfc_info, taint_map)
+        emitter.highlight("\t[cfc-expr] {}".format(localized_cfc))

@@ -1,5 +1,8 @@
-from app import definitions, values, emitter, extractor
+from app import definitions, values, emitter, extractor, utilities
 from pysmt.shortcuts import is_sat, Not, And, is_unsat
+from pysmt.smtlib.parser import SmtLibParser
+from six.moves import cStringIO
+
 
 tautology_included = False
 contradiction_included = False
@@ -227,3 +230,16 @@ def is_patch_duplicate(patch, index, lock):
     tree, _ = program
     result = is_tree_duplicate(tree, lock) or is_tree_logic_redundant(tree)
     return result, index
+
+
+def is_var_expr_equal(z3_code):
+    parser = SmtLibParser()
+    try:
+        script = parser.get_script(cStringIO(z3_code))
+        formula = script.get_last_formula()
+        result = is_sat(formula, solver_name="z3")
+        return result
+
+    except Exception:
+        print(z3_code)
+        emitter.warning("\t\t[warning] Z3 Exception")

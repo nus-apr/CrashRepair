@@ -6,10 +6,12 @@ from app import emitter, utilities, definitions, values, builder, repair, \
 from app.concolic import run_concrete_execution, run_concolic_execution
 
 
+
 def analyze():
     emitter.title("Analyzing Program")
     test_input_list = values.LIST_TEST_INPUT
     second_var_list = list()
+    cfc_info = dict()
     output_dir_path = definitions.DIRECTORY_OUTPUT
     test_case_id = 0
     seed_id = 0
@@ -46,7 +48,7 @@ def analyze():
             program_path = values.CONF_PATH_PROGRAM
         emitter.highlight("\tUsing Binary: " + str(program_path))
 
-        # c_src_file, var_list = extractor.extract_sanitizer_information(program_path, argument_list, definitions.FILE_CRASH_LOG)
+        # c_src_file, var_list, cfc = extractor.extract_sanitizer_information(program_path, argument_list, definitions.FILE_CRASH_LOG)
         extractor.extract_byte_code(program_path)
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
@@ -54,8 +56,13 @@ def analyze():
         assert exit_code == 0
         # set location of bug/crash
         values.IS_CRASH = False
-        c_src_file, var_list = extractor.extract_crash_information(program_path, argument_list, values.get_file_message_log())
+        c_src_file, var_list, cfc = extractor.extract_crash_information(program_path, argument_list, values.get_file_message_log())
+        cfc_info["file"] = c_src_file
+        cfc_info["var-list"] = var_list
+        cfc_info["expr"] = cfc
         latest_crash_loc, crash_type = reader.collect_crash_point(values.get_file_message_log())
+        cfc_info["loc"] = latest_crash_loc
+        cfc_info["type"] = crash_type
         # if oracle.is_loc_in_trace(values.CONF_LOC_PATCH):
         #     values.USEFUL_SEED_ID_LIST.append(test_case_id)
         if latest_crash_loc:
@@ -122,6 +129,7 @@ def analyze():
             input_byte_list = list(set(input_byte_list))
             input_bytes = [str(i) for i in input_byte_list]
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(input_bytes)))
+        cfc_info["var-info"] = var_info
 
         emitter.sub_sub_title("Running Taint Analysis")
         builder.build_normal()
@@ -138,7 +146,13 @@ def analyze():
         else:
             taint_log_path = klee_concolic_out_dir + "/taint.log"
         taint_map = reader.read_taint_values(taint_log_path)
-        for taint_loc in taint_map:
+        taint_loc_list = []
+        for taint_info in taint_map:
+            src_file, line, col, inst_add = taint_info.split(":")
+            taint_loc = ":".join([src_file, line])
+            if taint_loc not in taint_loc_list:
+                taint_loc_list.append(taint_loc)
 
+        for taint_loc in taint_loc_list:
             emitter.highlight("\t[taint-loc] {}".format(taint_loc))
-        return input_byte_list, taint_map
+        return input_byte_list, taint_map, cfc_info

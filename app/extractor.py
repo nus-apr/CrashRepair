@@ -62,6 +62,20 @@ def extract_byte_code(binary_path):
         utilities.execute_command(extract_command)
 
 
+def extract_func_ast(src_path, line_number):
+    ast_tree = extract_ast_json(src_path)
+    function_node_list = extract_function_node_list(ast_tree)
+    c_func_name = None
+    for func_name, func_node in function_node_list.items():
+        func_line_range = range(func_node["start line"], func_node["end line"])
+        if int(line_number) in func_line_range:
+            c_func_name = func_name
+            if c_func_name:
+                emitter.warning("\t\t[warning] two functions were found for same line number")
+    crash_func_ast = function_node_list[c_func_name]
+    return c_func_name, crash_func_ast
+
+
 def extract_formula_from_file(spec_file_path):
     spec_dir_path = "/".join(spec_file_path.split("/")[:-1])
     spec_file_name = spec_file_path.split("/")[-1]
@@ -153,13 +167,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     c_type, c_file, c_line, c_column, c_address = reader.collect_klee_crash_info(klee_log_path)
     ast_tree = extract_ast_json(c_file)
     function_node_list = extract_function_node_list(ast_tree)
-    c_func_name = None
-    for func_name, func_node in function_node_list.items():
-        func_line_range = range(func_node["start line"], func_node["end line"])
-        if int(c_line) in func_line_range:
-            c_func_name = func_name
-            break
-    crash_func_ast = function_node_list[c_func_name]
+    c_func_name, crash_func_ast = extract_func_ast(c_file, c_line)
     c_loc = ":".join([c_file, c_line, c_column])
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
     var_name_list = [x[0] for x in var_list]
@@ -178,7 +186,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
-    return c_file, var_list
+    return c_file, var_list, cfc
 
 
 def extract_sanitizer_information(binary_path, argument_list, log_path):
@@ -209,7 +217,7 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
-    return src_path, var_list
+    return src_path, var_list, cfc
 
 def extract_var_dec_list(ast_node):
     var_list = list()
@@ -218,16 +226,22 @@ def extract_var_dec_list(ast_node):
 
     if node_type in ["ParmVarDecl"]:
         var_name = str(ast_node['identifier'])
-        var_type = str(ast_node['data_type'])
-        line_number = int(ast_node['end line'])
-        var_list.append((var_name, line_number, var_type))
+        var_type = None
+        if "data_type" in ast_node:
+            var_type = str(ast_node['data_type'])
+        line_number = int(ast_node['start line'])
+        column_number = int(ast_node['start column'])
+        var_list.append((var_name, line_number, column_number, var_type))
         return var_list
 
     if node_type in ["VarDecl"]:
         var_name = str(ast_node['identifier'])
-        var_type = str(ast_node['data_type'])
-        line_number = int(ast_node['end line'])
-        var_list.append((var_name, line_number, var_type))
+        var_type = None
+        if "data_type" in ast_node:
+            var_type = str(ast_node['data_type'])
+        line_number = int(ast_node['start line'])
+        column_number = int(ast_node['start column'])
+        var_list.append((var_name, line_number, column_number, var_type))
         return var_list
     if child_count:
         for child_node in ast_node['children']:
@@ -242,7 +256,6 @@ def extract_var_ref_list(ast_node):
     if node_type in ["ReturnStmt"]:
         return var_list
     if node_type == "BinaryOperator":
-        insert_line_number = int(ast_node['end line'])
         node_value = ast_node['value']
         if node_value == "=":
             left_side = ast_node['children'][0]
@@ -250,20 +263,20 @@ def extract_var_ref_list(ast_node):
             right_var_list = extract_var_ref_list(right_side)
             left_var_list = extract_var_ref_list(left_side)
             operands_var_list = right_var_list + left_var_list
-            for var_name, line_number, var_type in operands_var_list:
-                var_list.append((str(var_name), insert_line_number, str(var_type)))
+            for var_name, line_number, col_number, var_type in operands_var_list:
+                var_list.append((str(var_name), line_number, col_number, str(var_type)))
             return var_list
     if node_type == "UnaryOperator":
-        insert_line_number = int(ast_node['end line'])
         node_value = ast_node['value']
         if node_value == "&":
             child_node = ast_node['children'][0]
             child_var_list = extract_var_ref_list(child_node)
-            for var_name, line_number, var_type in child_var_list:
-                var_list.append(("&" + str(var_name), insert_line_number, var_type))
+            for var_name, line_number, col_number, var_type in child_var_list:
+                var_list.append(("&" + str(var_name), line_number, col_number, var_type))
             return var_list
     if node_type == "DeclRefExpr":
-        line_number = int(ast_node['start line']) - 1
+        line_number = int(ast_node['start line'])
+        col_number = int(ast_node['start column'])
         if "ref_type" in ast_node.keys():
             ref_type = str(ast_node['ref_type'])
             if ref_type == "FunctionDecl":
@@ -274,13 +287,14 @@ def extract_var_ref_list(ast_node):
             var_type = str(ast_node['data_type'])
         else:
             var_type = "macro"
-        var_list.append((var_name, line_number, var_type))
+        var_list.append((var_name, line_number, col_number, var_type))
     if node_type == "ArraySubscriptExpr":
         var_name, var_type, auxilary_list = converter.convert_array_subscript(ast_node)
         line_number = int(ast_node['start line'])
-        var_list.append((str(var_name), line_number, var_type))
+        col_number = int(ast_node['start column'])
+        var_list.append((str(var_name), line_number, col_number, var_type))
         for aux_var_name, aux_var_type in auxilary_list:
-            var_list.append((str(aux_var_name), line_number, aux_var_type))
+            var_list.append((str(aux_var_name), line_number, col_number, aux_var_type))
         return var_list
     if node_type in ["MemberExpr"]:
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
@@ -304,19 +318,19 @@ def extract_var_ref_list(ast_node):
     if node_type in ["IfStmt"]:
         condition_node = ast_node['children'][0]
         body_node = ast_node['children'][1]
-        insert_line = body_node['start line']
         condition_node_var_list = extract_var_ref_list(condition_node)
-        for var_name, line_number, var_type in condition_node_var_list:
-            var_list.append((str(var_name), insert_line, var_type))
+        for var_name, line_number, col_number, var_type in condition_node_var_list:
+            var_list.append((str(var_name), line_number, col_number, var_type))
         var_list = var_list + extract_var_ref_list(body_node)
         return var_list
     if node_type in ["SwitchStmt"]:
         condition_node = ast_node['children'][0]
         body_node = ast_node['children'][1]
         insert_line = body_node['start line']
+        insert_column = body_node['start column']
         condition_node_var_list = extract_var_ref_list(condition_node)
         for var_name, line_number, var_type in condition_node_var_list:
-            var_list.append((str(var_name), insert_line, var_type))
+            var_list.append((str(var_name), insert_line, insert_column, var_type))
         var_list = var_list + extract_var_ref_list(body_node)
         return var_list
     if child_count:

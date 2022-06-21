@@ -13,16 +13,16 @@ def instrument_klee_var_expr(source_path, var_list):
     is_error_on_exit = True
     insert_code = dict()
     instrument_code = ""
-    for variable, line_number, data_type in var_list:
+    for variable, line_number, col, data_type in var_list:
         print_code = "klee_print_expr(\"[var-expr] " + variable + "\", " + variable + ");\n"
         type_print_code = "klee_print_stmt(\"[var-type]: " + variable + ":" + data_type + "\");\n"
         print_code = print_code + type_print_code
         if line_number in insert_code.keys():
             insert_code[
-                line_number] += print_code
+                line_number-1] += print_code
         else:
             insert_code[
-                line_number] = print_code
+                line_number-1] = print_code
 
     sorted_insert_code = collections.OrderedDict(sorted(insert_code.items(), reverse=True))
     utilities.backup_file(source_path, source_path + ".bk")

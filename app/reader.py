@@ -379,7 +379,7 @@ def read_symbolic_expressions(trace_file_path):
             for line in trace_file:
                 if '[var-expr]' in line:
                     line = line.split("[var-expr] ")[-1]
-                    var_name, var_expr = line.split(":")
+                    var_name, var_expr = line.split(" : ")
                     var_expr = var_expr.replace("\n", "")
                     if var_name not in var_expr_map.keys():
                         var_expr_map[var_name] = dict()
@@ -428,5 +428,5 @@ def read_taint_values(taint_log_path):
                     source_loc, taint_value = line.split(": ")
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
-                    taint_map[source_loc].append(taint_value)
+                    taint_map[source_loc].append(taint_value.replace("\n",""))
     return taint_map
