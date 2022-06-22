@@ -417,8 +417,8 @@ def read_concrete_values(trace_file_path):
                     var_value_map[var_name]['data_type'] = var_type
     return var_value_map
 
-def read_taint_values(taint_log_path):
-    emitter.normal("\tcollecting taint values")
+def read_tainted_expressions(taint_log_path):
+    emitter.normal("\tcollecting tainted expressions")
     taint_map = OrderedDict()
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
@@ -430,3 +430,21 @@ def read_taint_values(taint_log_path):
                         taint_map[source_loc] = []
                     taint_map[source_loc].append(taint_value.replace("\n",""))
     return taint_map
+
+def read_taint_values(taint_log_path):
+    emitter.normal("\tcollecting tainted concrete values")
+    taint_map = OrderedDict()
+    if os.path.exists(taint_log_path):
+        with open(taint_log_path, 'r') as taint_file:
+            for line in taint_file:
+                if 'KLEE: TaintTrack:' in line:
+                    line = line.split("KLEE: TaintTrack: ")[-1]
+                    source_loc, taint_value = line.split(": ")
+                    taint_value = taint_value.replace("\n", "")
+                    if "_ bv" in taint_value:
+                        taint_value = taint_value.split(" ")[1]
+                    if source_loc not in taint_map.keys():
+                        taint_map[source_loc] = []
+                    taint_map[source_loc].append(taint_value.replace("\n",""))
+    return taint_map
+

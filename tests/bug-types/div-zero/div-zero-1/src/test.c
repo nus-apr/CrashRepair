@@ -2,8 +2,6 @@
 
 int div (int a){
   return 1000 /(a-5);
-klee_print_expr("[var-expr] a", a);
-klee_print_stmt("[var-type]: a:macro");
 }
 
 void read_file(char *file_path, char *buf) {

@@ -70,8 +70,8 @@ def extract_func_ast(src_path, line_number):
         func_line_range = range(func_node["start line"], func_node["end line"])
         if int(line_number) in func_line_range:
             c_func_name = func_name
-            if c_func_name:
-                emitter.warning("\t\t[warning] two functions were found for same line number")
+            # if c_func_name:
+            #     emitter.warning("\t\t[warning] two functions were found for same line number")
     crash_func_ast = function_node_list[c_func_name]
     return c_func_name, crash_func_ast
 
@@ -254,26 +254,28 @@ def extract_var_ref_list(ast_node):
     child_count = len(ast_node['children'])
     node_type = ast_node['type']
     if node_type in ["ReturnStmt"]:
-        return var_list
+        child_list = ast_node['children']
+        if len(child_list) == 0:
+            return var_list
     if node_type == "BinaryOperator":
         node_value = ast_node['value']
-        if node_value == "=":
-            left_side = ast_node['children'][0]
-            right_side = ast_node['children'][1]
-            right_var_list = extract_var_ref_list(right_side)
-            left_var_list = extract_var_ref_list(left_side)
-            operands_var_list = right_var_list + left_var_list
-            for var_name, line_number, col_number, var_type in operands_var_list:
-                var_list.append((str(var_name), line_number, col_number, str(var_type)))
-            return var_list
+        left_side = ast_node['children'][0]
+        right_side = ast_node['children'][1]
+        right_var_list = extract_var_ref_list(right_side)
+        left_var_list = extract_var_ref_list(left_side)
+        operands_var_list = right_var_list + left_var_list
+        for var_name, line_number, col_number, var_type in operands_var_list:
+            var_list.append((str(var_name), line_number, col_number, str(var_type)))
+        return var_list
     if node_type == "UnaryOperator":
         node_value = ast_node['value']
-        if node_value == "&":
-            child_node = ast_node['children'][0]
-            child_var_list = extract_var_ref_list(child_node)
-            for var_name, line_number, col_number, var_type in child_var_list:
-                var_list.append(("&" + str(var_name), line_number, col_number, var_type))
-            return var_list
+        child_node = ast_node['children'][0]
+        child_var_list = extract_var_ref_list(child_node)
+        for var_name, line_number, col_number, var_type in child_var_list:
+            if node_value == "&":
+                var_name = "&" + str(var_name)
+            var_list.append((var_name, line_number, col_number, var_type))
+        return var_list
     if node_type == "DeclRefExpr":
         line_number = int(ast_node['start line'])
         col_number = int(ast_node['start column'])

@@ -31,6 +31,8 @@ FILE_PATCH_SET = ""
 FILE_PATCH_RANK_MATRIX = ""
 FILE_PATCH_RANK_INDEX = ""
 FILE_TRIDENT_LIB_BCA = DIRECTORY_LIB + "/libtrident_runtime.bca"
+FILE_LOCALIZATION_INFO = ""
+
 
 # ------------------- Configuration --------------------
 CONF_DIR_EXPERIMENT = "dir_exp:"

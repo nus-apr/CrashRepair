@@ -56,6 +56,8 @@ def analyze():
         assert exit_code == 0
         # set location of bug/crash
         values.IS_CRASH = False
+        taint_log_path = klee_concrete_out_dir + "/taint.log"
+        taint_map_concrete = reader.read_taint_values(taint_log_path)
         c_src_file, var_list, cfc = extractor.extract_crash_information(program_path, argument_list, values.get_file_message_log())
         cfc_info["file"] = c_src_file
         cfc_info["var-list"] = var_list
@@ -145,13 +147,21 @@ def analyze():
             taint_log_path = klee_taint_out_dir + "/taint.log"
         else:
             taint_log_path = klee_concolic_out_dir + "/taint.log"
-        taint_map = reader.read_taint_values(taint_log_path)
+        taint_map_symbolic = reader.read_tainted_expressions(taint_log_path)
         taint_loc_list = []
-        for taint_info in taint_map:
-            src_file, line, col, inst_add = taint_info.split(":")
+        taint_map = dict()
+        for taint_loc_info in taint_map_concrete:
+            src_file, line, col, inst_add = taint_loc_info.split(":")
             taint_loc = ":".join([src_file, line])
             if taint_loc not in taint_loc_list:
                 taint_loc_list.append(taint_loc)
+            concrete_value_list = taint_map_concrete[taint_loc_info]
+            symbolic_value_list = taint_map_symbolic[taint_loc_info]
+
+            taint_map[taint_loc_info] = {
+                "concrete-list": concrete_value_list,
+                "symbolic-list": symbolic_value_list
+            }
 
         for taint_loc in taint_loc_list:
             emitter.highlight("\t[taint-loc] {}".format(taint_loc))
