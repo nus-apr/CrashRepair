@@ -246,14 +246,15 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     localization_list = list()
     for func_name, tainted_fix_loc in tainted_fix_locations:
-        localization_obj = dict()
         src_file = tainted_fix_loc.split(":")[0]
         candidate_constraints = localize_cfc(tainted_fix_loc, cfc_info, taint_map)
         for candidate_info in candidate_constraints:
+            localization_obj = dict()
             localized_cfc, localized_line, localized_col = candidate_info
             localized_loc = ":".join([src_file, str(localized_line), str(localized_col)])
             state_info = localize_state_info(localized_loc, taint_map)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
+            localization_obj["fix-location"] = localized_loc
             localization_obj["constraint"] = localized_cfc
             localization_obj["state"] = list()
             emitter.highlight("\t[constraint] {}".format(localized_cfc))
@@ -264,7 +265,7 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 var_name, line, col, inst_addr = state
                 value_list = state_info[state]
                 state_obj["variable-name"] = var_name
-                state_obj["fix-location"] = ":".join([src_file, str(line), str(col)])
+                state_obj["source-location"] = ":".join([src_file, str(line), str(col)])
                 state_obj["instruction-address"] = inst_addr
                 state_obj["value-list"] = value_list
                 localization_obj["state"].append(state_obj)
