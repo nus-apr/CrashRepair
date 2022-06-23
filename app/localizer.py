@@ -13,7 +13,7 @@ comparison_op = ["==", "!=", ">", ">=", "<", "<="]
 symbol_op = arithmetic_op + comparison_op
 
 
-def generate_fix_locations(input_byte_list, taint_map):
+def generate_fix_locations(marked_byte_list, taint_map):
     emitter.sub_title("Generating Fix Locations")
     fix_locations = dict()
     loc_to_byte_map = collections.OrderedDict()
@@ -61,7 +61,7 @@ def generate_fix_locations(input_byte_list, taint_map):
                 observed_tainted_bytes = loc_to_byte_map[source_loc]
                 if not observed_tainted_bytes:
                     continue
-                if set(input_byte_list) <= set(observed_tainted_bytes):
+                if set(observed_tainted_bytes) <= set(marked_byte_list):
                     fix_locations[source_loc] = func_name
                     break
     sorted_fix_locations = []
@@ -73,6 +73,17 @@ def generate_fix_locations(input_byte_list, taint_map):
             sorted_fix_locations.append((fix_locations[taint_loc], taint_loc))
             cached_list.append(taint_loc)
     return sorted_fix_locations
+
+
+def localize_sub_expr(expr, candidate_var_list):
+    mapping = None
+    for candidate_var in candidate_var_list:
+        candidate_name, candidate_expr = candidate_var
+
+
+    return mapping
+
+
 
 
 def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast, cfc_var_info_list):
@@ -99,6 +110,8 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     for crash_var_name in cfc_var_info_list:
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
         for crash_var_expr in crash_var_expr_list:
+            found_mapping = False
+            subset_var_list = list()
             crash_var_sym_expr_code = generator.generate_z3_code_for_var(crash_var_expr, crash_var_name)
             crash_var_input_byte_list = extractor.extract_input_bytes_used(crash_var_sym_expr_code)
             for var_taint_info in var_taint_list:
@@ -107,10 +120,13 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                 for var_expr in var_expr_list:
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+                    if not var_input_byte_list:
+                        continue
                     if var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
                         if oracle.is_satisfiable(z3_eq_code):
+                            found_mapping = True
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
                             candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
@@ -118,6 +134,7 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                             z3_offset_code = generator.generate_z3_code_for_offset(var_sym_expr_code,
                                                                                    crash_var_sym_expr_code)
                             if oracle.is_satisfiable(z3_offset_code):
+                                found_mapping = True
                                 offset = solver.get_offset(z3_offset_code)
                                 if len(str(offset)) > 16:
                                     number = offset & 0xFFFFFFFF
@@ -126,6 +143,12 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 candidate_mapping[crash_var_name].add((mapping, v_line, v_col, v_addr))
+                    elif set(var_input_byte_list) <= set(crash_var_input_byte_list):
+                        subset_var_list.append((var_name, var_expr))
+            # if not found_mapping and subset_var_list:
+            #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
+
+
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
 
@@ -168,14 +191,16 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                 selected_col = 0
                 for mapping in c_t_map:
                     m_expr, m_line, m_col, _ = mapping
-                    if m_line > candidate_line:
+                    if m_line > candidate_line or (m_line == candidate_line
+                                                   and m_col > candidate_col):
                         continue
-                    if m_line == candidate_line and m_col > candidate_col:
+                    if selected_line > m_line or (selected_line == m_line
+                                                   and selected_col > m_col):
                         continue
-                    if selected_line < m_line and selected_col < m_col:
-                        selected_expr = m_expr
-                        selected_col = m_col
-                        selected_line = m_line
+                    selected_expr = m_expr
+                    selected_col = m_col
+                    selected_line = m_line
+
                 if selected_expr:
                     localized_tokens.append(c_t.replace(c_t_lookup, selected_expr))
             else:
