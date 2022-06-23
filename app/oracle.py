@@ -234,13 +234,11 @@ def is_patch_duplicate(patch, index, lock):
 
 def is_satisfiable(z3_code):
     parser = SmtLibParser()
+    result = False
     try:
         script = parser.get_script(cStringIO(z3_code))
         formula = script.get_last_formula()
         result = is_sat(formula, solver_name="z3")
-        return result
-
     except Exception as ex:
-        print(ex)
-        emitter.warning("\t\t[warning] Z3 Exception")
-
+        emitter.warning("\t\t[warning] Exception occurred in Z3 Solver for is_sat")
+    return result
