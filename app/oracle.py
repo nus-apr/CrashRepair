@@ -232,7 +232,7 @@ def is_patch_duplicate(patch, index, lock):
     return result, index
 
 
-def is_var_expr_equal(z3_code):
+def is_satisfiable(z3_code):
     parser = SmtLibParser()
     try:
         script = parser.get_script(cStringIO(z3_code))
@@ -240,6 +240,7 @@ def is_var_expr_equal(z3_code):
         result = is_sat(formula, solver_name="z3")
         return result
 
-    except Exception:
-        print(z3_code)
+    except Exception as ex:
+        print(ex)
         emitter.warning("\t\t[warning] Z3 Exception")
+

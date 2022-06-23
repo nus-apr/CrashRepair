@@ -1216,7 +1216,8 @@ def generate_z3_code_for_var(var_expr, var_name):
             code = generate_z3_code_for_expr(var_expr, var_name, 64)
     return code
 
-def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
+
+def generate_definitions(sym_expr_a, sym_expr_b):
     lines_a = sym_expr_a.split("\n")
     var_dec_a = lines_a[2]
     sym_expr_a = lines_a[3]
@@ -1255,7 +1256,13 @@ def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
         sym_expr_a = sym_expr_a.replace(var_name_a, var_name_a + "_a")
         var_dec_a = var_dec_a.replace(var_name_a, var_name_a + "_a")
         var_name_a = var_name_a + "_a"
+    return ((var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b))
 
+
+def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
+    def_a, def_b = generate_definitions(sym_expr_a, sym_expr_b)
+    var_name_a, sym_expr_a, var_dec_a = def_a
+    var_name_b, sym_expr_b, var_dec_b = def_b
     code = "(set-logic QF_AUFBV )\n"
     code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
     code += var_dec_a + "\n"
@@ -1263,6 +1270,25 @@ def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " " + var_name_b + "))\n"
+    code += "(check-sat)"
+    return code
+
+
+def generate_z3_code_for_offset(sym_expr_a, sym_expr_b):
+    def_a, def_b = generate_definitions(sym_expr_a, sym_expr_b)
+    var_name_a, sym_expr_a, var_dec_a = def_a
+    var_name_b, sym_expr_b, var_dec_b = def_b
+    code = "(set-logic QF_AUFBV )\n"
+    code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
+    code += var_dec_a + "\n"
+    code += var_dec_b + "\n"
+    if "_64" in var_name_b or "_64" in var_name_a:
+        code += "(declare-fun constant_offset() (_ BitVec 64))\n"
+    else:
+        code += "(declare-fun constant_offset() (_ BitVec 32))\n"
+    code += sym_expr_a + "\n"
+    code += sym_expr_b + "\n"
+    code += "(assert (= " + var_name_a + " (bvadd " + var_name_b + " constant_offset)))\n"
     code += "(check-sat)"
     return code
 

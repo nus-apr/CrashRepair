@@ -4,7 +4,7 @@
 import sys
 import os
 import collections
-from app import emitter, oracle, definitions, generator, extractor, values, writer
+from app import emitter, oracle, definitions, generator, extractor, values, writer, solver
 
 
 def generate_fix_locations(input_byte_list, taint_map):
@@ -109,10 +109,21 @@ def localize_cfc(fix_loc, cfc_info, taint_map):
                     if var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
-                        if oracle.is_var_expr_equal(z3_eq_code):
+                        if oracle.is_satisfiable(z3_eq_code):
                             if crash_var_name not in candidate_var_list:
                                 candidate_var_list[crash_var_name] = set()
                             candidate_var_list[crash_var_name].add((var_name, v_line))
+                        else:
+                            z3_offset_code = generator.generate_z3_code_for_offset(var_sym_expr_code,
+                                                                                   crash_var_sym_expr_code)
+                            if oracle.is_satisfiable(z3_offset_code):
+                                offset = solver.get_offset(z3_offset_code)
+                                mapping = "({} - {})".format(var_name, offset)
+                                if crash_var_name not in candidate_var_list:
+                                    candidate_var_list[crash_var_name] = set()
+                                candidate_var_list[crash_var_name].add((mapping, v_line))
+
+
 
     cfc_tokens = cfc_expr.split(" ")
     localized_tokens = []
@@ -193,3 +204,4 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
         localization_list.append(localization_obj)
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))
+

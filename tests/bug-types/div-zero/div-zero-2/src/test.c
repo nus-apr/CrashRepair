@@ -17,13 +17,13 @@ void read_file(char *file_path, char *buffer) {
 }
 
 int main(int argc, char *argv[]) {
-  int res, y;
+  int res, a;
   char buffer[10];
   read_file(argv[1], buffer);
-  int x = buffer[0] - 65;
-  printf("%d\n", x);
-  y = x - 1;
-  res = div(y);
+  int b = buffer[0] - 65;
+  printf("%d\n", b);
+  a = b - 1;
+  res = div(a);
   return 0;
 }
 
