@@ -439,12 +439,18 @@ def read_taint_values(taint_log_path):
             for line in taint_file:
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
-                    source_loc, taint_value = line.split(": ")
-                    taint_value = taint_value.replace("\n", "")
-                    if "_ bv" in taint_value:
-                        taint_value = taint_value.split(" ")[1]
+                    source_loc, taint_str = line.split(": ")
+                    taint_str = taint_str.replace("\n", "")
+                    if "_ bv" in taint_str:
+                        taint_str = taint_str.split(" ")[1]
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
-                    taint_map[source_loc].append(taint_value.replace("\n","").replace("bv", ""))
+                    if "true" in taint_str:
+                        taint_value = 1
+                    elif "false" in taint_str:
+                        taint_value = 0
+                    else:
+                        taint_value = int(taint_str.replace("\n", "").replace("bv", ""))
+                    taint_map[source_loc].append(taint_value)
     return taint_map
 

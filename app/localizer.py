@@ -61,7 +61,7 @@ def generate_fix_locations(marked_byte_list, taint_map):
                 observed_tainted_bytes = loc_to_byte_map[source_loc]
                 if not observed_tainted_bytes:
                     continue
-                if set(observed_tainted_bytes) <= set(marked_byte_list):
+                if set(marked_byte_list) <= set(observed_tainted_bytes):
                     fix_locations[source_loc] = func_name
                     break
     sorted_fix_locations = []
@@ -79,11 +79,7 @@ def localize_sub_expr(expr, candidate_var_list):
     mapping = None
     for candidate_var in candidate_var_list:
         candidate_name, candidate_expr = candidate_var
-
-
     return mapping
-
-
 
 
 def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast, cfc_var_info_list):
@@ -176,6 +172,7 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                 if int(c_line) == int(taint_line) and int(c_col) < int(taint_col):
                     continue
                 candidate_locations.append((c_line, c_col))
+
     for candidate_loc in candidate_locations:
         localized_tokens = []
         candidate_line, candidate_col = candidate_loc
@@ -266,13 +263,14 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 value_list = state_info[state]
                 state_obj["variable-name"] = var_name
                 state_obj["source-location"] = ":".join([src_file, str(line), str(col)])
-                state_obj["instruction-address"] = inst_addr
+                state_obj["instruction-address"] = int(inst_addr)
                 state_obj["value-list"] = value_list
+                print_list = [str(x) for x in value_list[:5]]
                 localization_obj["state"].append(state_obj)
                 emitter.highlight("\t\t[var-name] {}".format(var_name))
                 emitter.highlight("\t\t[var-loc] {}:{}".format(line, col))
                 emitter.highlight("\t\t[instruction-address] {}".format(inst_addr))
-                emitter.highlight("\t\t[values] {}".format(",".join(value_list[:5])))
+                emitter.highlight("\t\t[values] {}".format(",".join(print_list)))
                 if state != list(state_info.keys())[-1]:
                     emitter.highlight("\t\t" + "-"*50)
             localization_list.append(localization_obj)
