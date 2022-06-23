@@ -241,7 +241,7 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 state_obj["variable-name"] = var_name
                 state_obj["fix-location"] = ":".join([src_file, str(line), str(col)])
                 state_obj["instruction-address"] = inst_addr
-                state_obj["value-list"] = ",".join(value_list)
+                state_obj["value-list"] = value_list
                 localization_obj["state"].append(state_obj)
                 emitter.highlight("\t\t[var-name] {}".format(var_name))
                 emitter.highlight("\t\t[var-loc] {}:{}".format(line, col))

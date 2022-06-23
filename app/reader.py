@@ -445,6 +445,6 @@ def read_taint_values(taint_log_path):
                         taint_value = taint_value.split(" ")[1]
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
-                    taint_map[source_loc].append(taint_value.replace("\n",""))
+                    taint_map[source_loc].append(taint_value.replace("\n","").replace("bv", ""))
     return taint_map
 
