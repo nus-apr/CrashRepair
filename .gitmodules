@@ -1,6 +1,3 @@
 [submodule "repair/extern/llvm-supermutate"]
 	path = repair/extern/llvm-supermutate
 	url = git@github.com:squaresLab/llvm-supermutate
-[submodule "repair/extern/nlohmann_json"]
-	path = repair/extern/nlohmann_json
-	url = https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
