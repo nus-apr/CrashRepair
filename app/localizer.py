@@ -4,8 +4,10 @@
 import sys
 import os
 import collections
-from app import emitter, oracle, definitions, generator, extractor, values, writer, solver
+from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, constraints
 import ctypes
+import copy
+
 
 global_candidate_mapping = collections.OrderedDict()
 arithmetic_op = ["+", "-", "*", "/", "%"]
@@ -73,13 +75,6 @@ def generate_fix_locations(marked_byte_list, taint_map):
             sorted_fix_locations.append((fix_locations[taint_loc], taint_loc))
             cached_list.append(taint_loc)
     return sorted_fix_locations
-
-
-def localize_sub_expr(expr, candidate_var_list):
-    mapping = None
-    for candidate_var in candidate_var_list:
-        candidate_name, candidate_expr = candidate_var
-    return mapping
 
 
 def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast, cfc_var_info_list):
@@ -156,11 +151,12 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
     src_file, taint_line, taint_col = taint_loc.split(":")
     crash_loc = cfc_info["loc"]
     cfc_expr = cfc_info["expr"]
+    # cfc_expr_str = cfc_expr.to_string()
     cfc_var_info_list = cfc_info["var-info"]
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
     candidate_mapping = get_candidate_map_for_func(func_name, taint_map, src_file,
                                                    function_ast, cfc_var_info_list)
-    cfc_tokens = cfc_expr.split(" ")
+    cfc_tokens = cfc_expr.get_symbol_list()
     for c_t in cfc_tokens:
         c_t_lookup = c_t.replace("(", "").replace(")", "")
         if c_t_lookup in candidate_mapping:
@@ -174,12 +170,11 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                 candidate_locations.append((c_line, c_col))
 
     for candidate_loc in candidate_locations:
-        localized_tokens = []
+        localized_tokens = dict()
         candidate_line, candidate_col = candidate_loc
         for c_t in cfc_tokens:
             c_t_lookup = c_t.replace("(", "").replace(")", "")
             if c_t_lookup in symbol_op or str(c_t_lookup).isnumeric():
-                localized_tokens.append(c_t)
                 continue
             if c_t_lookup in candidate_mapping:
                 c_t_map = candidate_mapping[c_t_lookup]
@@ -199,12 +194,13 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                     selected_line = m_line
 
                 if selected_expr:
-                    localized_tokens.append(c_t.replace(c_t_lookup, selected_expr))
+                    localized_tokens[c_t_lookup] = selected_expr
             else:
-                localized_tokens = []
+                localized_tokens = dict()
                 break
         if localized_tokens:
-            localized_cfc = " ".join(localized_tokens)
+            localized_cfc = copy.deepcopy(cfc_expr)
+            localized_cfc.update_symbols(localized_tokens)
             candidate_constraints.append((localized_cfc, candidate_line, candidate_col))
     return candidate_constraints
 
@@ -252,9 +248,9 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             state_info = localize_state_info(localized_loc, taint_map)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
             localization_obj["fix-location"] = localized_loc
-            localization_obj["constraint"] = localized_cfc
+            localization_obj["constraint"] = localized_cfc.to_json()
             localization_obj["state"] = list()
-            emitter.highlight("\t[constraint] {}".format(localized_cfc))
+            emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
             emitter.highlight("\t[state information]:")
             emitter.highlight("\t" + "="*50)
             for state in state_info:

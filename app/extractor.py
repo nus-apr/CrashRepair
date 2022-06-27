@@ -3,7 +3,7 @@ from six.moves import cStringIO
 from pysmt.shortcuts import And
 import os
 import json
-from app import emitter, utilities, reader, values, converter, generator, definitions
+from app import emitter, utilities, reader, values, converter, generator, definitions, constraints
 from pathlib import Path
 from pysmt.smtlib.parser import SmtLibParser
 
@@ -184,7 +184,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
-    emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
+    emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc.to_string()))
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
     return c_file, var_list, cfc
 
@@ -215,7 +215,7 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
-    emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc))
+    emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc.to_string()))
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
     return src_path, var_list, cfc
 
@@ -370,7 +370,8 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
             utilities.error_exit("Unable to generate crash free constraint")
         divisor_ast = div_op_ast["children"][1]
         var_list = extract_var_list(divisor_ast)
-        cfc = converter.get_node_value(divisor_ast) + " != 0"
+        # cfc = converter.get_node_value(divisor_ast) + " != 0"
+        cfc = constraints.generate_div_zero_constraint(divisor_ast)
     elif crash_type in [definitions.CRASH_TYPE_INT_MUL_OVERFLOW,
                         definitions.CRASH_TYPE_INT_ADD_OVERFLOW,
                         definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
@@ -424,6 +425,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
     return cfc, var_list
+
 
 def extract_child_id_list(ast_node):
     id_list = list()
