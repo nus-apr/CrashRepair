@@ -11,6 +11,13 @@
 
 using namespace llvm;
 
+static llvm::cl::opt<std::string> localizationFilename(
+  "localization-filename",
+  llvm::cl::desc("The name of file from which the annotated fix localization should be read."),
+  llvm::cl::value_desc("filename"),
+  llvm::cl::Required
+);
+
 bool crashrepair::FixPass::runOnModule(Module &module) {
   llvm::outs() << "hello!\n";
   return true;
