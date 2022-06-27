@@ -5,7 +5,8 @@ add_library(crashrepairfix MODULE
 target_include_directories(crashrepairfix
   PRIVATE
     ${LLVM_INCLUDE_DIRS}
-    ${LLVMSUPERMUTATE_INCLUDE_DIRS}
+    ${CRASHREPAIR_INCLUDE_DIRS}
+    llvmsupermutate
     nlohmann_json::nlohmann_json
 )
 

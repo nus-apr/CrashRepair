@@ -7,6 +7,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <crashrepair/SourceLocation.h>
+
 using namespace llvm;
 
 bool crashrepair::FixPass::runOnModule(Module &module) {
