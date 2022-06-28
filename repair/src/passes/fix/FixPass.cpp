@@ -42,7 +42,11 @@ void loadImplicatedSourceLocations(std::string const &filename, std::set<crashre
 }
 
 void loadImplicatedSourceLocations(nlohmann::json &j, std::set<crashrepair::SourceLocation> &locations) {
-
+  for (auto &entry : j) {
+    std::string locationString = entry["fix-location"];
+    auto location = crashrepair::SourceLocation::fromString(locationString);
+    locations.emplace(location);
+  }
 }
 
 bool crashrepair::FixPass::runOnModule(Module &module) {
