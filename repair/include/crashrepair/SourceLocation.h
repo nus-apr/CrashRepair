@@ -18,6 +18,14 @@ public:
     size_t column
   ) : file(file), line(line), column(column) {}
 
+  bool operator==(const SourceLocation &rhs) const {
+    return file == rhs.file && line == rhs.line && column == rhs.column;
+  }
+
+  bool operator<(const SourceLocation &rhs) const {
+    return file < rhs.file && line < rhs.line && column < rhs.column;
+  }
+
   static SourceLocation fromString(std::string const &str) {
     auto parts = split(str, ':');
     assert (parts.size() == 3);
