@@ -41,8 +41,11 @@ RUN git clone https://github.com/klee/klee-uclibc.git . && \
     CC=clang ./configure --make-llvm-lib && \
     make -j2
 ENV KLEE_VERSION=2.0
-WORKDIR /klee 
-RUN git clone https://github.com/rshariffdeen/klee.git source; cd source; git checkout concolic
+WORKDIR /klee
+ARG KLEE_REVISION=2430369
+RUN git clone https://github.com/rshariffdeen/klee.git source \
+ && cd source \
+ && git checkout "${KLEE_REVISION}"
 RUN mkdir build && \
     cd build && \
     cmake \
