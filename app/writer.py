@@ -9,7 +9,7 @@ from app.synthesis import program_to_code
 
 
 def write_as_json(data, output_file_path):
-    content = json.dumps(data)
+    content = json.dumps(data, indent=2)
     with open(output_file_path, 'w') as out_file:
         out_file.writelines(content)
 
