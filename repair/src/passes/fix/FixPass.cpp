@@ -1,5 +1,8 @@
 #include "FixPass.h"
 
+#include <experimental/filesystem>
+#include <fstream>
+
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/Support/CommandLine.h>
@@ -23,6 +26,22 @@ static llvm::cl::opt<std::string> localizationFilename(
 );
 
 void loadImplicatedSourceLocations(std::string const &filename, std::set<crashrepair::SourceLocation> &locations) {
+  if (!std::experimental::filesystem::exists(filename)) {
+    llvm::errs()
+      << "FATAL ERROR: localization file not found: "
+      << filename
+      << "\n";
+    exit(1);
+  }
+
+  nlohmann::json j;
+  std::ifstream input(filename);
+  input >> j;
+
+  loadImplicatedSourceLocations(j, locations);
+}
+
+void loadImplicatedSourceLocations(nlohmann::json &j, std::set<crashrepair::SourceLocation> &locations) {
 
 }
 
