@@ -3,7 +3,8 @@ from six.moves import cStringIO
 from pysmt.shortcuts import And
 import os
 import json
-from app import emitter, utilities, reader, values, converter, generator, definitions, constraints
+from app import emitter, utilities, reader, values, converter, generator, \
+    definitions, constraints, oracle
 from pathlib import Path
 from pysmt.smtlib.parser import SmtLibParser
 
@@ -67,7 +68,8 @@ def extract_func_ast(src_path, line_number):
     function_node_list = extract_function_node_list(ast_tree)
     c_func_name = None
     for func_name, func_node in function_node_list.items():
-        func_line_range = range(func_node["start line"], func_node["end line"])
+        func_range = func_node["range"]
+        func_line_range = extract_line_range(src_path, func_range)
         if int(line_number) in func_line_range:
             c_func_name = func_name
             # if c_func_name:
@@ -135,13 +137,13 @@ def extract_largest_path_condition(dir_path):
 
 
 def extract_child_expressions(patch_tree):
-    (cid, semantics), children = patch_tree
+    (cid, semantics), inner = patch_tree
     child_list = list()
     if "right" not in patch_tree:
         child_list = [patch_tree]
     else:
-        right_child = children['right']
-        left_child = children['left']
+        right_child = inner['right']
+        left_child = inner['left']
         if cid in ["logical-or", "logical-and"]:
             right_list = extract_child_expressions(right_child)
             left_list = extract_child_expressions(left_child)
@@ -152,9 +154,9 @@ def extract_child_expressions(patch_tree):
 
 def extract_ast_json(source_file_path):
     source_dir = "/".join(source_file_path.split("/")[:-1])
-    ast_diff_bin = "/CrashRepair/bin/ast-diff"
+    ast_diff_bin = "clang-10 -Xclang -ast-dump=json -fsyntax-only"
     ast_file_path = source_file_path + ".ast"
-    generate_ast_command = "cd {} && {} -ast-dump-json {} > {}".format(source_dir, ast_diff_bin, source_file_path,
+    generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, ast_diff_bin, source_file_path,
                                                                        ast_file_path)
     utilities.execute_command(generate_ast_command)
     ast_tree = reader.read_ast_tree(ast_file_path)
@@ -196,7 +198,6 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     test_command += "{} {} > {} 2>&1".format(binary_path, binary_input, log_path)
     utilities.execute_command(test_command, False)
     c_loc, c_type, c_address, c_func_name = reader.collect_exploit_output(log_path)
-    print(c_loc, c_type, c_address, c_func_name)
     src_dir = values.CONF_DIR_EXPERIMENT + "/src/"
     src_path = c_loc.split(":")[0]
     ast_tree = extract_ast_json(src_path)
@@ -219,163 +220,165 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
     return src_path, var_list, cfc
 
-def extract_var_dec_list(ast_node):
-    var_list = list()
-    child_count = len(ast_node['children'])
-    node_type = ast_node['type']
 
+def extract_var_dec_list(ast_node, file_path):
+    var_list = list()
+    child_count = 0
+    if "inner" in ast_node:
+        child_count = len(ast_node['inner'])
+    node_type = ast_node["kind"]
     if node_type in ["ParmVarDecl"]:
-        var_name = str(ast_node['identifier'])
+        var_name = str(ast_node["name"])
         var_type = None
-        if "data_type" in ast_node:
-            var_type = str(ast_node['data_type'])
-        line_number = int(ast_node['start line'])
-        column_number = int(ast_node['start column'])
+        if "type" in ast_node:
+            var_type = str(ast_node['type']['qualType'])
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, line_number, column_number = begin_loc
         var_list.append((var_name, line_number, column_number, var_type))
         return var_list
 
     if node_type in ["VarDecl"]:
-        var_name = str(ast_node['identifier'])
+        var_name = str(ast_node["name"])
         var_type = None
-        if "data_type" in ast_node:
-            var_type = str(ast_node['data_type'])
-        line_number = int(ast_node['start line'])
-        column_number = int(ast_node['start column'])
+        if "type" in ast_node:
+            var_type = str(ast_node['type']['qualType'])
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, line_number, column_number = begin_loc
         var_list.append((var_name, line_number, column_number, var_type))
         return var_list
     if child_count:
-        for child_node in ast_node['children']:
-            var_list = var_list + list(set(extract_var_dec_list(child_node)))
+        for child_node in ast_node['inner']:
+            var_list = var_list + list(set(extract_var_dec_list(child_node, file_path)))
     return list(set(var_list))
 
 
-def extract_var_ref_list(ast_node):
+def extract_var_ref_list(ast_node, file_path):
     var_list = list()
-    child_count = len(ast_node['children'])
-    node_type = ast_node['type']
+    child_count = 0
+    if "inner" in ast_node:
+        child_count = len(ast_node['inner'])
+    node_type = ast_node["kind"]
     if node_type in ["ReturnStmt"]:
-        child_list = ast_node['children']
+        child_list = ast_node['inner']
         if len(child_list) == 0:
             return var_list
     if node_type == "BinaryOperator":
-        node_value = ast_node['value']
-        left_side = ast_node['children'][0]
-        right_side = ast_node['children'][1]
-        right_var_list = extract_var_ref_list(right_side)
-        left_var_list = extract_var_ref_list(left_side)
+        left_side = ast_node['inner'][0]
+        right_side = ast_node['inner'][1]
+        right_var_list = extract_var_ref_list(right_side, file_path)
+        left_var_list = extract_var_ref_list(left_side, file_path)
         operands_var_list = right_var_list + left_var_list
         for var_name, line_number, col_number, var_type in operands_var_list:
             var_list.append((str(var_name), line_number, col_number, str(var_type)))
         return var_list
     if node_type == "UnaryOperator":
-        node_value = ast_node['value']
-        child_node = ast_node['children'][0]
-        child_var_list = extract_var_ref_list(child_node)
+        node_value = ast_node['opcode']
+        child_node = ast_node['inner'][0]
+        child_var_list = extract_var_ref_list(child_node, file_path)
         for var_name, line_number, col_number, var_type in child_var_list:
             if node_value == "&":
                 var_name = "&" + str(var_name)
             var_list.append((var_name, line_number, col_number, var_type))
         return var_list
     if node_type == "DeclRefExpr":
-        line_number = int(ast_node['start line'])
-        col_number = int(ast_node['start column'])
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, line_number, col_number = begin_loc
         if "ref_type" in ast_node.keys():
             ref_type = str(ast_node['ref_type'])
             if ref_type == "FunctionDecl":
                 return var_list
-        var_name = str(ast_node['value'])
+        var_name = str(ast_node['referencedDecl']['name'])
         # print(ast_node)
-        if 'data_type' in ast_node.keys():
-            var_type = str(ast_node['data_type'])
+        if 'type' in ast_node.keys():
+            var_type = str(ast_node['type']['qualType'])
         else:
             var_type = "macro"
         var_list.append((var_name, line_number, col_number, var_type))
     if node_type == "ArraySubscriptExpr":
         var_name, var_type, auxilary_list = converter.convert_array_subscript(ast_node)
-        line_number = int(ast_node['start line'])
-        col_number = int(ast_node['start column'])
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, line_number, col_number = begin_loc
         var_list.append((str(var_name), line_number, col_number, var_type))
         for aux_var_name, aux_var_type in auxilary_list:
             var_list.append((str(aux_var_name), line_number, col_number, aux_var_type))
         return var_list
     if node_type in ["MemberExpr"]:
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
-        line_number = int(ast_node['start line'])
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, line_number, column_number = begin_loc
         var_list.append((str(var_name), line_number, var_type))
         for aux_var_name, aux_var_type in auxilary_list:
-            var_list.append((str(aux_var_name), line_number, aux_var_type))
+            var_list.append((str(aux_var_name), line_number, column_number, aux_var_type))
         return var_list
     if node_type in ["ForStmt", "WhileStmt"]:
-        body_node = ast_node['children'][child_count - 1]
-        insert_line = body_node['start line']
+        body_node = ast_node['inner'][child_count - 1]
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, line_number, column_number = begin_loc
         for i in range(0, child_count - 1):
-            condition_node = ast_node['children'][i]
-            condition_node_var_list = extract_var_ref_list(condition_node)
-            for var_name, line_number, var_type in condition_node_var_list:
-                var_list.append((str(var_name), insert_line, var_type))
-        var_list = var_list + extract_var_ref_list(body_node)
+            condition_node = ast_node['inner'][i]
+            condition_node_var_list = extract_var_ref_list(condition_node, file_path)
+            for var_name, line_number, col_number, var_type in condition_node_var_list:
+                var_list.append((str(var_name), line_number, col_number, var_type))
+        var_list = var_list + extract_var_ref_list(body_node, file_path)
         return var_list
     # if node_type in ["CaseStmt"]:
     #     return var_list
     if node_type in ["IfStmt"]:
-        condition_node = ast_node['children'][0]
-        body_node = ast_node['children'][1]
-        condition_node_var_list = extract_var_ref_list(condition_node)
+        condition_node = ast_node['inner'][0]
+        body_node = ast_node['inner'][1]
+        condition_node_var_list = extract_var_ref_list(condition_node, file_path)
         for var_name, line_number, col_number, var_type in condition_node_var_list:
             var_list.append((str(var_name), line_number, col_number, var_type))
-        var_list = var_list + extract_var_ref_list(body_node)
+        var_list = var_list + extract_var_ref_list(body_node, file_path)
         return var_list
     if node_type in ["SwitchStmt"]:
-        condition_node = ast_node['children'][0]
-        body_node = ast_node['children'][1]
-        insert_line = body_node['start line']
-        insert_column = body_node['start column']
-        condition_node_var_list = extract_var_ref_list(condition_node)
-        for var_name, line_number, var_type in condition_node_var_list:
-            var_list.append((str(var_name), insert_line, insert_column, var_type))
-        var_list = var_list + extract_var_ref_list(body_node)
+        condition_node = ast_node['inner'][0]
+        body_node = ast_node['inner'][1]
+        condition_node_var_list = extract_var_ref_list(condition_node, file_path)
+        for var_name, line_number, col_number, var_type in condition_node_var_list:
+            var_list.append((str(var_name), line_number, col_number, var_type))
+        var_list = var_list + extract_var_ref_list(body_node, file_path)
         return var_list
     if child_count:
-        for child_node in ast_node['children']:
-            var_list = var_list + list(set(extract_var_ref_list(child_node)))
+        for child_node in ast_node['inner']:
+            var_list = var_list + list(set(extract_var_ref_list(child_node, file_path)))
     return list(set(var_list))
 
 
-def extract_var_list(ast_node):
-    var_dec_list = extract_var_dec_list(ast_node)
-    var_ref_list = extract_var_ref_list(ast_node)
+def extract_var_list(ast_node, file_path):
+    var_dec_list = extract_var_dec_list(ast_node, file_path)
+    var_ref_list = extract_var_ref_list(ast_node, file_path)
     variable_list = list(set(var_ref_list + var_dec_list))
-    for child_node in ast_node['children']:
-        child_var_dec_list = extract_var_dec_list(child_node)
-        child_var_ref_list = extract_var_ref_list(child_node)
+    for child_node in ast_node['inner']:
+        child_var_dec_list = extract_var_dec_list(child_node, file_path)
+        child_var_ref_list = extract_var_ref_list(child_node, file_path)
         variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
     return variable_list
 
 
-def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
+def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
     cfc = None
     var_list = []
-    src_file, line_num, column_num = crash_loc.split(":")
+    src_file, line_num, column_num = crash_loc_str.split(":")
+    crash_loc = (src_file, int(line_num), int(column_num))
     if crash_type == definitions.CRASH_TYPE_DIV_ZERO :
-        binaryop_list = extract_binaryop_node_list(func_ast, ["/"])
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["/"])
         div_op_ast = None
-        for binaryop in binaryop_list:
-            if int(line_num) == binaryop["start line"]:
-                col_range = range(binaryop["start column"], binaryop["end column"])
-                if int(column_num) in col_range:
-                    div_op_ast = binaryop
-                    break
+        for op_ast in binaryop_list:
+            if oracle.is_loc_in_range(crash_loc, op_ast["range"]):
+                div_op_ast = op_ast
+                break
         if div_op_ast is None:
             emitter.error("\t[error] unable to find division operator")
             utilities.error_exit("Unable to generate crash free constraint")
-        divisor_ast = div_op_ast["children"][1]
-        var_list = extract_var_list(divisor_ast)
+        divisor_ast = div_op_ast["inner"][1]
+        var_list = extract_var_list(divisor_ast, src_file)
         # cfc = converter.get_node_value(divisor_ast) + " != 0"
         cfc = constraints.generate_div_zero_constraint(divisor_ast)
     elif crash_type in [definitions.CRASH_TYPE_INT_MUL_OVERFLOW,
                         definitions.CRASH_TYPE_INT_ADD_OVERFLOW,
                         definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
-        binaryop_list = extract_binaryop_node_list(func_ast, ["*", "+", "-"])
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["*", "+", "-"])
         crash_op_str = None
         crash_op_ast = None
         for binary_op_ast in binaryop_list:
@@ -389,15 +392,15 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
         if crash_op_ast is None:
             emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
             utilities.error_exit("Unable to generate crash free constraint")
-        op_a_ast = crash_op_ast["children"][0]
-        op_b_ast = crash_op_ast["children"][1]
+        op_a_ast = crash_op_ast["inner"][0]
+        op_b_ast = crash_op_ast["inner"][1]
         op_a_str = converter.convert_node_to_str(op_a_ast)
         op_b_str = converter.convert_node_to_str(op_b_ast)
         crash_op_converter = {"*": "/", "+": "-", "-": "+"}
         cfc = "{} <= INT_MAX {} {}".format(op_a_str, crash_op_converter[crash_op_str], op_b_str)
-        var_list = extract_var_list(crash_op_ast)
+        var_list = extract_var_list(crash_op_ast, src_file)
     elif crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
-        binaryop_list = extract_binaryop_node_list(func_ast, ["="])
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["="])
         assign_op_ast = None
         for binaryop in binaryop_list:
             if int(line_num) == binaryop["start line"]:
@@ -415,11 +418,11 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
                         target_ast = array_node
                         break
         else:
-            target_ast = assign_op_ast["children"][0]
+            target_ast = assign_op_ast["inner"][0]
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(target_ast)
+        var_list = extract_var_list(target_ast, src_file)
         cfc = converter.get_node_value(target_ast) + " != 0"
     else:
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
@@ -429,7 +432,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc):
 
 def extract_child_id_list(ast_node):
     id_list = list()
-    for child_node in ast_node['children']:
+    for child_node in ast_node['inner']:
         child_id = int(child_node['id'])
         id_list.append(child_id)
         grand_child_list = extract_child_id_list(child_node)
@@ -442,12 +445,12 @@ def extract_child_id_list(ast_node):
 
 def extract_call_node_list(ast_node):
     call_expr_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type == "CallExpr":
         call_expr_list.append(ast_node)
     else:
-        if len(ast_node['children']) > 0:
-            for child_node in ast_node['children']:
+        if len(ast_node['inner']) > 0:
+            for child_node in ast_node['inner']:
                 child_call_list = extract_call_node_list(child_node)
                 call_expr_list = call_expr_list + child_call_list
     return call_expr_list
@@ -455,13 +458,13 @@ def extract_call_node_list(ast_node):
 
 def extract_label_node_list(ast_node):
     label_stmt_list = dict()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type == "LabelStmt":
         node_value = ast_node['value']
         label_stmt_list[node_value] = ast_node
     else:
-        if len(ast_node['children']) > 0:
-            for child_node in ast_node['children']:
+        if len(ast_node['inner']) > 0:
+            for child_node in ast_node['inner']:
                 child_label_list = extract_label_node_list(child_node)
                 label_stmt_list.update(child_label_list)
     return label_stmt_list
@@ -469,12 +472,12 @@ def extract_label_node_list(ast_node):
 
 def extract_goto_node_list(ast_node):
     goto_stmt_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type == "GotoStmt":
         goto_stmt_list.append(ast_node)
     else:
-        if len(ast_node['children']) > 0:
-            for child_node in ast_node['children']:
+        if len(ast_node['inner']) > 0:
+            for child_node in ast_node['inner']:
                 child_goto_list = extract_goto_node_list(child_node)
                 goto_stmt_list = goto_stmt_list + child_goto_list
     return goto_stmt_list
@@ -482,22 +485,27 @@ def extract_goto_node_list(ast_node):
 
 def extract_function_node_list(ast_node):
     function_node_list = dict()
-    for child_node in ast_node['children']:
-        node_type = str(child_node["type"])
+    for child_node in ast_node["inner"]:
+        node_type = str(child_node["kind"])
         if node_type in ["FunctionDecl"]:
-            identifier = str(child_node['identifier'])
+            identifier = str(child_node["name"])
+            loc_info = child_node["loc"]
+            if "includedFrom" in loc_info:
+                continue
+            if "spellingLoc" in loc_info:
+                continue
             function_node_list[identifier] = child_node
     return function_node_list
 
 
 def extract_reference_node_list(ast_node):
     ref_node_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type in ["Macro", "DeclRefExpr", "MemberExpr", "GotoStmt"]:
         ref_node_list.append(ast_node)
 
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_ref_list = extract_reference_node_list(child_node)
             ref_node_list = ref_node_list + child_ref_list
     return ref_node_list
@@ -505,17 +513,17 @@ def extract_reference_node_list(ast_node):
 
 def extract_initialization_node_list(ast_node, ref_node):
     init_node_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type == "BinaryOperator":
         node_value = str(ast_node['value'])
         if node_value == "=":
-            assign_node = ast_node['children'][0]
-            if assign_node['type'] == "DeclRefExpr":
-                if assign_node['value'] == ref_node['identifier']:
+            assign_node = ast_node['inner'][0]
+            if assign_node["kind"] == "DeclRefExpr":
+                if assign_node['value'] == ref_node["name"]:
                     init_node_list.append(ast_node)
     else:
-        if len(ast_node['children']) > 0:
-            for child_node in ast_node['children']:
+        if len(ast_node['inner']) > 0:
+            for child_node in ast_node['inner']:
                 child_init_list = extract_initialization_node_list(child_node, ref_node)
                 init_node_list = init_node_list + child_init_list
     return init_node_list
@@ -523,18 +531,18 @@ def extract_initialization_node_list(ast_node, ref_node):
 
 def extract_decl_list(ast_node, ref_type=None):
     dec_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if ref_type:
         if node_type == ref_type:
-            identifier = str(ast_node['identifier'])
+            identifier = str(ast_node["name"])
             dec_list.append(identifier)
     else:
         if node_type in ["FunctionDecl", "VarDecl", "ParmVarDecl", "RecordDecl"]:
-            identifier = str(ast_node['identifier'])
+            identifier = str(ast_node["name"])
             dec_list.append(identifier)
 
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_dec_list = extract_decl_list(child_node, ref_type)
             dec_list = dec_list + child_dec_list
     return list(set(dec_list))
@@ -544,18 +552,18 @@ def extract_decl_node_list(ast_node, ref_type=None):
     dec_list = dict()
     if not ast_node:
         return dec_list
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if ref_type:
         if node_type == ref_type:
-            identifier = str(ast_node['identifier'])
+            identifier = str(ast_node["name"])
             dec_list[identifier] = ast_node
     else:
         if node_type in ["FunctionDecl", "VarDecl", "ParmVarDecl", "RecordDecl"]:
-            identifier = str(ast_node['identifier'])
+            identifier = str(ast_node["name"])
             dec_list[identifier] = ast_node
 
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_dec_list = extract_decl_node_list(child_node, ref_type)
             dec_list.update(child_dec_list)
     return dec_list
@@ -565,24 +573,24 @@ def extract_decl_node_list_global(ast_tree):
     dec_list = dict()
     if not ast_tree:
         return dec_list
-    if len(ast_tree['children']) > 0:
-        for child_node in ast_tree['children']:
-            child_node_type = child_node['type']
+    if len(ast_tree['inner']) > 0:
+        for child_node in ast_tree['inner']:
+            child_node_type = child_node["kind"]
             if child_node_type in ["FunctionDecl", "VarDecl", "ParmVarDecl"]:
-                identifier = str(child_node['identifier'])
+                identifier = str(child_node["name"])
                 dec_list[identifier] = child_node
     return dec_list
 
 
 def extract_enum_node_list(ast_tree):
     dec_list = dict()
-    node_type = str(ast_tree["type"])
+    node_type = str(ast_tree["kind"])
     if node_type in ["EnumConstantDecl"]:
-        identifier = str(ast_tree['identifier'])
+        identifier = str(ast_tree["name"])
         dec_list[identifier] = ast_tree
 
-    if len(ast_tree['children']) > 0:
-        for child_node in ast_tree['children']:
+    if len(ast_tree['inner']) > 0:
+        for child_node in ast_tree['inner']:
             child_dec_list = extract_enum_node_list(child_node)
             dec_list.update(child_dec_list)
     return dec_list
@@ -591,7 +599,7 @@ def extract_enum_node_list(ast_tree):
 def extract_global_var_node_list(ast_tree):
     dec_list = list()
     for ast_node in ast_tree:
-        node_type = str(ast_node["type"])
+        node_type = str(ast_node["kind"])
         if node_type in ["VarDecl"]:
             dec_list.append(ast_node)
     return dec_list
@@ -599,12 +607,12 @@ def extract_global_var_node_list(ast_tree):
 
 def extract_data_type_list(ast_node):
     data_type_list = list()
-    node_type = str(ast_node["type"])
-    if "data_type" in ast_node.keys():
-        data_type = str(ast_node['data_type'])
+    node_type = str(ast_node["kind"])
+    if "type" in ast_node.keys():
+        data_type = str(ast_node['type']['qualType'])
         data_type_list.append(data_type)
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_data_type_list = extract_data_type_list(child_node)
             data_type_list = data_type_list + child_data_type_list
     return list(set(data_type_list))
@@ -612,13 +620,13 @@ def extract_data_type_list(ast_node):
 
 def extract_typedef_node_list(ast_node):
     typedef_node_list = dict()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type in ["TypedefDecl", "RecordDecl"]:
-        identifier = str(ast_node['identifier'])
+        identifier = str(ast_node["name"])
         typedef_node_list[identifier] = ast_node
 
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_typedef_node_list = extract_typedef_node_list(child_node)
             typedef_node_list.update(child_typedef_node_list)
     return typedef_node_list
@@ -626,44 +634,43 @@ def extract_typedef_node_list(ast_node):
 
 def extract_typeloc_node_list(ast_node):
     typeloc_node_list = dict()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type in ["TypeLoc"]:
         identifier = str(ast_node['value'])
         typeloc_node_list[identifier] = ast_node
 
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_typeloc_node_list = extract_typeloc_node_list(child_node)
             # print(child_typeloc_node_list)
             typeloc_node_list.update(child_typeloc_node_list)
     return typeloc_node_list
 
 
-def extract_binaryop_node_list(ast_node, filter_list=None):
+def extract_binaryop_node_list(ast_node, file_path, filter_list=None):
     binaryop_node_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type in ["BinaryOperator"]:
-        identifier = str(ast_node['value'])
+        identifier = str(ast_node['opcode'])
         if filter_list:
             if identifier in filter_list:
                 binaryop_node_list.append(ast_node)
         else:
             binaryop_node_list.append(ast_node)
-
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
-            child_binaryop_node_list = extract_binaryop_node_list(child_node, filter_list)
+    if "inner" in ast_node and len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
+            child_binaryop_node_list = extract_binaryop_node_list(child_node, file_path, filter_list)
             binaryop_node_list = binaryop_node_list + child_binaryop_node_list
     return binaryop_node_list
 
 
 def extract_array_subscript_node_list(ast_node):
     array_node_list = list()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type in ["ArraySubscriptExpr"]:
         array_node_list.append(ast_node)
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_array_node_list = extract_array_subscript_node_list(child_node)
             array_node_list = array_node_list + child_array_node_list
     return array_node_list
@@ -671,13 +678,13 @@ def extract_array_subscript_node_list(ast_node):
 
 def extract_unaryop_node_list(ast_node):
     unaryop_node_list = dict()
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type in ["UnaryOperator"]:
         identifier = str(ast_node['value'])
         unaryop_node_list[identifier] = ast_node
 
-    if len(ast_node['children']) > 0:
-        for child_node in ast_node['children']:
+    if len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
             child_unaryop_node_list = extract_unaryop_node_list(child_node)
             unaryop_node_list.update(child_unaryop_node_list)
     return unaryop_node_list
@@ -729,3 +736,34 @@ def extract_input_bytes_used(sym_expr):
     if input_byte_list:
         input_byte_list.sort()
     return input_byte_list
+
+
+def extract_line(file_path, ast_loc_info):
+    offset = int(ast_loc_info["offset"])
+    if file_path not in values.AST_OFFSET_MAP:
+        values.AST_OFFSET_MAP[file_path] = generator.generate_offset_to_line(file_path)
+    offset_mapping = values.AST_OFFSET_MAP[file_path]
+    return offset_mapping[offset]
+
+
+def extract_line_range(file_path, ast_range):
+    begin_loc = ast_range["begin"]
+    end_loc = ast_range["end"]
+    begin_line = extract_line(file_path,begin_loc)
+    end_line = extract_line(file_path, end_loc)
+    return range(begin_line, end_line+1)
+
+
+def extract_col_range(ast_loc_info):
+    begin_col = ast_loc_info["col"]
+    end_col = begin_col + int(ast_loc_info["tokLen"])
+    return range(begin_col, end_col+1)
+
+
+def extract_loc(file_path, ast_loc_info):
+    col = ast_loc_info["col"]
+    line = extract_line(file_path, ast_loc_info)
+    return file_path, line, col
+
+
+

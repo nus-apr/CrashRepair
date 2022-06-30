@@ -44,10 +44,11 @@ def generate_fix_locations(marked_byte_list, taint_map):
         ast_tree = extractor.extract_ast_json(source_path)
         function_node_list = extractor.extract_function_node_list(ast_tree)
         for func_name, func_node in function_node_list.items():
-            func_range = range(func_node["start line"], func_node["end line"])
+            func_range = func_node["range"]
+            f_line_range = extractor.extract_line_range(source_path, func_range)
             for loc in tainted_loc_list:
                 line, col = loc
-                if int(line) in func_range:
+                if int(line) in f_line_range:
                     if source_path not in tainted_function_list:
                         tainted_function_list[source_path] = dict()
                     if func_name not in tainted_function_list[source_path]:
@@ -81,15 +82,16 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     global global_candidate_mapping
     if function_name in global_candidate_mapping:
         return global_candidate_mapping[function_name]
-    function_range = range(function_ast["start line"], function_ast["end line"])
-    var_info_list = extractor.extract_var_list(function_ast)
+    function_range = function_ast["range"]
+    func_line_range = extractor.extract_line_range(src_file, function_range)
+    var_info_list = extractor.extract_var_list(function_ast, src_file)
     var_taint_list = collections.OrderedDict()
     for taint_info in taint_map:
         c_file, line, col, inst_add = taint_info.split(":")
         taint_expr_list = taint_map[taint_info]['symbolic-list']
         if src_file != c_file:
             continue
-        if int(line) not in function_range:
+        if int(line) not in func_line_range:
             continue
         for var_info in var_info_list:
             var_name, v_line, v_col, v_type = var_info
@@ -138,7 +140,6 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                         subset_var_list.append((var_name, var_expr))
             # if not found_mapping and subset_var_list:
             #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
-
 
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
@@ -209,15 +210,15 @@ def localize_state_info(fix_loc, taint_map):
     state_info_list = dict()
     src_file, fix_line, fix_col = fix_loc.split(":")
     func_name, function_ast = extractor.extract_func_ast(src_file, fix_line)
-    function_range = range(function_ast["start line"], function_ast["end line"])
-    var_info_list = extractor.extract_var_list(function_ast)
+    func_line_range = extractor.extract_line_range(src_file, function_ast["range"])
+    var_info_list = extractor.extract_var_list(function_ast, src_file)
     for taint_info in taint_map:
         c_file, taint_line, taint_col, inst_add = taint_info.split(":")
         taint_value_list = taint_map[taint_info]['concrete-list']
 
         if src_file != c_file:
             continue
-        if int(taint_line) not in function_range:
+        if int(taint_line) not in func_line_range:
             continue
         if int(taint_line) > int(fix_line):
             continue

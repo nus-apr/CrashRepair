@@ -217,13 +217,13 @@ def generate_expr_for_str(expr_str)->ConstraintExpression:
 
 
 def generate_expr_for_ast(ast_node)->ConstraintExpression:
-    node_type = str(ast_node["type"])
+    node_type = str(ast_node["kind"])
     if node_type == "BinaryOperator":
-        op_symbol_str = str(ast_node["value"])
+        op_symbol_str = str(ast_node["opcode"])
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
-        left_ast = ast_node["children"][0]
-        right_ast = ast_node["children"][1]
+        left_ast = ast_node["inner"][0]
+        right_ast = ast_node["inner"][1]
         left_expr = generate_expr_for_ast(left_ast)
         right_expr = generate_expr_for_ast(right_ast)
         constraint_expr = make_binary_expression(constraint_symbol, left_expr, right_expr)
@@ -232,13 +232,13 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         op_symbol_str = str(ast_node["value"])
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
-        child_ast = ast_node["children"][0]
+        child_ast = ast_node["inner"][0]
         constraint_expr = make_unary_expression(constraint_symbol, child_ast)
         return constraint_expr
     elif node_type == "Macro":
         utilities.error_exit("Unhandled node type for Expression: {}".format(node_type))
-    elif node_type == "ParenExpr":
-        child_node = ast_node["children"][0]
+    elif node_type in ["ParenExpr", "ImplicitCastExpr"]:
+        child_node = ast_node["inner"][0]
         return generate_expr_for_ast(child_node)
     elif node_type == "IntegerLiteral":
         symbol_str = int(ast_node["value"])
@@ -247,7 +247,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["DeclRefExpr"]:
-        symbol_str = str(ast_node["value"])
+        symbol_str = str(ast_node["referencedDecl"]["name"])
         op_type = "INT_VAR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)

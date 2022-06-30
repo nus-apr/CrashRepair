@@ -367,7 +367,7 @@ def collect_specification(spec_file_path):
 def read_ast_tree(json_file):
     with io.open(json_file, 'r', encoding='utf8', errors="ignore") as f:
         ast_json = json.loads(f.read())
-    return ast_json['root']
+    return ast_json
 
 
 

@@ -9,13 +9,13 @@ from app import utilities
 
 def convert_cast_expr(ast_node, only_string=False):
     var_list = list()
-    type_node = ast_node['children'][0]
+    type_node = ast_node["inner"][0]
     type_value = type_node['value']
     data_type = None
-    if "data_type" in type_node:
-        data_type = str(type_node['data_type'])
-    param_node = ast_node['children'][1]
-    param_node_type = param_node['type']
+    if "type" in type_node:
+        data_type = str(type_node["type"]["qualType"])
+    param_node = ast_node["inner"][1]
+    param_node_type = param_node["kind"]
     var_name = "(" + type_value + ") " + get_node_value(param_node)
     if only_string:
         return var_name
@@ -26,9 +26,9 @@ def convert_paren_node_to_expr(ast_node, only_string=False):
     var_name = ""
     var_list = list()
     value = ""
-    child_node = ast_node['children'][0]
+    child_node = ast_node["inner"][0]
     # print(child_node)
-    child_node_type = child_node['type']
+    child_node_type = child_node["kind"]
     value = get_node_value(child_node)
     var_name = "(" + value + ")"
     # print(var_name)
@@ -41,10 +41,10 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
     var_name = ""
     var_list = list()
     # print(ast_node)
-    child_node = ast_node['children'][0]
+    child_node = ast_node["inner"][0]
     # print(left_child)
     child_value = ""
-    child_type = str(child_node['type'])
+    child_type = str(child_node["kind"])
     if child_type in ["DeclRefExpr", "IntegerLiteral"]:
         child_value = str(child_node['value'])
     elif child_type == "BinaryOperator":
@@ -66,10 +66,10 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
 
 def convert_conditional_op_to_expr(ast_node, only_string=False):
     var_name = ""
-    condition_exp = convert_binary_node_to_expr(ast_node['children'][0], True)
-    true_node = ast_node['children'][1]
+    condition_exp = convert_binary_node_to_expr(ast_node["inner"][0], True)
+    true_node = ast_node["inner"][1]
     true_node_value = get_node_value(true_node)
-    false_node = ast_node['children'][2]
+    false_node = ast_node["inner"][2]
     false_node_value = get_node_value(false_node)
     var_name = condition_exp + " ? " + true_node_value + " : " + false_node_value
     return var_name
@@ -77,7 +77,7 @@ def convert_conditional_op_to_expr(ast_node, only_string=False):
 
 def get_node_value(ast_node):
     ast_value = ""
-    ast_type = str(ast_node['type'])
+    ast_type = str(ast_node["kind"])
     if ast_type in ["DeclRefExpr", "IntegerLiteral", "StringLiteral"]:
         ast_value = str(ast_node['value'])
     elif ast_type in ["ParmVarDecl", "RecordDecl", "VarDecl"]:
@@ -111,7 +111,7 @@ def get_node_value(ast_node):
     elif ast_type == "ConditionalOperator":
         ast_value = convert_conditional_op_to_expr(ast_node, True)
     elif ast_type == "PredefinedExpr":
-        ast_value = get_node_value(ast_node['children'][0])
+        ast_value = get_node_value(ast_node["inner"][0])
     elif ast_type in ["CharacterLiteral", "CompoundLiteralExpr", "BinaryConditionalOperator"]:
         return None
     else:
@@ -125,12 +125,12 @@ def convert_binary_node_to_expr(ast_node, only_string=False):
     var_name = ""
     var_list = list()
     # print(ast_node)
-    left_child = ast_node['children'][0]
+    left_child = ast_node["inner"][0]
     # print(left_child)
     left_child_value = get_node_value(left_child)
     operation = str(ast_node['value'])
     # print(operation)
-    right_child = ast_node['children'][1]
+    right_child = ast_node["inner"][1]
     # print(right_child)
     right_child_value = get_node_value(right_child)
     var_name = left_child_value + " " + operation + " " + right_child_value
@@ -140,13 +140,13 @@ def convert_binary_node_to_expr(ast_node, only_string=False):
 
 
 def convert_array_iterator(iterator_node, only_string=False):
-    iterator_node_type = str(iterator_node['type'])
+    iterator_node_type = str(iterator_node["kind"])
     var_list = list()
     if iterator_node_type in ["VarDecl", "ParmVarDecl"]:
         iterator_name = str(iterator_node['identifier'])
         iterator_data_type = None
         if "data-type" in iterator_node:
-            iterator_data_type = str(iterator_node['data_type'])
+            iterator_data_type = str(iterator_node["type"]["qualType"])
         var_list.append((iterator_name, iterator_data_type))
         var_name = "[" + iterator_name + "]"
     elif iterator_node_type in ["Macro"]:
@@ -156,7 +156,7 @@ def convert_array_iterator(iterator_node, only_string=False):
         iterator_name = str(iterator_node['value'])
         iterator_data_type = None
         if "data-type" in iterator_node:
-            iterator_data_type = str(iterator_node['data_type'])
+            iterator_data_type = str(iterator_node["type"]["qualType"])
         var_list.append((iterator_name, iterator_data_type))
         var_name = "[" + iterator_name + "]"
     elif iterator_node_type in ["IntegerLiteral"]:
@@ -196,48 +196,52 @@ def convert_array_subscript(ast_node, only_string=False):
     var_name = ""
     var_data_type = ""
     # print(ast_node)
-    array_node = ast_node['children'][0]
-    array_type = str(array_node['type'])
+    array_node = ast_node["inner"][0]
+    array_type = str(array_node["kind"])
+    if array_type == "ImplicitCastExpr":
+        array_node = array_node["inner"][0]
+        array_type = str(array_node["kind"])
+
     if array_type == "DeclRefExpr":
-        array_name = str(array_node['value'])
+        array_name = str(array_node['referencedDecl']['name'])
         array_data_type = None
-        if 'data_type' in array_node.keys():
-            array_data_type = str(array_node['data_type'])
+        if "type" in array_node.keys():
+            array_data_type = str(array_node["type"]["qualType"])
         if array_data_type is None:
             var_data_type = "unknown"
         else:
             var_data_type = array_data_type.split("[")[0]
-        iterator_node = ast_node['children'][1]
-        iterator_node_type = str(iterator_node['type'])
+        iterator_node = ast_node["inner"][1]
+        iterator_node_type = str(iterator_node["kind"])
         iterator_name = convert_array_iterator(iterator_node, True)
         var_name = array_name + iterator_name
     elif array_type == "MemberExpr":
         array_name = str(array_node['value'])
         array_data_type = None
-        if 'data_type' in array_node.keys():
-            array_data_type = str(array_node['data_type'])
-        if len(ast_node['children']) > 1:
-            iterator_node = ast_node['children'][1]
+        if "type" in array_node.keys():
+            array_data_type = str(array_node["type"]["qualType"])
+        if len(ast_node["inner"]) > 1:
+            iterator_node = ast_node["inner"][1]
             array_name = convert_member_expr(array_node, True)
             iterator_name = convert_array_iterator(iterator_node, True)
             var_name = array_name + iterator_name
     elif array_type == "ParenExpr":
         array_name = convert_paren_node_to_expr(array_node, True)
         var_data_type = None
-        if 'data_type' in array_node.keys():
-            var_data_type = str(array_node['data_type'])
-        iterator_node = ast_node['children'][1]
+        if "type" in array_node.keys():
+            var_data_type = str(array_node["type"]["qualType"])
+        iterator_node = ast_node["inner"][1]
         iterator_name = convert_array_iterator(iterator_node, True)
         var_name = array_name + iterator_name
     elif array_type == "Macro":
         var_data_type = None
-        iterator_node = ast_node['children'][1]
+        iterator_node = ast_node["inner"][1]
         array_name = str(array_node['value'])
         iterator_name = convert_array_iterator(iterator_node, True)
         var_name = array_name + iterator_name
     elif array_type == "ArraySubscriptExpr":
         array_name = convert_array_subscript(array_node, True)
-        iterator_node = ast_node['children'][1]
+        iterator_node = ast_node["inner"][1]
         iterator_name = convert_array_iterator(iterator_node, True)
         var_name = array_name + iterator_name
     else:
@@ -255,14 +259,14 @@ def convert_call_expr(ast_node, only_string=False):
     function_name = ""
     operand_list = list()
     var_list = list()
-    call_function_node = ast_node['children'][0]
-    call_function_node_type = str(call_function_node['type'])
+    call_function_node = ast_node["inner"][0]
+    call_function_node_type = str(call_function_node["kind"])
     call_function_node_ref_type = str(call_function_node['ref_type'])
-    operand_count = len(ast_node['children'])
+    operand_count = len(ast_node["inner"])
     if call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "FunctionDecl":
         function_name = str(call_function_node['value'])
     elif call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "VarDecl":
-        function_name = str(call_function_node['data_type'])
+        function_name = str(call_function_node["type"]["qualType"])
         operand = str(call_function_node['value'])
         operand_list.append(operand)
         operand_count = 0
@@ -271,8 +275,8 @@ def convert_call_expr(ast_node, only_string=False):
         utilities.error_exit("unknown decl type in convert_call_expr")
 
     for i in range(1, operand_count):
-        operand_node = ast_node['children'][i]
-        operand_node_type = str(operand_node['type'])
+        operand_node = ast_node["inner"][i]
+        operand_node_type = str(operand_node["kind"])
         if operand_node_type == "CallExpr":
             operand_var_name = convert_call_expr(operand_node, True)
             operand_list.append(operand_var_name)
@@ -318,14 +322,14 @@ def convert_member_expr(ast_node, only_string=False):
         node_value = ast_node['value']
         var_name = str(node_value.split(":")[-1])
         # print(var_name)
-        var_data_type = str(ast_node['data_type'])
+        var_data_type = str(ast_node["type"]["qualType"])
         if "isArrow" not in ast_node.keys():
             var_name = "." + var_name
         else:
             var_name = "->" + var_name
-    child_node = ast_node['children'][0]
+    child_node = ast_node["inner"][0]
     while child_node:
-        child_node_type = child_node['type']
+        child_node_type = child_node["kind"]
         if child_node_type == "DeclRefExpr":
             var_name = str(child_node['value']) + var_name
         elif child_node_type == "ArraySubscriptExpr":
@@ -335,11 +339,11 @@ def convert_member_expr(ast_node, only_string=False):
             # if var_name[:2] == "->":
             #     var_name = "." + var_name[2:]
             # var_name = array_var_name + var_name
-            iterating_var_node = child_node['children'][1]
+            iterating_var_node = child_node["inner"][1]
 
             # iterating_var_name = iterating_var_node['value']
-            # iterating_var_type = iterating_var_node['type']
-            # iterating_var_data_type = iterating_var_node['data_type']
+            # iterating_var_type = iterating_var_node["kind"]
+            # iterating_var_data_type = iterating_var_node["type"]["qualType"]
             iterating_var_name = convert_array_iterator(iterating_var_node, True)
 
             # if var_data_type == "":
@@ -357,8 +361,8 @@ def convert_member_expr(ast_node, only_string=False):
             #             var_name = "." + var_name[2:]
             #         var_name = "[" + iterating_var_name + "]" + var_name
         elif child_node_type == "ParenExpr":
-            param_node = child_node['children'][0]
-            param_node_type = param_node['type']
+            param_node = child_node["inner"][0]
+            param_node_type = param_node["kind"]
             param_node_var_name = ""
             param_node_aux_list = list()
             if param_node_type == "MemberExpr":
@@ -375,7 +379,7 @@ def convert_member_expr(ast_node, only_string=False):
             break
         elif child_node_type == "MemberExpr":
             child_node_value = child_node['value']
-            # var_data_type = str(child_node['data_type'])
+            # var_data_type = str(child_node["type"]["qualType"])
             if "isArrow" not in child_node.keys():
                 var_name = "." + str(child_node_value.split(":")[-1]) + var_name
             else:
@@ -390,8 +394,8 @@ def convert_member_expr(ast_node, only_string=False):
         else:
             print(ast_node)
             utilities.error_exit("unhandled exception at membership expr -> str")
-        if len(child_node['children']) > 0:
-            child_node = child_node['children'][0]
+        if len(child_node["inner"]) > 0:
+            child_node = child_node["inner"][0]
         else:
             child_node = None
     if only_string:
@@ -402,17 +406,17 @@ def convert_member_expr(ast_node, only_string=False):
 
 def convert_node_to_str(ast_node, only_string=False):
     node_str = ""
-    node_type = str(ast_node['type'])
+    node_type = str(ast_node["kind"])
     if node_type in ["DeclStmt", "DeclRefExpr", "VarDecl"]:
         node_str = str(ast_node['value'])
-    if str(ast_node['type']) == "BinaryOperator":
+    if str(ast_node["kind"]) == "BinaryOperator":
         operator = str(ast_node['value'])
-        right_operand = convert_node_to_str(ast_node['children'][1], only_string)
-        left_operand = convert_node_to_str(ast_node['children'][0])
+        right_operand = convert_node_to_str(ast_node["inner"][1], only_string)
+        left_operand = convert_node_to_str(ast_node["inner"][0])
         node_str = left_operand + " " + operator + " " + right_operand
-    elif str(ast_node['type']) == "UnaryOperator":
+    elif str(ast_node["kind"]) == "UnaryOperator":
         operator = str(ast_node['value'])
-        child_operand = convert_node_to_str(ast_node['children'][0])
+        child_operand = convert_node_to_str(ast_node["inner"][0])
         node_str = operator + child_operand
     return node_str
 
@@ -429,7 +433,7 @@ def convert_macro_list_to_dict(string_list):
 
 def convert_dict_to_array(ast_tree):
     node_array = dict()
-    for ast_node in ast_tree['children']:
+    for ast_node in ast_tree["inner"]:
         child_id = int(ast_node['id'])
         node_array[child_id] = ast_node
         child_list = convert_dict_to_array(ast_node)

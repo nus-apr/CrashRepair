@@ -1292,3 +1292,16 @@ def generate_z3_code_for_offset(sym_expr_a, sym_expr_b):
     code += "(check-sat)"
     return code
 
+def generate_offset_to_line(src_file_path):
+    offset_to_line = dict()
+    line = 1
+    with open(src_file_path, "r") as src_file:
+        contents = src_file.read()
+        for offset, char in enumerate(contents):
+            # note that we map each line to the newline character that begins the line
+            # this allows us to simply add a one-indexed column number to find an offset
+            # FIXME does this need to be more robust?
+            if char == "\n":
+                line += 1
+            offset_to_line[offset] = line
+    return offset_to_line

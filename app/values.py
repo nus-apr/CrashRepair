@@ -207,6 +207,7 @@ CONF_PRESERVE_BC = False
 CONF_GENERALIZED_SEED_INPUT = ""
 CONF_GENERALIZED_TEST_INPUT = ""
 
+AST_OFFSET_MAP = dict()
 
 def get_dir_klee_last():
     return KLEE_LAST_DIR

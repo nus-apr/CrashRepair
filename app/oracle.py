@@ -2,6 +2,7 @@ from app import definitions, values, emitter, extractor, utilities
 from pysmt.shortcuts import is_sat, Not, And, is_unsat
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
+import numpy as np
 
 
 tautology_included = False
@@ -242,3 +243,36 @@ def is_satisfiable(z3_code):
     except Exception as ex:
         emitter.warning("\t\t[warning] Exception occurred in Z3 Solver for is_sat")
     return result
+
+
+def ndim_grid(start,stop):
+    # Set number of dimensions
+    ndims = len(start)
+
+    # List of ranges across all dimensions
+    L = [np.arange(start[i],stop[i]) for i in range(ndims)]
+
+    # Finally use meshgrid to form all combinations corresponding to all
+    # dimensions and stack them as M x ndims array
+    return np.hstack((np.meshgrid(*L))).swapaxes(0,1).reshape(ndims,-1).T
+
+
+def is_loc_in_range(check_loc, ast_range):
+    file_path, c_line, c_col = check_loc
+    end_loc = extractor.extract_loc(file_path, ast_range["end"])
+    line_range = extractor.extract_line_range(file_path, ast_range)
+    if c_line in line_range:
+        if c_line == line_range.stop - 1:
+            if c_col <= end_loc[2]:
+                return True
+        else:
+            return True
+    return False
+
+
+def is_loc_match(check_loc, ast_range):
+    file_path, c_line, c_col = check_loc
+    begin_loc = extractor.extract_loc(file_path, ast_range["begin"])
+    if begin_loc[1] == c_line and begin_loc[2] == c_col:
+        return True
+    return False
