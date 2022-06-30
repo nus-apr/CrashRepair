@@ -318,8 +318,8 @@ def convert_member_expr(ast_node, only_string=False):
     var_name = ""
     var_data_type = ""
     # print(ast_node)
-    if 'value' in ast_node.keys():
-        node_value = ast_node['value']
+    if 'name' in ast_node.keys():
+        node_value = ast_node['name']
         var_name = str(node_value.split(":")[-1])
         # print(var_name)
         var_data_type = str(ast_node["type"]["qualType"])
@@ -330,8 +330,11 @@ def convert_member_expr(ast_node, only_string=False):
     child_node = ast_node["inner"][0]
     while child_node:
         child_node_type = child_node["kind"]
+        if child_node_type == "ImplicitCastExpr":
+            child_node = child_node["inner"][0]
+            child_node_type = child_node["kind"]
         if child_node_type == "DeclRefExpr":
-            var_name = str(child_node['value']) + var_name
+            var_name = str(child_node['referencedDecl']['name']) + var_name
         elif child_node_type == "ArraySubscriptExpr":
             # array_var_name, array_var_data_type, \
             # iterating_var_list = convert_array_subscript(child_node)
@@ -393,8 +396,9 @@ def convert_member_expr(ast_node, only_string=False):
             break
         else:
             print(ast_node)
+            print(child_node)
             utilities.error_exit("unhandled exception at membership expr -> str")
-        if len(child_node["inner"]) > 0:
+        if "inner" in child_node and len(child_node["inner"]) > 0:
             child_node = child_node["inner"][0]
         else:
             child_node = None

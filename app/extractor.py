@@ -224,6 +224,8 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
 def extract_var_dec_list(ast_node, file_path):
     var_list = list()
     child_count = 0
+    if not ast_node:
+        return var_list
     if "inner" in ast_node:
         child_count = len(ast_node['inner'])
     node_type = ast_node["kind"]
@@ -255,6 +257,8 @@ def extract_var_dec_list(ast_node, file_path):
 def extract_var_ref_list(ast_node, file_path):
     var_list = list()
     child_count = 0
+    if not ast_node:
+        return var_list
     if "inner" in ast_node:
         child_count = len(ast_node['inner'])
     node_type = ast_node["kind"]
@@ -306,7 +310,7 @@ def extract_var_ref_list(ast_node, file_path):
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, column_number = begin_loc
-        var_list.append((str(var_name), line_number, var_type))
+        var_list.append((str(var_name), line_number, column_number, var_type))
         for aux_var_name, aux_var_type in auxilary_list:
             var_list.append((str(aux_var_name), line_number, column_number, aux_var_type))
         return var_list
@@ -362,7 +366,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
     src_file, line_num, column_num = crash_loc_str.split(":")
     crash_loc = (src_file, int(line_num), int(column_num))
     if crash_type == definitions.CRASH_TYPE_DIV_ZERO :
-        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["/"])
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["/", "%"])
         div_op_ast = None
         for op_ast in binaryop_list:
             if oracle.is_loc_in_range(crash_loc, op_ast["range"]):
@@ -649,6 +653,8 @@ def extract_typeloc_node_list(ast_node):
 
 def extract_binaryop_node_list(ast_node, file_path, filter_list=None):
     binaryop_node_list = list()
+    if not ast_node:
+        return binaryop_node_list
     node_type = str(ast_node["kind"])
     if node_type in ["BinaryOperator"]:
         identifier = str(ast_node['opcode'])

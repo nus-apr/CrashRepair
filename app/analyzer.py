@@ -162,7 +162,4 @@ def analyze():
                 "concrete-list": concrete_value_list,
                 "symbolic-list": symbolic_value_list
             }
-
-        for taint_loc in taint_loc_list:
-            emitter.highlight("\t[taint-loc] {}".format(taint_loc))
         return input_byte_list, taint_map, cfc_info

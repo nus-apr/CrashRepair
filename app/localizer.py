@@ -41,6 +41,8 @@ def generate_fix_locations(marked_byte_list, taint_map):
     for source_path in source_mapping:
         tainted_loc_list = source_mapping[source_path]
         source_dir = values.CONF_DIR_EXPERIMENT + "/src/"
+        if source_dir not in source_path:
+            continue
         ast_tree = extractor.extract_ast_json(source_path)
         function_node_list = extractor.extract_function_node_list(ast_tree)
         for func_name, func_node in function_node_list.items():
@@ -237,6 +239,8 @@ def localize_state_info(fix_loc, taint_map):
 def fix_localization(input_byte_list, taint_map, cfc_info):
     emitter.title("Fix Localization")
     tainted_fix_locations = generate_fix_locations(input_byte_list, taint_map)
+    for taint_loc in tainted_fix_locations:
+        emitter.highlight("\t[taint-loc] {}".format(taint_loc))
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     localization_list = list()
     for func_name, tainted_fix_loc in tainted_fix_locations:

@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-from app import emitter, utilities
+from app import emitter, utilities, converter
 
 SymbolType = {
                  "INT_CONST": "",
@@ -248,6 +248,12 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         return constraint_expr
     elif node_type in ["DeclRefExpr"]:
         symbol_str = str(ast_node["referencedDecl"]["name"])
+        op_type = "INT_VAR"
+        constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+        return constraint_expr
+    elif node_type in ["MemberExpr"]:
+        symbol_str = converter.convert_member_expr(ast_node, True)
         op_type = "INT_VAR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
