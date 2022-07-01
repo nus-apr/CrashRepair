@@ -15,8 +15,6 @@ from loguru import logger
 from .localization import FixLocalization
 from .mutation import Mutation
 
-DESCRIPTION = "automatically repair security vulnerabilities in C/C++"
-
 # TODO allow these to be set via command-line
 PATH_CC = "/opt/llvm11/bin/clang"
 PATH_LLC = "/opt/llvm11/bin/llc"

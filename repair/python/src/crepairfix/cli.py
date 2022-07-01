@@ -8,6 +8,8 @@ import typing as t
 
 from loguru import logger
 
+DESCRIPTION = "automatically repair security vulnerabilities in C/C++"
+
 
 def do_validate(args: argparse.Namespace) -> None:
     scenario = BugScenario.for_directory_or_bug_file(args.directory_or_filename)
