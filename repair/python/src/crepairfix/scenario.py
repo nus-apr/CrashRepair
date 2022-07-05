@@ -345,12 +345,16 @@ class BugScenario:
             },
         )
 
+        logger.info("cleaning project")
+        check_call(self.clean_command)
+        logger.info("finished cleaning project")
+
         logger.info("prebuilding project")
-        check_call("./prebuild")
+        check_call(self.prebuild_command)
         logger.info("finished prebuilding project")
 
         logger.info("building project")
-        check_call("./build")
+        check_call(self.build_command)
         logger.info("finished building project")
 
     def generate_bitcode(self, disassemble: bool = True) -> str:
@@ -412,7 +416,6 @@ class BugScenario:
             bitcode_path,
             "-localization-filename",
             localization_filename,
-            "-validate-localization={}".format('true' if self.should_validate_localization else 'false'),
             "-mutated-filename",
             mutated_bitcode_path,
             "-o={}".format(mutated_bitcode_path),
