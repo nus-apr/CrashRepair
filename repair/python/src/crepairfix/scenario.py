@@ -39,16 +39,17 @@ class BugScenario:
     ----------
     directory: str
         The path of the bug scenario directory
-    bug_id: str
-        The unique identifier for the bug (e.g., cve_2016_10092)
     binary_path: str
         The path of the binary under repair for this scenario, relative to
         the source directory for this scenario.
     linker_options: str
         Additional options that should be passed to the linker when building
         the instrumented binary.
-    source_path: str
-        The absolute path of the source code directory for the program under repair.
+    relative_build_directory: str
+        The path of the build directory (i.e., where build-related commands should be executed),
+        relative to the bug directory.
+    relative_source_directory: str
+        The path of the source directory, relative to the bug directory.
     prebuild_command: str
         The command that should be used to configure the project.
     build_command: str
@@ -72,11 +73,11 @@ class BugScenario:
         The cached fix localization for this bug scenario.
     """
     directory = attr.ib(type=str)
-    bug_id = attr.ib(type=str)
     binary_path = attr.ib(type=str)
-    source_path = attr.ib(type=str)
     linker_options = attr.ib(type=str)
     crash_command = attr.ib(type=str)
+    relative_build_directory = attr.ib(type=str)
+    relative_source_directory = attr.ib(type=str)
     prebuild_command = attr.ib(type=str)
     build_command = attr.ib(type=str)
     clean_command = attr.ib(type=str)
@@ -99,31 +100,30 @@ class BugScenario:
             bug_dict = json.load(f)
 
         try:
-            bug_id = bug_dict["name"]
             binary_path = bug_dict["binary"]
             crash_command = bug_dict.get("test", {}).get("command", "./test")
             options_dict = bug_dict.get("options", {})
             linker_options = options_dict.get("hifix", {}).get("linker-options", "")
             build_dict = bug_dict["build"]
-            source_path = bug_dict.get("source", {}).get("directory", "source")
+            relative_source_directory = bug_dict.get("source", {}).get("directory", "source")
+            relative_build_directory = relative_source_directory
         except KeyError as exc:
             msg = "missing field in bug.json: {}".format(exc)
             raise ValueError(msg)
 
         build_commands = build_dict.get("commands", {})
         build_command = build_commands.get("build", "./build")
-        prebuild_command = build_commands.get("build", "./prebuild")
+        prebuild_command = build_commands.get("prebuild", "./prebuild")
         clean_command = build_commands.get("clean", "./clean")
 
         # ensure that directory is an absolute path
         directory = os.path.dirname(bug_filename)
         directory = os.path.abspath(directory)
-        source_path = os.path.join(directory, source_path)
 
         scenario = BugScenario(
             directory=directory,
-            bug_id=bug_id,
-            source_path=source_path,
+            relative_build_directory=relative_build_directory,
+            relative_source_directory=relative_source_directory,
             binary_path=binary_path,
             linker_options=linker_options,
             build_command=build_command,
@@ -237,8 +237,9 @@ class BugScenario:
         )
         logger.info("- found implicated source files: {}".format(", ".join(implicated_files)))
 
+        absolute_source_directory = os.path.join(self.directory, self.relative_source_directory)
         for filename in implicated_files:
-            self.obtain_ast_dump(os.path.join(self.source_path, filename))
+            self.obtain_ast_dump(os.path.join(absolute_source_directory, filename))
 
         logger.info("obtained all implicated ASTs")
 
@@ -248,7 +249,8 @@ class BugScenario:
             raise ValueError("source file must be given as an absolute path to obtain an AST dump")
 
         # determine where to store the AST dump
-        rel_filename = os.path.relpath(abs_filename, self.source_path)
+        absolute_source_directory = os.path.join(self.directory, self.relative_source_directory)
+        rel_filename = os.path.relpath(abs_filename, absolute_source_directory)
         ast_dump_filename = os.path.join(self.ast_dumps_path, rel_filename)
         ast_dump_filename += ".ast.json"
 
@@ -309,7 +311,7 @@ class BugScenario:
             additional_args["stdout"] = subprocess.PIPE
             additional_args["universal_newlines"] = "\n"
 
-        logger.debug("executing: %s", command)
+        logger.debug(f"executing: {command}")
         result = subprocess.run(
             command,
             shell=True,
@@ -368,15 +370,11 @@ class BugScenario:
         command = command.format(
             bitcode_path,
             PATH_LLVM_LINK,
-            os.path.join("source", self.binary_path),
+            os.path.join(self.relative_source_directory, self.binary_path),
         )
-        logger.info(
-            "generating bitcode file: %s [command: %s]",
-            bitcode_path,
-            command,
-        )
+        logger.info(f"generating bitcode file: {bitcode_path} [command: {command}]")
         self.shell(command)
-        logger.info("generated bitcode file: {}".format(bitcode_path))
+        logger.info(f"generated bitcode file: {bitcode_path}")
 
         # optionally, disassemble the bitcode
         if disassemble:
@@ -482,19 +480,15 @@ class BugScenario:
         # find the corresponding fix location and AST
         fix_location = self.fix_localization[mutation.instruction_id]
         ast = self._source_filename_to_ast[fix_location.filename]
-        fixed_file_rel_to_bug_directory = os.path.relpath(
-            self.directory,
-            os.path.join(fix_location.filename, self.source_path),
-        )
 
-        # FIXME generate patch via temp file
         with tempfile.TemporaryDirectory() as variant_directory:
             os.rmdir(variant_directory)
             shutil.copytree(self.directory, variant_directory)
             patch_filename = os.path.join(variant_directory, "patch.diff")
             buggy_filename = os.path.join(
                 variant_directory,
-                fixed_file_rel_to_bug_directory,
+                self.relative_source_directory,
+                fix_location.filename,
             )
             mutation.diff(ast, fix_location, patch_filename)
 
