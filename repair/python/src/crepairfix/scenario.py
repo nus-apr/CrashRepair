@@ -450,9 +450,9 @@ class BugScenario:
         command = " ".join((
             PATH_OPT,
             "-load",
-            PATH_LLVMTOSOURCE,
+            PATH_LLVMSUPERMUTATE,
             "-load",
-            PATH_CRASHREPAIRFIX,
+            PATH_LLVMTOSOURCE,
             "-llvmtosource",
             "-mapping-filename",
             self.ir_source_mapping_path,
