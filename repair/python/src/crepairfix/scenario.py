@@ -39,8 +39,6 @@ class BugScenario:
     ----------
     directory: str
         The path of the bug scenario directory
-    subject: str
-        The name of the subject being repaired (e.g., libtiff)
     bug_id: str
         The unique identifier for the bug (e.g., cve_2016_10092)
     binary_path: str
@@ -49,6 +47,8 @@ class BugScenario:
     linker_options: str
         Additional options that should be passed to the linker when building
         the instrumented binary.
+    source_path: str
+        The absolute path of the source code directory for the program under repair.
     prebuild_command: str
         The command that should be used to configure the project.
     build_command: str
@@ -72,9 +72,9 @@ class BugScenario:
         The cached fix localization for this bug scenario.
     """
     directory = attr.ib(type=str)
-    subject = attr.ib(type=str)
     bug_id = attr.ib(type=str)
     binary_path = attr.ib(type=str)
+    source_path = attr.ib(type=str)
     linker_options = attr.ib(type=str)
     crash_command = attr.ib(type=str)
     prebuild_command = attr.ib(type=str)
@@ -90,6 +90,8 @@ class BugScenario:
 
     @classmethod
     def for_bug_file(cls, bug_filename: str) -> BugScenario:
+        bug_directory = os.path.dirname(bug_filename)
+
         if not os.path.exists(bug_filename):
             raise ValueError(f"bug.json not found: {bug_filename}")
 
@@ -97,13 +99,13 @@ class BugScenario:
             bug_dict = json.load(f)
 
         try:
-            subject = bug_dict["subject"]
             bug_id = bug_dict["name"]
             binary_path = bug_dict["binary"]
-            crash_command = bug_dict.get("crash_command", "./test")
+            crash_command = bug_dict.get("test", {}).get("command", "./test")
             options_dict = bug_dict.get("options", {})
             linker_options = options_dict.get("hifix", {}).get("linker-options", "")
             build_dict = bug_dict["build"]
+            source_path = bug_dict.get("source", {}).get("directory", "source")
         except KeyError as exc:
             msg = "missing field in bug.json: {}".format(exc)
             raise ValueError(msg)
@@ -116,11 +118,12 @@ class BugScenario:
         # ensure that directory is an absolute path
         directory = os.path.dirname(bug_filename)
         directory = os.path.abspath(directory)
+        source_path = os.path.join(directory, source_path)
 
         scenario = BugScenario(
             directory=directory,
-            subject=subject,
             bug_id=bug_id,
+            source_path=source_path,
             binary_path=binary_path,
             linker_options=linker_options,
             build_command=build_command,
@@ -201,11 +204,6 @@ class BugScenario:
     def failed_patches_path(self) -> str:
         """The absolute path of the directory containing patches that failed when lifted to source."""
         return os.path.join(self.directory, ".failed-patches")
-
-    @property
-    def source_path(self) -> str:
-        """The absolute path of the source code directory for the program under repair."""
-        return os.path.join(self.directory, "source")
 
     @property
     def fix_localization(self) -> FixLocalization:
@@ -484,6 +482,10 @@ class BugScenario:
         # find the corresponding fix location and AST
         fix_location = self.fix_localization[mutation.instruction_id]
         ast = self._source_filename_to_ast[fix_location.filename]
+        fixed_file_rel_to_bug_directory = os.path.relpath(
+            self.directory,
+            os.path.join(fix_location.filename, self.source_path),
+        )
 
         # FIXME generate patch via temp file
         with tempfile.TemporaryDirectory() as variant_directory:
@@ -492,8 +494,7 @@ class BugScenario:
             patch_filename = os.path.join(variant_directory, "patch.diff")
             buggy_filename = os.path.join(
                 variant_directory,
-                "source",
-                fix_location.filename,
+                fixed_file_rel_to_bug_directory,
             )
             mutation.diff(ast, fix_location, patch_filename)
 
