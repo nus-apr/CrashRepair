@@ -48,6 +48,12 @@ class BugScenario:
     linker_options: str
         Additional options that should be passed to the linker when building
         the instrumented binary.
+    prebuild_command: str
+        The command that should be used to configure the project.
+    build_command: str
+        The command that should be used to build the binary.
+    clean_command: str
+        The command that should be used to clean the workspace.
     should_validate_localization: bool
         Flag used to control whether the produced fix localization should be
         validated to ensure that it satisfies the requirements of repair.
@@ -69,6 +75,9 @@ class BugScenario:
     bug_id = attr.ib(type=str)
     binary_path = attr.ib(type=str)
     linker_options = attr.ib(type=str)
+    prebuild_command = attr.ib(type=str)
+    build_command = attr.ib(type=str)
+    clean_command = attr.ib(type=str)
     should_compute_dependencies = attr.ib(type=bool, default=True)
     should_compute_repair = attr.ib(type=bool, default=True)
     should_validate_localization = attr.ib(type=bool, default=True)
@@ -92,9 +101,15 @@ class BugScenario:
             binary_path = bug_dict["binary"]
             options_dict = bug_dict.get("options", {})
             linker_options = options_dict.get("hifix", {}).get("linker-options", "")
+            build_dict = bug_dict["build"]
         except KeyError as exc:
             msg = "missing field in bug.json: {}".format(exc)
             raise ValueError(msg)
+
+        build_commands = build_dict.get("commands", {})
+        build_command = build_commands.get("build", "./build")
+        prebuild_command = build_commands.get("build", "./prebuild")
+        clean_command = build_commands.get("clean", "./clean")
 
         # ensure that directory is an absolute path
         directory = os.path.dirname(bug_filename)
@@ -106,6 +121,9 @@ class BugScenario:
             bug_id=bug_id,
             binary_path=binary_path,
             linker_options=linker_options,
+            build_command=build_command,
+            prebuild_command=prebuild_command,
+            clean_command=clean_command,
         )
         logger.info("loaded bug scenario: {}".format(scenario))
         return scenario
@@ -390,7 +408,7 @@ class BugScenario:
             PATH_LLVMTOSOURCE,
             "-load",
             PATH_CRASHREPAIRFIX,
-            "-llvmrepair",
+            "-crashfix",
             bitcode_path,
             "-localization-filename",
             localization_filename,
