@@ -41,7 +41,7 @@ class BugScenario:
         The path of the bug scenario directory
     binary_path: str
         The path of the binary under repair for this scenario, relative to
-        the source directory for this scenario.
+        the build directory for this scenario.
     linker_options: str
         Additional options that should be passed to the linker when building
         the instrumented binary.
@@ -100,11 +100,11 @@ class BugScenario:
             bug_dict = json.load(f)
 
         try:
-            binary_path = bug_dict["binary"]
             crash_command = bug_dict.get("test", {}).get("command", "./test")
             options_dict = bug_dict.get("options", {})
             linker_options = options_dict.get("hifix", {}).get("linker-options", "")
             build_dict = bug_dict["build"]
+            binary_path = build_dict["binary"]
             relative_source_directory = bug_dict.get("source", {}).get("directory", "source")
             relative_build_directory = relative_source_directory
         except KeyError as exc:
@@ -370,7 +370,7 @@ class BugScenario:
         command = command.format(
             bitcode_path,
             PATH_LLVM_LINK,
-            os.path.join(self.relative_source_directory, self.binary_path),
+            os.path.join(self.relative_build_directory, self.binary_path),
         )
         logger.info(f"generating bitcode file: {bitcode_path} [command: {command}]")
         self.shell(command)
