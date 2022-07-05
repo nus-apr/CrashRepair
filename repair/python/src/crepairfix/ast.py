@@ -9,7 +9,7 @@ import attr
 from loguru import logger
 
 
-@attr.s(slots=True, frozen=True)
+@attr.s(slots=True, frozen=True, auto_attribs=True)
 class ClangAST:
     """Provides access to the Clang AST for a source file.
 
@@ -26,10 +26,10 @@ class ClangAST:
         of their corresponding newlines, where the first line is mapped to
         -1.
     """
-    source_filename = attr.ib(type=str)
-    source = attr.ib(type=str)
-    _ast = attr.ib(type=dict)
-    _line_to_offset = attr.ib(type=dict)
+    source_filename: str
+    source: str
+    _ast: t.Dict[str, t.Any]
+    _line_to_offset: t.Mapping[int, int]
 
     @classmethod
     def load(
@@ -195,7 +195,7 @@ class ClangAST:
     def ancestors(
         self,
         node: t.Dict[str, t.Any],
-    ) -> t.Sequence[t.Dict[str, t.Any]]:
+    ) -> t.List[t.Dict[str, t.Any]]:
         node_id = node["id"]
         starts_at = node["range"]["begin"]["offset"]
         function_decl = self.find_enclosing_function_decl(starts_at)
@@ -206,7 +206,7 @@ class ClangAST:
         root: t.Dict[str, t.Any],
         node_id: str,
         node_starts_at: int,
-    ) -> t.Sequence[t.Dict[str, t.Any]]:
+    ) -> t.List[t.Dict[str, t.Any]]:
         if root["id"] == node_id:
             return []
 

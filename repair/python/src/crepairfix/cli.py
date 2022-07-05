@@ -8,6 +8,8 @@ import typing as t
 
 from loguru import logger
 
+from .scenario import BugScenario
+
 DESCRIPTION = "automatically repair security vulnerabilities in C/C++"
 
 

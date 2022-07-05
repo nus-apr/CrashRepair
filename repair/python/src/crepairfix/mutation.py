@@ -10,6 +10,9 @@ import typing as t
 import attr
 from loguru import logger
 
+from .ast import ClangAST
+from .localization import FixLocation
+
 
 @attr.s(frozen=True)
 class Mutation(abc.ABC):
@@ -20,11 +23,12 @@ class Mutation(abc.ABC):
     @classmethod
     def from_dict(cls, d: t.Dict[str, t.Any]) -> "Mutation":
         operator = d["operator"]
-        return ({
+        name_to_class: t.Mapping[str, t.Type[Mutation]] = {
             "GuardStatement": GuardStatementMutation,
             "InsertConditionalReturn": InsertConditionalReturnMutation,
             "StrengthenBranchCondition": StrengthenBranchConditionMutation,
-        })[operator]._from_dict(d)
+        }
+        return name_to_class[operator]._from_dict(d)
 
     @classmethod
     @abc.abstractmethod
@@ -47,7 +51,6 @@ class Mutation(abc.ABC):
         env_var_val = str(self.mutant_id)
         return {env_var_name: env_var_val}
 
-    @classmethod
     @abc.abstractmethod
     def _apply(
         self,
@@ -125,7 +128,7 @@ class GuardStatementMutation(Mutation):
     def _apply(
         self,
         ast: ClangAST,
-        location: FixLocation
+        location: FixLocation,
     ) -> str:
         logger.debug("performing guard statement mutation at fix location: {}".format(location))
 

@@ -12,6 +12,7 @@ import typing as t
 import attr
 from loguru import logger
 
+from .ast import ClangAST
 from .localization import FixLocalization
 from .mutation import Mutation
 
@@ -75,6 +76,7 @@ class BugScenario:
     bug_id = attr.ib(type=str)
     binary_path = attr.ib(type=str)
     linker_options = attr.ib(type=str)
+    crash_command = attr.ib(type=str)
     prebuild_command = attr.ib(type=str)
     build_command = attr.ib(type=str)
     clean_command = attr.ib(type=str)
@@ -89,8 +91,7 @@ class BugScenario:
     @classmethod
     def for_bug_file(cls, bug_filename: str) -> BugScenario:
         if not os.path.exists(bug_filename):
-            msg = "bug.json not found in directory [{}]".format(directory)
-            raise ValueError(msg)
+            raise ValueError(f"bug.json not found: {bug_filename}")
 
         with open(bug_filename, "r") as f:
             bug_dict = json.load(f)
@@ -99,6 +100,7 @@ class BugScenario:
             subject = bug_dict["subject"]
             bug_id = bug_dict["name"]
             binary_path = bug_dict["binary"]
+            crash_command = bug_dict.get("crash_command", "./test")
             options_dict = bug_dict.get("options", {})
             linker_options = options_dict.get("hifix", {}).get("linker-options", "")
             build_dict = bug_dict["build"]
@@ -124,6 +126,7 @@ class BugScenario:
             build_command=build_command,
             prebuild_command=prebuild_command,
             clean_command=clean_command,
+            crash_command=crash_command,
         )
         logger.info("loaded bug scenario: {}".format(scenario))
         return scenario
@@ -308,7 +311,7 @@ class BugScenario:
         if not cwd:
             cwd = self.directory
 
-        additional_args = {}
+        additional_args: t.Dict[str, t.Any] = {}
         if capture_output:
             additional_args["stdout"] = subprocess.PIPE
             additional_args["universal_newlines"] = "\n"
@@ -459,7 +462,7 @@ class BugScenario:
             PATH_LLVMTOSOURCE,
             "-load",
             PATH_CRASHREPAIRFIX,
-            "-llvm2source",
+            "-llvmtosource",
             "-mapping-filename",
             self.ir_source_mapping_path,
             self.bitcode_path,
@@ -534,9 +537,9 @@ class BugScenario:
 
             # test
             try:
-               self.shell("./test", cwd=variant_directory)
+               self.shell(self.crash_command, cwd=variant_directory)
             except subprocess.CalledProcessError:
-                logger.info("failed to lift mutation to source: test command failed")
+                logger.info("failed to lift mutation to source: test command failed [{self.crash_command}]")
                 return False
 
         return True
@@ -574,7 +577,7 @@ class BugScenario:
             if self.validate_mutation(mutation):
                 yield mutation
 
-    def validate(self) -> None:
+    def validate(self) -> bool:
         """Validates the generated mutations and creates source-level patches."""
         found_patch = False
         for mutation in self.find_acceptable_mutations():
@@ -585,12 +588,14 @@ class BugScenario:
             # if we only need to generate a single acceptable patch, let's terminate early
             if self.should_terminate_early:
                 print("TERMINATING EARLY: ACCEPTABLE PATCH WAS FOUND")
-                return
+                return True
 
         print("FINISHED EVALUATING ALL PLAUSIBLE MUTATIONS")
 
         if not found_patch:
             print("NO ACCEPTABLE REPAIR WAS FOUND")
+
+        return found_patch
 
     def create_patch(self, mutation: Mutation) -> None:
         """Creates a patch file for a given mutation."""

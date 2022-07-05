@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 crepairfix = {path = ".", editable = true}
 pyinstaller = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.9"
