@@ -188,11 +188,6 @@ class BugScenario:
         return os.path.join(self.directory, self.binary_name + ".mutated.o")
 
     @property
-    def test_path(self) -> str:
-        """The absolute path of the single test for the program under repair."""
-        return os.path.join(self.directory, "test")
-
-    @property
     def ast_dumps_path(self) -> str:
         """The absolute path of the AST dumps directory for the program under repair."""
         return os.path.join(self.directory, "asts")
@@ -477,7 +472,7 @@ class BugScenario:
         True if the vulnerability is fixed, or false if not.
         """
         # compute the command to run the exploit on the mutated binary
-        command = '{} {}'.format(self.test_path, self.mutated_binary_path)
+        command = self.crash_command.replace("__BINARY__", self.mutated_binary_path)
 
         # compute the environment variables that should be used to activate this mutation
         env = mutation.env()
