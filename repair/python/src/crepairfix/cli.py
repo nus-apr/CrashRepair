@@ -33,25 +33,6 @@ def do_mutate(args: argparse.Namespace) -> None:
     )
 
 
-def do_analysis(args: argparse.Namespace) -> None:
-    scenario = BugScenario.for_directory_or_bug_file(args.directory_or_filename)
-    scenario.analyze(debug=args.debug)
-
-
-def do_repair(args: argparse.Namespace) -> None:
-    scenario = BugScenario.for_directory_or_bug_file(args.directory_or_filename)
-    scenario.should_terminate_early = args.should_terminate_early
-    scenario.should_validate_localization = args.should_validate_localization
-    if not args.compute_deps:
-        scenario.should_compute_dependencies = False
-    scenario.repair(debug=args.debug)
-
-
-def do_trace(args: argparse.Namespace) -> None:
-    scenario = BugScenario.for_directory_or_bug_file(args.directory_or_filename)
-    scenario.generate_trace()
-
-
 def do_dump_ast(args: argparse.Namespace) -> None:
     scenario = BugScenario.for_directory_or_bug_file(args.directory_or_filename)
     scenario.obtain_ast_dump(args.filename)
@@ -75,54 +56,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser_dump_ast.set_defaults(func=do_dump_ast)
 
-    parser_repair = subparsers.add_parser(
-        "repair",
-        help="attempts to repair the given program",
-    )
-    parser_repair.add_argument(
-        "directory_or_filename",
-        help="the path to the directory or bug.json for a repair scenario",
-    )
-    parser_repair.add_argument(
-        "--debug",
-        help="enables debugging mode",
-        action="store_true",
-    )
-    parser_repair.add_argument(
-        "--no-deps",
-        help="disables dependency calculation",
-        dest="compute_deps",
-        action="store_false",
-    )
-    parser_repair.add_argument(
-        "--stop-early",
-        help="stops generating patches after an acceptable patch has been found",
-        dest="should_terminate_early",
-        action="store_true",
-    )
-    parser_repair.add_argument(
-        "--no-validation",
-        help="disables validation of the fix localization for the purposes of repair",
-        dest="should_validate_localization",
-        action="store_false",
-    )
-    parser_repair.set_defaults(func=do_repair)
-
-    parser_analysis = subparsers.add_parser(
-        "analyze",
-        help="analyses to produce repair constraints"
-    )
-    parser_analysis.add_argument(
-        "--debug",
-        help="enables debugging mode",
-        action="store_true",
-    )
-    parser_analysis.add_argument(
-        "directory_or_filename",
-        help="the path to the directory or bug.json for a repair scenario",
-    )
-    parser_analysis.set_defaults(func=do_analysis)
-
     parser_mutate = subparsers.add_parser(
         "mutate",
         help="mutates the LLVM IR for the program",
@@ -134,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     parser_mutate.add_argument(
         "--localization",
         dest="localization_path",
-        help="an optional path to a handcrafted annotated fix localization that should be used during repair",
+        help="the fix localization file that should be used to generate mutations",
         required=False,
     )
     parser_mutate.add_argument(
@@ -164,16 +97,6 @@ def parse_args() -> argparse.Namespace:
         help="the path to the directory or bug.json for a repair scenario",
     )
     parser_validate.set_defaults(func=do_validate)
-
-    parser_trace = subparsers.add_parser(
-        "trace",
-        help="produces trace from the instrumented binary",
-    )
-    parser_trace.add_argument(
-        "directory_or_filename",
-        help="the path to the directory or bug.json for a repair scenario",
-    )
-    parser_trace.set_defaults(func=do_trace)
 
     return parser.parse_args()
 
