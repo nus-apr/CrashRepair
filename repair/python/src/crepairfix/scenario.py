@@ -24,8 +24,10 @@ PATH_LLVM_DIS = "/opt/llvm11/bin/llvm-dis"
 PATH_OPT = "/opt/llvm11/bin/opt"
 
 # TODO this is a nasty temporary workaround
-PATH_LLVMTOSOURCE = "/opt/hifix/build/src/llvmtosource/libllvm2source.so"
-PATH_LLVMREPAIR = "/opt/hifix/build/src/llvm-repair/libllvmrepair.so"
+PATH_LLVMTOSOURCE = "/opt/crashrepair/lib/libllvmtosource.so"
+PATH_CRASHREPAIRFIX = "/opt/crashrepair/lib/libcrashrepairfix.so"
+PATH_LLVMSUPERMUTATE = "/opt/crashrepair/lib/libllvmsupermutate.so"
+PATH_LLVMSUPERMUTATOR = "/opt/crashrepair/lib/libllvmsupermutator.so"
 
 
 @attr.s(slots=True)
@@ -387,9 +389,7 @@ class BugScenario:
             "-load",
             PATH_LLVMTOSOURCE,
             "-load",
-            PATH_HIFIX,
-            "-load",
-            PATH_LLVMREPAIR,
+            PATH_CRASHREPAIRFIX,
             "-llvmrepair",
             bitcode_path,
             "-localization-filename",
@@ -437,7 +437,7 @@ class BugScenario:
             "-load",
             PATH_LLVMTOSOURCE,
             "-load",
-            PATH_HIFIX,
+            PATH_CRASHREPAIRFIX,
             "-llvm2source",
             "-mapping-filename",
             self.ir_source_mapping_path,
