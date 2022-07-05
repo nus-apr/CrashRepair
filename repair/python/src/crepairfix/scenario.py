@@ -76,7 +76,7 @@ class BugScenario:
     _fix_localization = attr.ib(type=FixLocalization, default=None)
 
     @classmethod
-    def for_bug_file(cls, bug_filename: str) -> "BugScenario":
+    def for_bug_file(cls, bug_filename: str) -> BugScenario:
         if not os.path.exists(bug_filename):
             msg = "bug.json not found in directory [{}]".format(directory)
             raise ValueError(msg)
@@ -109,7 +109,7 @@ class BugScenario:
         return scenario
 
     @classmethod
-    def for_directory(cls, directory: str) -> "BugScenario":
+    def for_directory(cls, directory: str) -> BugScenario:
         if not os.path.isdir(directory):
             msg = "bug directory does not exist [{}]".format(directory)
             raise ValueError(msg)
@@ -118,7 +118,7 @@ class BugScenario:
         return cls.for_bug_file(bug_filename)
 
     @classmethod
-    def for_directory_or_bug_file(cls, directory_or_filename: str) -> "BugScenario":
+    def for_directory_or_bug_file(cls, directory_or_filename: str) -> BugScenario:
         if os.path.isdir(directory_or_filename):
             return cls.for_directory(directory_or_filename)
         else:
@@ -133,11 +133,6 @@ class BugScenario:
     def ir_source_mapping_path(self) -> str:
         """The absolute path of the IR->source mapping file for the program under repair."""
         return os.path.join(self.directory, "source-mapping.json")
-
-    @property
-    def instrumented_binary_path(self) -> str:
-        """The absolute path of the instrumented binary for the program under repair."""
-        return os.path.join(self.directory, self.binary_name + "-inst")
 
     @property
     def mutated_binary_path(self) -> str:
@@ -170,16 +165,6 @@ class BugScenario:
         return os.path.join(self.directory, self.binary_name + ".mutated.o")
 
     @property
-    def instrumented_bitcode_path(self) -> str:
-        """The absolute path of the instrumented bitcode for the program under repair."""
-        return os.path.join(self.directory, self.binary_name + "-inst.bc")
-
-    @property
-    def trace_path(self) -> str:
-        """The absolute path of the trace path for the program under repair."""
-        return os.path.join(self.directory, self.binary_name + ".bbt")
-
-    @property
     def test_path(self) -> str:
         """The absolute path of the single test for the program under repair."""
         return os.path.join(self.directory, "test")
@@ -203,17 +188,6 @@ class BugScenario:
     def source_path(self) -> str:
         """The absolute path of the source code directory for the program under repair."""
         return os.path.join(self.directory, "source")
-
-    @property
-    def input_spec_path(self) -> t.Optional[str]:
-        """The absolute path for the input specification for the program under repair"""
-        path = os.path.join(self.directory, "input.json")
-        if not os.path.exists(path):
-            logger.warning("no input specification file provided for this bug scenario")
-            return None
-
-        logger.info("using input specification file: {}".format(path))
-        return path
 
     @property
     def fix_localization(self) -> FixLocalization:
@@ -382,19 +356,6 @@ class BugScenario:
             command,
         )
         self.shell(command)
-
-        # we also need to run the split-calls pass on the bitcode
-        command = " ".join((
-            PATH_OPT,
-            "-load",
-            PATH_SPLITCALLS,
-            "-o",
-            bitcode_path,
-            "-splitcall",
-            bitcode_path,
-        ))
-        self.shell(command)
-
         logger.info("generated bitcode file: {}".format(bitcode_path))
 
         # optionally, disassemble the bitcode
@@ -406,109 +367,6 @@ class BugScenario:
             self.shell(command)
 
         return bitcode_path
-
-    def build_instrumented_binary(self) -> str:
-        """Generates an instrumented binary for this bug scenario."""
-        instrumented_binary_path = self.instrumented_binary_path
-
-        if os.path.exists(instrumented_binary_path):
-            logger.debug("skipping building of instrumented binary: already exists")
-            return instrumented_binary_path
-
-        trace_path = self.trace_path
-        bitcode_path = self.bitcode_path
-        instrumented_bc_path = self.instrumented_bitcode_path
-        path_instrumented_object = bitcode_path[:-3] + "-inst.o"
-
-        logger.info("generating instrumented binary [%s]", instrumented_binary_path)
-        self.generate_bitcode()
-
-        # instrument the bitcode
-        logger.info("generating instrumented bitcode [%s]", instrumented_bc_path)
-        command = '{} -load "{}" -tracer --trace-file="{}" "{}" -o "{}"'
-        command = command.format(PATH_OPT, PATH_LIBTRACER, trace_path, bitcode_path, instrumented_bc_path)
-        self.shell(command)
-
-        # compile the binary
-        logger.info("compiling instrumented object [%s]", path_instrumented_object)
-        command = '{} --filetype=obj -o "{}" "{}"'
-        command = command.format(PATH_LLC, path_instrumented_object, instrumented_bc_path)
-        self.shell(command)
-
-        # link the binary
-        logger.info("linking instrumented binary [%s]", path_instrumented_object)
-        command = '{} -o "{}" "{}" "{}" {}'
-        command = command.format(
-            PATH_CC,
-            instrumented_binary_path,
-            path_instrumented_object,
-            PATH_RUNTIME_O,
-            self.linker_options,
-        )
-        self.shell(command)
-
-        logger.info("generated instrumented binary [%s]", instrumented_binary_path)
-        return instrumented_binary_path
-
-    def generate_trace(self) -> None:
-        """
-        Uses the test case and an instrumented binary for this bug scenario to generate a
-        program trace for subsequent analysis and repair.
-        """
-        trace_path = self.trace_path
-
-        if os.path.exists(trace_path):
-            logger.debug("skipping building of trace file: already exists")
-            return trace_path
-
-        test_path = self.test_path
-        instrumented_binary_path = self.instrumented_binary_path
-        logger.info("generating trace file: %s", trace_path)
-
-        if os.path.exists(trace_path):
-            logger.info("removing existing trace file: %s", trace_path)
-            os.remove(trace_path)
-            logger.info("removed existing trace file: %s", trace_path)
-
-        self.build_instrumented_binary()
-
-        # run the test case on the instrumented binary
-        logger.info("executing test on instrumented binary [%s]", instrumented_binary_path)
-        command = '{} {}'.format(test_path, instrumented_binary_path)
-        self.shell(command, check_returncode=False)
-        logger.info("generated trace file")
-
-    def analyze(self, debug: bool = False) -> None:
-        # NOTE we run the analysis on the instrumented bitcode
-        self.generate_bitcode()
-        self.generate_trace()
-        trace_path = self.trace_path
-        bitcode_path = self.bitcode_path
-        input_spec_path = self.input_spec_path
-
-        command_parts = [
-            PATH_OPT,
-            "-load",
-            PATH_LLVMTOSOURCE,
-            "-load",
-            PATH_HIFIX,
-            "-hifix",
-            "-trace",
-            trace_path,
-            bitcode_path,
-            "-depend={}".format('true' if self.should_compute_dependencies else 'false'),
-            "-repair={}".format('true' if self.should_compute_repair else 'false'),
-            "-o=/dev/null",
-        ]
-
-        if input_spec_path is not None:
-            command_parts += ["-inputspec={}".format(input_spec_path)]
-
-        if debug:
-            command_parts += ["-debug"]
-
-        command = " ".join(command_parts)
-        self.shell(command)
 
     def mutate(
         self,
@@ -731,12 +589,3 @@ class BugScenario:
         # generate and store the patch
         mutation.diff(ast, fix_location, patch_filename)
         logger.info("saved patch for mutation [{}] to file: {}".format(mutation, patch_filename))
-
-    def repair(self, debug: bool = False) -> None:
-        self.analyze(debug)
-        # FIXME why would we be calling repair and not actually computing the repair?
-        if self.should_compute_repair:
-            self.obtain_implicated_asts()
-            self.mutate()
-            self.validate()
-

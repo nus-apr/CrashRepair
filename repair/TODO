@@ -1,0 +1,13 @@
+Lift from HiFix code:
+
+* generate bitcode for project
+* compile supermutated bitcode
+* evaluate mutants
+* obtain ASTs
+
+
+Interface:
+
+```
+$ crashrepair-fix bug.json localization.json
+```
