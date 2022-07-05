@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# This reusable script provides a mechanism for efficiently lifting a given
+# directory in a Docker image into a volume. To avoid recreating volumes when
+# the underlying image hasn't changed, this script uses Docker labels to record
+# the SHA1 of the image that was used to build the volume.
+#
+# Feel free to modify and reuse with attribution!
+#
+# USAGE:
+# ./image_to_volume image_name volume_name volume_location
+#
+# EXAMPLE:
+# ./image_to_volume rosdiscover/cxx-recover rosdiscover-cxx-opt /opt/rosdiscover
+#
+# Author: Chris Timperley (chris at timperley dot info)
+# Date Created: 15th September, 2021
+# Date Modified: 15th September, 2021
+# License: Apache License 2.0
+#
+#set -eu
+
+VOLUME_SHA1_LABEL_NAME="VOLUMEBUILDER_IMAGE_SHA1"
+
+function image_to_volume {
+  image_name="$1"
+  volume_name="$2"
+  volume_location="$3"
+  temporary_container_name="volume-builder-for-${volume_name}"
+
+  info "building volume [${volume_name}] from directory [${volume_location}] in image [${image_name}]"
+
+  # get the SHA1 of the existing image
+  image_sha1="$(docker image inspect --format=\"\{\{.Id\}\}\" ${image_name} 2> /dev/null)" \
+      || error "image does not exist [${image_name}]"
+  image_sha1="$(echo ${image_sha1} | jq -r .)"
+  info "SHA1 for image [${image_name}]: ${image_sha1}"
+
+  # get the image SHA1 associated with the volumes
+  volume_version=$(image_sha1_used_by_volume "${volume_name}")
+  info "image SHA1 used in volume [${volume_name}]: ${volume_version}"
+
+  # skip volume construction where possible
+  if [ "${volume_version}" == "${image_sha1}" ]; then
+      info "skipping volume construction: volumes were created using the latest image"
+      exit 0
+  fi
+
+  info "building volumes..."
+
+  # destroy both volumes
+  docker volume rm -f ${volume_name} &> /dev/null
+  info "destroyed existing volumes (if there were any)"
+
+  # create the actual empty volumes themselves
+  docker volume create --label ${VOLUME_SHA1_LABEL_NAME}=${image_sha1} ${volume_name} &> /dev/null
+  info "initialized volumes"
+
+  # populate the volumes
+  info "populating volumes..."
+  docker rm -f ${temporary_container_name} &> /dev/null
+  docker run \
+      --rm \
+      --name=${temporary_container_name} \
+      -v "${volume_name}:${volume_location}" \
+      ${image_name}
+  docker rm -f ${temporary_container_name} &> /dev/null
+
+  echo "finished installation"
+  exit 0
+}
+
+function error {
+    echo "ERROR: $1"
+    exit 1;
+}
+
+function info {
+    echo "INFO: $1"
+}
+
+function image_sha1_used_by_volume {
+    out="$(docker volume inspect --format \"\{\{.Labels.${VOLUME_SHA1_LABEL_NAME}\}\}\" $1 2> /dev/null)"
+    if [ "$?" -eq 0 ]; then
+        echo $out | jq -r .
+        return 0
+    else
+        echo "none"
+        return 1
+    fi
+}
+
+SCRIPT_NAME=$0
+if [[ $# -ne 3 ]]; then
+  echo "USAGE: ${SCRIPT_NAME} image_name volume_name volume_location"
+  exit 1
+fi
+
+# check that dependencies are installed
+type docker &> /dev/null || error "dependency not found: docker"
+type jq &> /dev/null || error "dependency not found: jq"
+
+IMAGE_NAME=$1
+VOLUME_NAME=$2
+VOLUME_LOCATION=$3
+image_to_volume "${IMAGE_NAME}" "${VOLUME_NAME}" "${VOLUME_LOCATION}"
