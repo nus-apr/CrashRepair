@@ -1,3 +1,6 @@
 [submodule "repair/extern/llvm-supermutate"]
 	path = repair/extern/llvm-supermutate
 	url = git@github.com:squaresLab/llvm-supermutate
+[submodule "repair/extern/PEGTL"]
+	path = repair/extern/pegtl
+	url = https://github.com/taocpp/PEGTL
