@@ -1,0 +1,311 @@
+[
+  {
+    "fix-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:19:7",
+    "constraint": {
+      "type": "OP_NEQ",
+      "symbol": "!=",
+      "left": {
+        "type": "OP_ARITH_MINUS",
+        "symbol": "-",
+        "left": {
+          "type": "INT_VAR",
+          "symbol": "(x - 1)"
+        },
+        "right": {
+          "type": "INT_CONST",
+          "symbol": 5
+        }
+      },
+      "right": {
+        "type": "INT_CONST",
+        "symbol": 0
+      }
+    },
+    "state": [
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8401,
+        "value-list": [
+          93986828350656
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8402,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8403,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "x",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:18",
+        "instruction-address": 8424,
+        "value-list": [
+          6
+        ]
+      },
+      {
+        "variable-name": "printf",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:3",
+        "instruction-address": 8425,
+        "value-list": [
+          2
+        ]
+      },
+      {
+        "variable-name": "x",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:19:7",
+        "instruction-address": 8426,
+        "value-list": [
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "fix-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:18",
+    "constraint": {
+      "type": "OP_NEQ",
+      "symbol": "!=",
+      "left": {
+        "type": "OP_ARITH_MINUS",
+        "symbol": "-",
+        "left": {
+          "type": "INT_VAR",
+          "symbol": "(x - 1)"
+        },
+        "right": {
+          "type": "INT_CONST",
+          "symbol": 5
+        }
+      },
+      "right": {
+        "type": "INT_CONST",
+        "symbol": 0
+      }
+    },
+    "state": [
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8401,
+        "value-list": [
+          93986828350656
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8402,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8403,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "x",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:18",
+        "instruction-address": 8424,
+        "value-list": [
+          6
+        ]
+      },
+      {
+        "variable-name": "printf",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:3",
+        "instruction-address": 8425,
+        "value-list": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "fix-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:20:13",
+    "constraint": {
+      "type": "OP_NEQ",
+      "symbol": "!=",
+      "left": {
+        "type": "OP_ARITH_MINUS",
+        "symbol": "-",
+        "left": {
+          "type": "INT_VAR",
+          "symbol": "y"
+        },
+        "right": {
+          "type": "INT_CONST",
+          "symbol": 5
+        }
+      },
+      "right": {
+        "type": "INT_CONST",
+        "symbol": 0
+      }
+    },
+    "state": [
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8401,
+        "value-list": [
+          93986828350656
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8402,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8403,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "x",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:18",
+        "instruction-address": 8424,
+        "value-list": [
+          6
+        ]
+      },
+      {
+        "variable-name": "printf",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:18:3",
+        "instruction-address": 8425,
+        "value-list": [
+          2
+        ]
+      },
+      {
+        "variable-name": "x",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:19:7",
+        "instruction-address": 8426,
+        "value-list": [
+          6
+        ]
+      },
+      {
+        "variable-name": "y",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:20:13",
+        "instruction-address": 8447,
+        "value-list": [
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "fix-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+    "constraint": {
+      "type": "OP_NEQ",
+      "symbol": "!=",
+      "left": {
+        "type": "OP_ARITH_MINUS",
+        "symbol": "-",
+        "left": {
+          "type": "INT_VAR",
+          "symbol": "(buffer[0] - 66)"
+        },
+        "right": {
+          "type": "INT_CONST",
+          "symbol": 5
+        }
+      },
+      "right": {
+        "type": "INT_CONST",
+        "symbol": 0
+      }
+    },
+    "state": [
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8401,
+        "value-list": [
+          93986828350656
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8402,
+        "value-list": [
+          71
+        ]
+      },
+      {
+        "variable-name": "buffer[0]",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:17:11",
+        "instruction-address": 8403,
+        "value-list": [
+          71
+        ]
+      }
+    ]
+  },
+  {
+    "fix-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:4:17",
+    "constraint": {
+      "type": "OP_NEQ",
+      "symbol": "!=",
+      "left": {
+        "type": "OP_ARITH_MINUS",
+        "symbol": "-",
+        "left": {
+          "type": "INT_VAR",
+          "symbol": "a"
+        },
+        "right": {
+          "type": "INT_CONST",
+          "symbol": 5
+        }
+      },
+      "right": {
+        "type": "INT_CONST",
+        "symbol": 0
+      }
+    },
+    "state": [
+      {
+        "variable-name": "a",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:4:17",
+        "instruction-address": 8286,
+        "value-list": [
+          93986825518480
+        ]
+      },
+      {
+        "variable-name": "a",
+        "source-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:4:17",
+        "instruction-address": 8288,
+        "value-list": [
+          5
+        ]
+      }
+    ]
+  }
+]

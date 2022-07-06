@@ -1,0 +1,15 @@
+{
+  "crash_command": "__BINARY__ ./exploit",
+  "source": {
+    "directory": "src"
+  },
+  "build": {
+    "directory": "src",
+    "binary": "test",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean",
+      "build": "CFLAGS=\"-fsanitize=undefined ${CFLAGS:-}\" make"
+    }
+  }
+}
