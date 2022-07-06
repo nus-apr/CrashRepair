@@ -28,20 +28,67 @@ static llvm::cl::opt<std::string> localizationFilename(
   llvm::cl::Required
 );
 
+
+class GeneratePatchesConsumer : public clang::ASTConsumer {
+public:
+  explicit GeneratePatchesConsumer(
+    ASTContext &context,
+    FixLocalization &fixLocalization
+  ) : fixLocalization(fixLocalization) {}
+
+  virtual void HandleTranslationUnit(clang::ASTContext &context) {
+
+  }
+
+private:
+  [[maybe_unused]] FixLocalization &fixLocalization;
+};
+
+class GeneratePatchesAction : public clang::ASTFrontendAction {
+public:
+  GeneratePatchesAction(FixLocalization &fixLocalization)
+    : clang::ASTFrontendAction(),
+      fixLocalization(fixLocalization)
+  {}
+
+  virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
+    clang::CompilerInstance &compiler,
+    llvm::StringRef file
+  ) {
+    return std::make_unique<GeneratePatchesConsumer>(compiler.getASTContext(), fixLocalization);
+  }
+
+private:
+  FixLocalization &fixLocalization;
+};
+
+class GeneratePatchesActionFactory : public clang::tooling::FrontendActionFactory {
+public:
+  GeneratePatchesActionFactory(FixLocalization &fixLocalization)
+    : clang::tooling::FrontendActionFactory(),
+      fixLocalization(fixLocalization)
+  {}
+
+  std::unique_ptr<clang::FrontendAction> create() override {
+    return std::make_unique<GeneratePatchesAction>(fixLocalization);
+  }
+
+private:
+  FixLocalization &fixLocalization;
+};
+
+
 int main(int argc, const char **argv) {
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
-  FixLocalization location = FixLocalization::load(localizationFilename);
-
-  // TODO find corresponding Clang locations
+  FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
 
   // TODO obtain source paths from the fix localization?
 
   ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
   tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
 
-  // TODO run an action
-  // tool.run();
-
-  return 0;
+  auto actionFactory = std::make_unique<GeneratePatchesActionFactory>(fixLocalization);
+  auto retcode = tool.run(actionFactory.get());
+  return retcode;
 }
