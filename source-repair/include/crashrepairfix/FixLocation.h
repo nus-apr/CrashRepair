@@ -19,6 +19,10 @@ public:
     SourceLocation location = SourceLocation::fromString(j["location"]);
     return FixLocation(location);
   }
+
+  SourceLocation const & getLocation() const {
+    return sourceLocation;
+  }
 };
 
 }
