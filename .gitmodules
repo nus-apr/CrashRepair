@@ -7,3 +7,6 @@
 [submodule "source-repair/extern/fmt"]
 	path = source-repair/extern/fmt
 	url = https://github.com/fmtlib/fmt
+[submodule "source-repair/extern/nlohmann_json"]
+	path = source-repair/extern/nlohmann_json
+	url = https://github.com/nlohmann/json
