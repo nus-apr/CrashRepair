@@ -137,17 +137,16 @@ def analyze():
         emitter.sub_sub_title("Running Taint Analysis")
         builder.build_normal()
         extractor.extract_byte_code(program_path)
-        if not crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
-            if not os.path.isfile(program_path + ".bc"):
-                app.utilities.error_exit("Unable to generate bytecode for " + program_path)
-            values.ARGUMENT_LIST = generalized_arg_list
-            klee_taint_out_dir = output_dir_path + "/klee-out-taint-" + str(test_case_id - 1)
-            exit_code = run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
-                                               klee_taint_out_dir)
 
-            taint_log_path = klee_taint_out_dir + "/taint.log"
-        else:
-            taint_log_path = klee_concolic_out_dir + "/taint.log"
+        if not os.path.isfile(program_path + ".bc"):
+            app.utilities.error_exit("Unable to generate bytecode for " + program_path)
+        values.ARGUMENT_LIST = generalized_arg_list
+        klee_taint_out_dir = output_dir_path + "/klee-out-taint-" + str(test_case_id - 1)
+        exit_code = run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
+                                           klee_taint_out_dir)
+
+        taint_log_path = klee_taint_out_dir + "/taint.log"
+
         taint_map_symbolic = reader.read_tainted_expressions(taint_log_path)
         taint_loc_list = []
         taint_map = dict()

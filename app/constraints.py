@@ -275,7 +275,7 @@ def generate_div_zero_constraint(divisor_node):
     return constraint_expr
 
 
-def generate_overflow_constraint(binary_node):
+def generate_int_overflow_constraint(binary_node):
     binary_left_ast = binary_node["inner"][0]
     binary_right_ast = binary_node["inner"][1]
     binary_op_str = binary_node["opcode"]
@@ -305,3 +305,30 @@ def generate_overflow_constraint(binary_node):
     constraint_right_expr = make_binary_expression(inverted_op, check_val_expr, binary_right_expr)
     constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
     return constraint_expr
+
+
+def generate_memory_overflow_constraint(reference_node):
+    array_node = reference_node["inner"][0]
+    iterator_node = reference_node["inner"][1]
+
+
+    # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
+    # first generate the left-side expression
+    constraint_left_expr = generate_expr_for_ast(iterator_node)
+
+    # second generate the constraint logical-operator
+    constraint_op_str = "<="
+    constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
+    constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
+
+    # last generate the expression for array size
+    sizeof_op_str = "sizeof "
+    sizeof_op_type = next(key for key, value in SymbolType.items() if value == sizeof_op_str)
+    sizeof_op = make_constraint_symbol(sizeof_op_str, sizeof_op_type)
+
+    array_expr = generate_expr_for_ast(array_node)
+    constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
+    constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
+    return constraint_expr
+
+

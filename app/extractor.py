@@ -359,10 +359,11 @@ def extract_var_list(ast_node, file_path):
     var_dec_list = extract_var_dec_list(ast_node, file_path)
     var_ref_list = extract_var_ref_list(ast_node, file_path)
     variable_list = list(set(var_ref_list + var_dec_list))
-    for child_node in ast_node['inner']:
-        child_var_dec_list = extract_var_dec_list(child_node, file_path)
-        child_var_ref_list = extract_var_ref_list(child_node, file_path)
-        variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
+    if 'inner' in ast_node:
+        for child_node in ast_node['inner']:
+            child_var_dec_list = extract_var_dec_list(child_node, file_path)
+            child_var_ref_list = extract_var_ref_list(child_node, file_path)
+            variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
     return variable_list
 
 
@@ -383,13 +384,11 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         divisor_ast = div_op_ast["inner"][1]
         var_list = extract_var_list(divisor_ast, src_file)
-        # cfc = converter.get_node_value(divisor_ast) + " != 0"
         cfc = constraints.generate_div_zero_constraint(divisor_ast)
     elif crash_type in [definitions.CRASH_TYPE_INT_MUL_OVERFLOW,
                         definitions.CRASH_TYPE_INT_ADD_OVERFLOW,
                         definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["*", "+", "-"])
-        crash_op_str = None
         crash_op_ast = None
         for binary_op_ast in binaryop_list:
             if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
@@ -399,32 +398,32 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
-        cfc = constraints.generate_overflow_constraint(crash_op_ast)
+        cfc = constraints.generate_int_overflow_constraint(crash_op_ast)
     elif crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
+        # check for memory write nodes if not found check for memory access nodes
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["="])
         assign_op_ast = None
-        for binaryop in binaryop_list:
-            if int(line_num) == binaryop["start line"]:
-                col_range = range(binaryop["start column"], binaryop["end column"])
-                if int(column_num) in col_range:
-                    assign_op_ast = binaryop
-                    break
+        for binary_op_ast in binaryop_list:
+            if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
+                assign_op_ast = binary_op_ast
+                break
         target_ast = None
-        if assign_op_ast is None:
-            array_access_node_list = extract_array_subscript_node_list(func_ast)
-            for array_node in array_access_node_list:
-                if int(line_num) == array_node["start line"]:
-                    col_range = range(array_node["start column"], array_node["end column"])
-                    if int(column_num) in col_range:
-                        target_ast = array_node
-                        break
-        else:
+        if assign_op_ast:
             target_ast = assign_op_ast["inner"][0]
+        else:
+            array_access_list = extract_array_subscript_node_list(func_ast)
+            for reference_ast in array_access_list:
+                if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
+                    target_ast = reference_ast
+
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(target_ast, src_file)
-        cfc = converter.get_node_value(target_ast) + " != 0"
+        for var_node in var_list:
+            if "[" in var_node[0]:
+                var_list.remove(var_node)
+        cfc = constraints.generate_memory_overflow_constraint(target_ast)
     else:
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
@@ -501,11 +500,13 @@ def extract_function_node_list(ast_node):
 
 def extract_reference_node_list(ast_node):
     ref_node_list = list()
+    if not ast_node:
+        return ref_node_list
     node_type = str(ast_node["kind"])
     if node_type in ["Macro", "DeclRefExpr", "MemberExpr", "GotoStmt"]:
         ref_node_list.append(ast_node)
 
-    if len(ast_node['inner']) > 0:
+    if 'inner' in ast_node and len(ast_node['inner']) > 0:
         for child_node in ast_node['inner']:
             child_ref_list = extract_reference_node_list(child_node)
             ref_node_list = ref_node_list + child_ref_list
@@ -669,13 +670,15 @@ def extract_binaryop_node_list(ast_node, file_path, filter_list=None):
 
 def extract_array_subscript_node_list(ast_node):
     array_node_list = list()
+    if not ast_node:
+        return  array_node_list
     node_type = str(ast_node["kind"])
     if node_type in ["ArraySubscriptExpr"]:
         array_node_list.append(ast_node)
-    if len(ast_node['inner']) > 0:
-        for child_node in ast_node['inner']:
-            child_array_node_list = extract_array_subscript_node_list(child_node)
-            array_node_list = array_node_list + child_array_node_list
+    if 'inner' in ast_node and len(ast_node['inner']) > 0:
+            for child_node in ast_node['inner']:
+                child_array_node_list = extract_array_subscript_node_list(child_node)
+                array_node_list = array_node_list + child_array_node_list
     return array_node_list
 
 
