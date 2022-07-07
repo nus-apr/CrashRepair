@@ -264,7 +264,7 @@ def convert_call_expr(ast_node, only_string=False):
     var_list = list()
     call_function_node = ast_node["inner"][0]
     call_function_node_type = str(call_function_node["kind"])
-    call_function_node_ref_type = str(call_function_node['ref_type'])
+    call_function_node_ref_type = str(call_function_node['referencedDecl']['kind'])
     operand_count = len(ast_node["inner"])
     if call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "FunctionDecl":
         function_name = str(call_function_node['value'])

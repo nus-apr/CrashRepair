@@ -293,8 +293,8 @@ def extract_var_ref_list(ast_node, file_path):
     if node_type == "DeclRefExpr":
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, col_number = begin_loc
-        if "ref_type" in ast_node.keys():
-            ref_type = str(ast_node['ref_type'])
+        if "referencedDecl" in ast_node.keys():
+            ref_type = str(ast_node['referencedDecl']['kind'])
             if ref_type == "FunctionDecl":
                 return var_list
         var_name = str(ast_node['referencedDecl']['name'])
