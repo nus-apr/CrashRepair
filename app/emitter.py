@@ -109,8 +109,7 @@ def emit_patch(patch_tree, jump_line=True, message=""):
 
 
 def information(message, jump_line=True):
-    if values.DEBUG:
-        write(message, WHITE, jump_line)
+    write(message, WHITE, jump_line)
     logger.information(message)
 
 

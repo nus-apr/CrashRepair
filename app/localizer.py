@@ -258,7 +258,7 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             localization_obj["state"] = list()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
             emitter.highlight("\t[state information]:")
-            emitter.highlight("\t" + "="*50)
+            emitter.highlight("\t" + "="*60)
             for state in state_info:
                 state_obj = dict()
                 var_name, line, col, inst_addr = state
@@ -269,12 +269,11 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 state_obj["value-list"] = value_list
                 print_list = [str(x) for x in value_list[:5]]
                 localization_obj["state"].append(state_obj)
-                emitter.highlight("\t\t[var-name] {}".format(var_name))
-                emitter.highlight("\t\t[var-loc] {}:{}".format(line, col))
-                emitter.highlight("\t\t[instruction-address] {}".format(inst_addr))
-                emitter.highlight("\t\t[values] {}".format(",".join(print_list)))
-                if state != list(state_info.keys())[-1]:
-                    emitter.highlight("\t\t" + "-"*50)
+                state_str = "[var-name] : {0:20}".format(var_name)
+                state_str += " [var-loc] {0:4},{0:4}".format(line, col)
+                state_str += " [instruction-address]: {0:4}".format(inst_addr)
+                state_str += " [values]: {0:20}".format(",".join(print_list))
+                emitter.information("\t\t{ " + state_str + " }")
             localization_list.append(localization_obj)
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))
