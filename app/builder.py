@@ -5,7 +5,7 @@
 import os
 import sys
 from app.utilities import execute_command, error_exit
-from app import definitions, values, logger, emitter
+from app import definitions, values, logger, emitter, reader
 
 CC = "$CREPAIR_CC"
 CXX = "$CREPAIR_CXX"
@@ -191,6 +191,9 @@ def build_project(project_path, build_command=None):
     if int(ret_code) != 0:
         emitter.error(build_command)
         error_exit("BUILD FAILED!!\nExit Code: " + str(ret_code))
+    else:
+        if os.path.isfile(project_path + "/compile_commands.json"):
+            values.COMPILE_COMMANDS = reader.read_compile_commands(project_path + "/compile_commands.json")
 
 
 def build_normal():

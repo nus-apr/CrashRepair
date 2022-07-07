@@ -110,7 +110,7 @@ def get_node_value(ast_node):
         ast_value = convert_unary_node_to_expr(ast_node, True)
     elif ast_type == "ConditionalOperator":
         ast_value = convert_conditional_op_to_expr(ast_node, True)
-    elif ast_type == "PredefinedExpr":
+    elif ast_type in ["PredefinedExpr", "ImplicitCastExpr"]:
         ast_value = get_node_value(ast_node["inner"][0])
     elif ast_type in ["CharacterLiteral", "CompoundLiteralExpr", "BinaryConditionalOperator"]:
         return None
@@ -128,7 +128,7 @@ def convert_binary_node_to_expr(ast_node, only_string=False):
     left_child = ast_node["inner"][0]
     # print(left_child)
     left_child_value = get_node_value(left_child)
-    operation = str(ast_node['value'])
+    operation = str(ast_node['opcode'])
     # print(operation)
     right_child = ast_node["inner"][1]
     # print(right_child)
@@ -142,6 +142,9 @@ def convert_binary_node_to_expr(ast_node, only_string=False):
 def convert_array_iterator(iterator_node, only_string=False):
     iterator_node_type = str(iterator_node["kind"])
     var_list = list()
+    if iterator_node_type == "ImplicitCastExpr":
+        iterator_node = iterator_node["inner"][0]
+        iterator_node_type = str(iterator_node["kind"])
     if iterator_node_type in ["VarDecl", "ParmVarDecl"]:
         iterator_name = str(iterator_node['identifier'])
         iterator_data_type = None
@@ -153,7 +156,7 @@ def convert_array_iterator(iterator_node, only_string=False):
         iterator_value = str(iterator_node['value'])
         var_name = "[" + iterator_value + "]"
     elif iterator_node_type == "DeclRefExpr":
-        iterator_name = str(iterator_node['value'])
+        iterator_name = str(iterator_node['referencedDecl']['name'])
         iterator_data_type = None
         if "data-type" in iterator_node:
             iterator_data_type = str(iterator_node["type"]["qualType"])
@@ -216,7 +219,7 @@ def convert_array_subscript(ast_node, only_string=False):
         iterator_name = convert_array_iterator(iterator_node, True)
         var_name = array_name + iterator_name
     elif array_type == "MemberExpr":
-        array_name = str(array_node['value'])
+        array_name = str(array_node['referencedDecl']['name'])
         array_data_type = None
         if "type" in array_node.keys():
             array_data_type = str(array_node["type"]["qualType"])
@@ -381,7 +384,7 @@ def convert_member_expr(ast_node, only_string=False):
             var_name = cast_var_name + var_name
             break
         elif child_node_type == "MemberExpr":
-            child_node_value = child_node['value']
+            child_node_value = child_node['name']
             # var_data_type = str(child_node["type"]["qualType"])
             if "isArrow" not in child_node.keys():
                 var_name = "." + str(child_node_value.split(":")[-1]) + var_name

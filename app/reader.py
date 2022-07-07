@@ -13,7 +13,7 @@ def read_json(file_path):
     json_data = None
     if os.path.isfile(file_path):
         with open(file_path, 'r') as in_file:
-            content = in_file.readline()
+            content = in_file.read()
             json_data = json.loads(content)
     return json_data
 
@@ -453,4 +453,22 @@ def read_taint_values(taint_log_path):
                         taint_value = int(taint_str.replace("\n", "").replace("bv", ""))
                     taint_map[source_loc].append(taint_value)
     return taint_map
+
+
+def read_compile_commands(database_path):
+    command_list = read_json(database_path)
+    compile_command_info = dict()
+    for entry in command_list:
+        file_name = entry["file"]
+        dir_path = entry["directory"]
+        file_path = dir_path + "/" + file_name
+        compile_command_info[file_path] = list()
+        argument_list = entry["arguments"]
+        for argument in argument_list:
+            if "-I" in argument:
+                include_rel_path = argument.replace("-I", "")
+                count_traverse = str(include_rel_path).count("..")
+                include_path = "/".join(dir_path.split("/")[:-count_traverse] + include_rel_path.split("/")[count_traverse:])
+                compile_command_info[file_path].append(include_path)
+    return compile_command_info
 

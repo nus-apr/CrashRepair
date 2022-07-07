@@ -41,6 +41,7 @@ def generate_fix_locations(marked_byte_list, taint_map):
     for source_path in source_mapping:
         tainted_loc_list = source_mapping[source_path]
         source_dir = values.CONF_DIR_EXPERIMENT + "/src/"
+        source_dir = source_dir.replace("//", "/")
         if source_dir not in source_path:
             continue
         ast_tree = extractor.extract_ast_json(source_path)

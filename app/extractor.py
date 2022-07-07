@@ -154,9 +154,15 @@ def extract_child_expressions(patch_tree):
 
 def extract_ast_json(source_file_path):
     source_dir = "/".join(source_file_path.split("/")[:-1])
-    ast_diff_bin = "clang-10 -Xclang -ast-dump=json -fsyntax-only"
+    diff_command = "clang-10 "
+    if values.COMPILE_COMMANDS:
+        if source_file_path in values.COMPILE_COMMANDS:
+            include_dir_list = values.COMPILE_COMMANDS[source_file_path]
+            for path in include_dir_list:
+                diff_command += " -I{} ".format(path)
+    diff_command += " -Xclang -ast-dump=json -fsyntax-only"
     ast_file_path = source_file_path + ".ast"
-    generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, ast_diff_bin, source_file_path,
+    generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, diff_command, source_file_path,
                                                                        ast_file_path)
     utilities.execute_command(generate_ast_command)
     ast_tree = reader.read_ast_tree(ast_file_path)
