@@ -193,7 +193,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc.to_string()))
-    emitter.highlight("\t\t[info] crash inducing variables: {}".format(",".join(var_name_list)))
+    emitter.highlight("\t\t[info] crash inducing variables: {}".format(", ".join(var_name_list)))
     return c_file, var_list, cfc
 
 
@@ -392,23 +392,14 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         crash_op_str = None
         crash_op_ast = None
         for binary_op_ast in binaryop_list:
-            binary_op_str = binary_op_ast["value"]
-            if int(line_num) == binary_op_ast["start line"]:
-                col_range = range(binary_op_ast["start column"], binary_op_ast["end column"])
-                if int(column_num) in col_range:
-                    crash_op_ast = binary_op_ast
-                    crash_op_str = binary_op_str
-                    break
+            if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
+                crash_op_ast = binary_op_ast
+                break
         if crash_op_ast is None:
             emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
             utilities.error_exit("Unable to generate crash free constraint")
-        op_a_ast = crash_op_ast["inner"][0]
-        op_b_ast = crash_op_ast["inner"][1]
-        op_a_str = converter.convert_node_to_str(op_a_ast)
-        op_b_str = converter.convert_node_to_str(op_b_ast)
-        crash_op_converter = {"*": "/", "+": "-", "-": "+"}
-        cfc = "{} <= INT_MAX {} {}".format(op_a_str, crash_op_converter[crash_op_str], op_b_str)
         var_list = extract_var_list(crash_op_ast, src_file)
+        cfc = constraints.generate_overflow_constraint(crash_op_ast)
     elif crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["="])
         assign_op_ast = None
@@ -525,7 +516,7 @@ def extract_initialization_node_list(ast_node, ref_node):
     init_node_list = list()
     node_type = str(ast_node["kind"])
     if node_type == "BinaryOperator":
-        node_value = str(ast_node['value'])
+        node_value = str(ast_node['opcode'])
         if node_value == "=":
             assign_node = ast_node['inner'][0]
             if assign_node["kind"] == "DeclRefExpr":

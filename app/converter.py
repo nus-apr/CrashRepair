@@ -414,15 +414,20 @@ def convert_member_expr(ast_node, only_string=False):
 def convert_node_to_str(ast_node, only_string=False):
     node_str = ""
     node_type = str(ast_node["kind"])
-    if node_type in ["DeclStmt", "DeclRefExpr", "VarDecl"]:
+    if node_type == "ImplicitCastExpr":
+        ast_node = ast_node["inner"][0]
+        node_type = str(ast_node["kind"])
+    if node_type in ["DeclRefExpr"]:
+        node_str = str(ast_node['referencedDecl']['name'])
+    elif node_type in ["DeclStmt", "VarDecl"]:
         node_str = str(ast_node['value'])
     if str(ast_node["kind"]) == "BinaryOperator":
-        operator = str(ast_node['value'])
+        operator = str(ast_node['opcode'])
         right_operand = convert_node_to_str(ast_node["inner"][1], only_string)
         left_operand = convert_node_to_str(ast_node["inner"][0])
         node_str = left_operand + " " + operator + " " + right_operand
     elif str(ast_node["kind"]) == "UnaryOperator":
-        operator = str(ast_node['value'])
+        operator = str(ast_node['opcode'])
         child_operand = convert_node_to_str(ast_node["inner"][0])
         node_str = operator + child_operand
     return node_str

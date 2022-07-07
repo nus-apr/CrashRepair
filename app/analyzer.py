@@ -69,7 +69,6 @@ def analyze():
         #     values.USEFUL_SEED_ID_LIST.append(test_case_id)
         if latest_crash_loc:
             values.IS_CRASH = True
-            emitter.information("\t\t\t[info] identified a crash location: " + str(latest_crash_loc))
             if latest_crash_loc not in values.CONF_LOC_LIST_CRASH:
                 values.CONF_LOC_LIST_CRASH.append(latest_crash_loc)
 
@@ -121,16 +120,18 @@ def analyze():
             # print(var_name)
             # print(value_list)
             # print(sym_expr_list)
+            tainted_byte_list = []
             for sym_expr in sym_expr_list:
                 sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
                 tainted_byte_list = extractor.extract_input_bytes_used(sym_expr_code)
-                if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
-                    input_byte_list = [sym_expr.strip().split(" ")[1]]
-                    break
-                input_byte_list = input_byte_list + tainted_byte_list
-            input_byte_list = list(set(input_byte_list))
-            input_bytes = [str(i) for i in input_byte_list]
-            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(input_bytes)))
+                # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
+                #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
+                #     break
+            tainted_byte_list = list(set(tainted_byte_list))
+            input_byte_list = input_byte_list + tainted_byte_list
+            tainted_bytes = [str(i) for i in tainted_byte_list]
+            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
+        input_byte_list = list(set(input_byte_list))
         cfc_info["var-info"] = var_info
 
         emitter.sub_sub_title("Running Taint Analysis")

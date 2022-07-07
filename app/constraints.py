@@ -274,3 +274,34 @@ def generate_div_zero_constraint(divisor_node):
     constraint_expr = make_binary_expression(constraint_op, left_expr, right_expr)
     return constraint_expr
 
+
+def generate_overflow_constraint(binary_node):
+    binary_left_ast = binary_node["inner"][0]
+    binary_right_ast = binary_node["inner"][1]
+    binary_op_str = binary_node["opcode"]
+
+    # Generating a constraint of type {} <= INT_MAX {} {}
+    # first generate the left-side expression
+    binary_left_expr = generate_expr_for_ast(binary_left_ast)
+
+    # second generate the constraint logical-operator
+    constraint_op_str = "<="
+    constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
+    constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
+
+    # last, generate the right-side expression
+    crash_op_converter = {"*": "/", "+": "-", "-": "+"}
+    inverted_binary_op_str = crash_op_converter[binary_op_str]
+    inverted_binary_op_type = next(key for key, value in SymbolType.items() if value == inverted_binary_op_str)
+    inverted_op = make_constraint_symbol(inverted_binary_op_str, inverted_binary_op_type)
+
+    check_val_str = "INT_MAX"
+    check_val_type = "INT_CONST"
+    check_val_symbol = make_constraint_symbol(check_val_str, check_val_type)
+    check_val_expr = make_symbolic_expression(check_val_symbol)
+    binary_right_expr = generate_expr_for_ast(binary_right_ast)
+
+    constraint_left_expr = binary_left_expr
+    constraint_right_expr = make_binary_expression(inverted_op, check_val_expr, binary_right_expr)
+    constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
+    return constraint_expr

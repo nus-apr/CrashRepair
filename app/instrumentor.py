@@ -17,12 +17,11 @@ def instrument_klee_var_expr(source_path, var_list):
         print_code = "klee_print_expr(\"[var-expr] " + variable + "\", " + variable + ");\n"
         type_print_code = "klee_print_stmt(\"[var-type]: " + variable + ":" + data_type + "\");\n"
         print_code = print_code + type_print_code
+        line_number = line_number - 1
         if line_number in insert_code.keys():
-            insert_code[
-                line_number-1] += print_code
+            insert_code[line_number] = insert_code[line_number] + print_code
         else:
-            insert_code[
-                line_number-1] = print_code
+            insert_code[line_number] = print_code
 
     sorted_insert_code = collections.OrderedDict(sorted(insert_code.items(), reverse=True))
     utilities.backup_file(source_path, source_path + ".bk")
