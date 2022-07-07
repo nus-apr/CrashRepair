@@ -17,4 +17,18 @@ std::vector<std::string> split(const std::string &s, char delim) {
   return elems;
 }
 
+std::string getSource(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
+  static clang::LangOptions languageOptions;
+  auto range = clang::CharSourceRange::getTokenRange(stmt->getSourceRange());
+  return clang::Lexer::getSourceText(
+    range, 
+    sourceManager, 
+    languageOptions
+  ).str();
+}
+
+std::string getSource(clang::Stmt const *stmt, clang::ASTContext const &context) {
+  return getSource(stmt, context.getSourceManager());
+}
+
 }

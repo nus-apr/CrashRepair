@@ -31,6 +31,7 @@ public:
       result(nullptr)
     {}
 
+
   bool VisitStmt(clang::Stmt *stmt) {
     auto stmtLoc = stmt->getBeginLoc();
     if (!stmtLoc.isValid()) {
@@ -38,21 +39,23 @@ public:
     }
 
     // TODO ensure that stmt is in the correct file before getting here
-    if (sourceManager.getFilename(stmtLoc) != sourceLocation.file) {
+    // TODO normalize filename
+    std::string stmtFilename = sourceManager.getFilename(stmtLoc).str();
+    if (stmtFilename != sourceLocation.file) {
       return true;
     }
 
-    // TODO if we've gone too far, stop searching
-    if (sourceManager.getSpellingColumnNumber(stmtLoc) != sourceLocation.column) {
-      return true;
-    }
-    if (sourceManager.getSpellingLineNumber(stmtLoc) != sourceLocation.line) {
-      return true;
-    }
+    auto stmtLine = sourceManager.getSpellingLineNumber(stmtLoc);
+    auto stmtColumn = sourceManager.getSpellingColumnNumber(stmtLoc);
+    // spdlog::info("stmt at {}:{}", stmtLine, stmtColumn);
 
     // we have a match! store it and stop searching
-    result = stmt;
-    return false;
+    if (stmtColumn == sourceLocation.column && stmtLine == sourceLocation.line) {
+      result = stmt;
+      return false;
+    }
+ 
+    return true;
   }
 };
 

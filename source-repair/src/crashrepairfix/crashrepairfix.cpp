@@ -49,7 +49,11 @@ public:
         continue;
       }
 
-      spdlog::info("found matching statement!");
+      spdlog::info("found matching statement: {}", getSource(stmt, context));
+      llvm::outs() << stmt;
+      
+      // mutate this statement
+      // TODO mutate(stmt, context)
     }
   }
 
@@ -92,6 +96,8 @@ private:
 
 
 int main(int argc, const char **argv) {
+  spdlog::set_level(spdlog::level::debug);
+
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
