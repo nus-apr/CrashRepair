@@ -10,3 +10,9 @@
 [submodule "source-repair/extern/nlohmann_json"]
 	path = source-repair/extern/nlohmann_json
 	url = https://github.com/nlohmann/json
+[submodule "source-repair/example/SimpleNES"]
+	path = source-repair/example/SimpleNES
+	url = https://github.com/amhndu/SimpleNES
+[submodule "source-repair/extern/spdlog"]
+	path = source-repair/extern/spdlog
+	url = https://github.com/gabime/spdlog
