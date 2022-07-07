@@ -18,6 +18,7 @@ target_link_libraries(crashrepairfix PRIVATE
   ${CLANG_LIBS}
   nlohmann_json::nlohmann_json
   fmt::fmt-header-only
+  spdlog::spdlog
 )
 target_compile_options(crashrepairfix PRIVATE
   -Wall -Werror -fno-rtti
@@ -34,6 +35,7 @@ target_include_directories(crashrepairfix
     ${LLVM_INCLUDE_DIRS}
     nlohmann_json::nlohmann_json
     fmt::fmt
+    spdlog::spdlog
     ../../include
 )
 

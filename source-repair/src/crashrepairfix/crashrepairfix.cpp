@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <spdlog/spdlog.h>
+
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/FrontendActions.h>
@@ -11,6 +13,7 @@
 #include <clang/Rewrite/Core/Rewriter.h>
 
 #include <crashrepairfix/FixLocalization.h>
+#include <crashrepairfix/StmtFinder.h>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -29,6 +32,9 @@ static llvm::cl::opt<std::string> localizationFilename(
 );
 
 
+// TODO find corresponding Clang stmt
+
+
 class GeneratePatchesConsumer : public clang::ASTConsumer {
 public:
   explicit GeneratePatchesConsumer(
@@ -37,7 +43,14 @@ public:
   ) : fixLocalization(fixLocalization) {}
 
   virtual void HandleTranslationUnit(clang::ASTContext &context) {
+    for (auto &location : fixLocalization) {
+      auto *stmt = StmtFinder::find(context, location.getLocation());
+      if (stmt == nullptr) {
+        continue;
+      }
 
+      spdlog::info("found matching statement!");
+    }
   }
 
 private:
@@ -88,6 +101,7 @@ int main(int argc, const char **argv) {
   ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
   tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
 
+  spdlog::info("generating patches...");
   auto actionFactory = std::make_unique<GeneratePatchesActionFactory>(fixLocalization);
   auto retcode = tool.run(actionFactory.get());
   return retcode;
