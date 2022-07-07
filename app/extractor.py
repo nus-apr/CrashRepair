@@ -184,8 +184,12 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
         c_details = "division by zero"
     elif c_type == definitions.CRASH_TYPE_INT_MUL_OVERFLOW:
         c_details = "integer multiplication overflow"
-    elif c_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
-        c_details = "buffer overflow"
+    elif c_type == definitions.CRASH_TYPE_INT_ADD_OVERFLOW:
+        c_details = "integer addition overflow"
+    elif c_type == definitions.CRASH_TYPE_INT_SUB_OVERFLOW:
+        c_details = "integer subtraction overflow"
+    elif c_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
+        c_details = "memory overflow"
     else:
         c_details = "unknown"
     emitter.highlight("\t\t[info] crash type: {}".format(c_details))
@@ -399,7 +403,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_int_overflow_constraint(crash_op_ast)
-    elif crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
+    elif crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["="])

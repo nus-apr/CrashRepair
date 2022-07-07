@@ -227,7 +227,7 @@ def collect_crash_point(trace_file_path):
     if "divide by zero" in crash_reason:
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
     elif "out of bound pointer" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_BUFFER_OVERFLOW
+        crash_type = definitions.CRASH_TYPE_MEMORY_OVERFLOW
     return crash_location, crash_type
 
 
@@ -261,7 +261,7 @@ def collect_klee_crash_info(trace_file_path):
     elif "overflow on subtraction" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
     elif "out of bound pointer" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_BUFFER_OVERFLOW
+        crash_type = definitions.CRASH_TYPE_MEMORY_OVERFLOW
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
 
 
@@ -311,7 +311,7 @@ def collect_exploit_output(log_file_path):
     elif "overflow on multiplication" in crash_type:
         crash_id = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
     elif "buffer-overflow" in crash_type:
-        crash_id = definitions.CRASH_TYPE_BUFFER_OVERFLOW
+        crash_id = definitions.CRASH_TYPE_MEMORY_OVERFLOW
     return crash_loc, crash_id, crash_address, crash_function
 
 
