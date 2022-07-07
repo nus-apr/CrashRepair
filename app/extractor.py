@@ -401,15 +401,24 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         cfc = constraints.generate_int_overflow_constraint(crash_op_ast)
     elif crash_type == definitions.CRASH_TYPE_BUFFER_OVERFLOW:
         # check for memory write nodes if not found check for memory access nodes
+        target_ast = None
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["="])
         assign_op_ast = None
         for binary_op_ast in binaryop_list:
             if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
                 assign_op_ast = binary_op_ast
                 break
-        target_ast = None
+        deref_op_ast = None
+        if not assign_op_ast:
+            unaryop_list = extract_unaryop_node_list(func_ast, ["*"])
+            for unary_op_ast in unaryop_list:
+                if oracle.is_loc_in_range(crash_loc, unary_op_ast["range"]):
+                    deref_op_ast = unary_op_ast
+                    break
         if assign_op_ast:
             target_ast = assign_op_ast["inner"][0]
+        elif deref_op_ast:
+            target_ast = deref_op_ast
         else:
             array_access_list = extract_array_subscript_node_list(func_ast)
             for reference_ast in array_access_list:
@@ -682,17 +691,23 @@ def extract_array_subscript_node_list(ast_node):
     return array_node_list
 
 
-def extract_unaryop_node_list(ast_node):
-    unaryop_node_list = dict()
+def extract_unaryop_node_list(ast_node, filter_list):
+    unaryop_node_list = list()
+    if not ast_node:
+        return unaryop_node_list
     node_type = str(ast_node["kind"])
     if node_type in ["UnaryOperator"]:
-        identifier = str(ast_node['value'])
-        unaryop_node_list[identifier] = ast_node
+        identifier = str(ast_node['opcode'])
+        if filter_list:
+            if identifier in filter_list:
+                unaryop_node_list.append(ast_node)
+        else:
+            unaryop_node_list.append(ast_node)
 
-    if len(ast_node['inner']) > 0:
+    if 'inner' in ast_node and  len(ast_node['inner']) > 0:
         for child_node in ast_node['inner']:
-            child_unaryop_node_list = extract_unaryop_node_list(child_node)
-            unaryop_node_list.update(child_unaryop_node_list)
+            child_unaryop_node_list = extract_unaryop_node_list(child_node, filter_list)
+            unaryop_node_list = unaryop_node_list + child_unaryop_node_list
     return unaryop_node_list
 
 

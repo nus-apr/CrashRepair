@@ -308,27 +308,33 @@ def generate_int_overflow_constraint(binary_node):
 
 
 def generate_memory_overflow_constraint(reference_node):
-    array_node = reference_node["inner"][0]
-    iterator_node = reference_node["inner"][1]
+    ref_node_type = reference_node["kind"]
+    if ref_node_type == "UnaryOperator":
+        ptr_node = reference_node["inner"][0]
+        # Generating a constraint of type ptr != 0
+        constraint_expr = generate_div_zero_constraint(ptr_node)
 
+    else:
+        array_node = reference_node["inner"][0]
+        iterator_node = reference_node["inner"][1]
 
-    # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
-    # first generate the left-side expression
-    constraint_left_expr = generate_expr_for_ast(iterator_node)
+        # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
+        # first generate the left-side expression
+        constraint_left_expr = generate_expr_for_ast(iterator_node)
 
-    # second generate the constraint logical-operator
-    constraint_op_str = "<="
-    constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
-    constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
+        # second generate the constraint logical-operator
+        constraint_op_str = "<="
+        constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
+        constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
 
-    # last generate the expression for array size
-    sizeof_op_str = "sizeof "
-    sizeof_op_type = next(key for key, value in SymbolType.items() if value == sizeof_op_str)
-    sizeof_op = make_constraint_symbol(sizeof_op_str, sizeof_op_type)
+        # last generate the expression for array size
+        sizeof_op_str = "sizeof "
+        sizeof_op_type = next(key for key, value in SymbolType.items() if value == sizeof_op_str)
+        sizeof_op = make_constraint_symbol(sizeof_op_str, sizeof_op_type)
 
-    array_expr = generate_expr_for_ast(array_node)
-    constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
-    constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
+        array_expr = generate_expr_for_ast(array_node)
+        constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
+        constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
     return constraint_expr
 
 
