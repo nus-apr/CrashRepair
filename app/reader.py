@@ -256,6 +256,10 @@ def collect_klee_crash_info(trace_file_path):
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
     elif "overflow on multiplication" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
+    elif "overflow on addition" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_INT_ADD_OVERFLOW
+    elif "overflow on subtraction" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
     elif "out of bound pointer" in crash_reason:
         crash_type = definitions.CRASH_TYPE_BUFFER_OVERFLOW
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address

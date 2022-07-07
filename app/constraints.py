@@ -229,7 +229,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_expr = make_binary_expression(constraint_symbol, left_expr, right_expr)
         return constraint_expr
     elif node_type == "UnaryOperator":
-        op_symbol_str = str(ast_node["value"])
+        op_symbol_str = str(ast_node["opcode"])
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
         child_ast = ast_node["inner"][0]

@@ -4,7 +4,7 @@
 
 int sub(int a, int b){
   int res;
-  res = -b - a;
+  res = b - a;
   return res;
 }
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   char buffer[10];
   read_file(argv[1], &buffer);
   int x = buffer[1];
-  int y = INT_MAX;
+  int y = -INT_MAX;
   printf("%d\n", x);
   res = sub(x,y);
   return 0;
