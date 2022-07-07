@@ -13,7 +13,7 @@
 #include <clang/Rewrite/Core/Rewriter.h>
 
 #include <crashrepairfix/FixLocalization.h>
-#include <crashrepairfix/StmtFinder.h>
+#include <crashrepairfix/ProgramMutator.h>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -32,66 +32,49 @@ static llvm::cl::opt<std::string> localizationFilename(
 );
 
 
-// TODO find corresponding Clang stmt
-
-
 class GeneratePatchesConsumer : public clang::ASTConsumer {
 public:
-  explicit GeneratePatchesConsumer(
-    ASTContext &context,
-    FixLocalization &fixLocalization
-  ) : fixLocalization(fixLocalization) {}
+  explicit GeneratePatchesConsumer(ProgramMutator &mutator) : mutator(mutator) {}
 
   virtual void HandleTranslationUnit(clang::ASTContext &context) {
-    for (auto &location : fixLocalization) {
-      auto *stmt = StmtFinder::find(context, location.getLocation());
-      if (stmt == nullptr) {
-        continue;
-      }
-
-      spdlog::info("found matching statement: {}", getSource(stmt, context));
-      llvm::outs() << stmt;
-      
-      // mutate this statement
-      // TODO mutate(stmt, context)
-    }
+    mutator.mutate(context);
   }
 
 private:
-  [[maybe_unused]] FixLocalization &fixLocalization;
+  [[maybe_unused]] ProgramMutator &mutator;
 };
 
 class GeneratePatchesAction : public clang::ASTFrontendAction {
 public:
-  GeneratePatchesAction(FixLocalization &fixLocalization)
+  GeneratePatchesAction(ProgramMutator &mutator)
     : clang::ASTFrontendAction(),
-      fixLocalization(fixLocalization)
+      mutator(mutator)
   {}
 
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
     clang::CompilerInstance &compiler,
     llvm::StringRef file
   ) {
-    return std::make_unique<GeneratePatchesConsumer>(compiler.getASTContext(), fixLocalization);
+    return std::make_unique<GeneratePatchesConsumer>(mutator);
   }
 
 private:
-  FixLocalization &fixLocalization;
+  ProgramMutator &mutator;
 };
 
 class GeneratePatchesActionFactory : public clang::tooling::FrontendActionFactory {
 public:
-  GeneratePatchesActionFactory(FixLocalization &fixLocalization)
+  GeneratePatchesActionFactory(ProgramMutator &mutator)
     : clang::tooling::FrontendActionFactory(),
-      fixLocalization(fixLocalization)
+      mutator(mutator)
   {}
 
   std::unique_ptr<clang::FrontendAction> create() override {
-    return std::make_unique<GeneratePatchesAction>(fixLocalization);
+    return std::make_unique<GeneratePatchesAction>(mutator);
   }
 
 private:
-  FixLocalization &fixLocalization;
+  ProgramMutator &mutator;
 };
 
 
@@ -101,6 +84,7 @@ int main(int argc, const char **argv) {
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
+  ProgramMutator mutator(fixLocalization);
 
   // TODO obtain source paths from the fix localization?
 
@@ -108,7 +92,7 @@ int main(int argc, const char **argv) {
   tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
 
   spdlog::info("generating patches...");
-  auto actionFactory = std::make_unique<GeneratePatchesActionFactory>(fixLocalization);
+  auto actionFactory = std::make_unique<GeneratePatchesActionFactory>(mutator);
   auto retcode = tool.run(actionFactory.get());
   return retcode;
 }

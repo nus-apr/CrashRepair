@@ -1,5 +1,7 @@
 add_executable(crashrepairfix
   crashrepairfix.cpp
+  ProgramMutator.cpp
+  Utils.cpp
 )
 
 llvm_map_components_to_libnames(CRASHREPAIRFIX_LLVM_LIBS

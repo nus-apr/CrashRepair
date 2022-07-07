@@ -47,7 +47,6 @@ public:
 
     auto stmtLine = sourceManager.getSpellingLineNumber(stmtLoc);
     auto stmtColumn = sourceManager.getSpellingColumnNumber(stmtLoc);
-    // spdlog::info("stmt at {}:{}", stmtLine, stmtColumn);
 
     // we have a match! store it and stop searching
     if (stmtColumn == sourceLocation.column && stmtLine == sourceLocation.line) {
