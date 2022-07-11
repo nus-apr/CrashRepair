@@ -4,6 +4,8 @@
 
 #include <spdlog/spdlog.h>
 
+using json = nlohmann::json;
+
 namespace crashrepairfix {
 
 void ProgramMutator::mutate(clang::ASTContext &context) {
@@ -14,13 +16,29 @@ void ProgramMutator::mutate(clang::ASTContext &context) {
     }
 
     spdlog::info("found matching statement: {}", getSource(stmt, context));
-    // TODO mutate this statement
-    // mutate(stmt, context);
+    mutate(stmt, context);
   }
 }
 
 void ProgramMutator::mutate(clang::Stmt *stmt, clang::ASTContext &context) {
   spdlog::info("mutating statement [{}]: {}", stmt->getStmtClassName(), getSource(stmt, context));
+
+  // is this an if statement?
+  // is this an assignment?
+  // while loop? for loop?
+}
+
+void ProgramMutator::save() {
+  // FIXME allow this to be customized
+  std::string filename = "mutations.json";
+
+  json j = json::array();
+  for (auto &mutation : mutations) {
+    j.push_back(mutation.toJson());
+  }
+
+  std::ofstream o(filename);
+  o << std::setw(2) << j << std::endl;
 }
 
 }

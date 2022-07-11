@@ -94,5 +94,9 @@ int main(int argc, const char **argv) {
   spdlog::info("generating patches...");
   auto actionFactory = std::make_unique<GeneratePatchesActionFactory>(mutator);
   auto retcode = tool.run(actionFactory.get());
+
+  // save generated mutations to disk
+  mutator.save();
+
   return retcode;
 }
