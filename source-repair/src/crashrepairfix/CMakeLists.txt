@@ -19,7 +19,7 @@ target_link_libraries(crashrepairfix PRIVATE
   ${CRASHREPAIRFIX_LLVM_LIBS}
   ${CLANG_LIBS}
   nlohmann_json::nlohmann_json
-  fmt::fmt-header-only
+#  fmt::fmt
   spdlog::spdlog
 )
 target_compile_options(crashrepairfix PRIVATE
@@ -36,7 +36,7 @@ target_include_directories(crashrepairfix
     ${CLANG_INCLUDE_DIRS}
     ${LLVM_INCLUDE_DIRS}
     nlohmann_json::nlohmann_json
-    fmt::fmt
+#    fmt::fmt
     spdlog::spdlog
     ../../include
 )
