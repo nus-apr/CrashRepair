@@ -2,6 +2,7 @@
 
 #include <clang/AST/ASTContext.h>
 
+#include "AstLinkedFixLocation.h"
 #include "FixLocalization.h"
 #include "Mutation.h"
 
@@ -28,6 +29,7 @@ private:
   void addConditionalBreak(clang::Stmt *stmt, clang::ASTContext &context);
   void addConditionalContinue(clang::Stmt *stmt, clang::ASTContext &context);
   void addConditionalReturn(clang::Stmt *stmt, clang::ASTContext &context);
+  void addConditionalVoidReturn(clang::Stmt *stmt, clang::ASTContext &context);
 };
 
 }

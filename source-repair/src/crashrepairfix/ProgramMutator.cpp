@@ -6,6 +6,9 @@
 
 using json = nlohmann::json;
 
+// TODO bundle clang::Stmt, clang::ASTContext, and FixLocation into a single data structure
+// - can also add clang::FunctionDecl for parent function
+
 namespace crashrepairfix {
 
 void ProgramMutator::mutate(clang::ASTContext &context) {
@@ -15,7 +18,8 @@ void ProgramMutator::mutate(clang::ASTContext &context) {
       continue;
     }
 
-    spdlog::info("found matching statement: {}", getSource(stmt, context));
+    AstLinkedFixLocation linkedLocation = AstLinkedFixLocation::create(location, stmt, context);
+    spdlog::info("found matching statement: {}", linkedLocation.getSource());
     mutate(stmt, context);
   }
 }
@@ -60,26 +64,50 @@ void ProgramMutator::mutateNonConditionalStmt(clang::Stmt *stmt, clang::ASTConte
 }
 
 void ProgramMutator::prependConditionalControlFlow(clang::Stmt *stmt, clang::ASTContext &context) {
+  // TODO make sure that we can actually add a return statement!
+  // TODO find parent function
   addConditionalReturn(stmt, context);
+
   if (isInsideLoop(stmt, context)) {
     addConditionalBreak(stmt, context);
     addConditionalContinue(stmt, context);
   }
 }
 
-void ProgramMutator::addConditionalBreak(clang::Stmt *stmt, clang::ASTContext &context) {
+void ProgramMutator::addConditionalBreak(
+  clang::Stmt *stmt,
+  clang::ASTContext &context
+) {
   spdlog::info("inserting conditional break before statement: {}", getSource(stmt, context));
 }
 
-void ProgramMutator::addConditionalContinue(clang::Stmt *stmt, clang::ASTContext &context) {
+void ProgramMutator::addConditionalContinue(
+  clang::Stmt *stmt,
+  clang::ASTContext &context
+) {
   spdlog::info("inserting conditional continue before statement: {}", getSource(stmt, context));
 }
 
-void ProgramMutator::addConditionalReturn(clang::Stmt *stmt, clang::ASTContext &context) {
+void ProgramMutator::addConditionalReturn(
+  clang::Stmt *stmt,
+  clang::ASTContext &context
+) {
   spdlog::info("inserting conditional return before statement: {}", getSource(stmt, context));
+
+  // void or non-void?
 }
 
-void ProgramMutator::guardStatement(clang::Stmt *stmt, clang::ASTContext &context) {
+void ProgramMutator::addConditionalVoidReturn(
+  clang::Stmt *stmt,
+  clang::ASTContext &context
+) {
+  spdlog::info("inserting conditional void return before statement: {}", getSource(stmt, context));
+}
+
+void ProgramMutator::guardStatement(
+  clang::Stmt *stmt,
+  clang::ASTContext &context
+) {
   spdlog::info("wrapping guard around statement: {}", getSource(stmt, context));
 
   // NOTE this is 
