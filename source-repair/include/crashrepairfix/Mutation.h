@@ -18,11 +18,17 @@ namespace crashrepairfix {
 
 class Replacement {
 public:
-  Replacement(size_t offset, size_t length, std::string text)
-  : offset(offset), length(length), text(text) {}
+  Replacement(
+    std::string const &filename,
+    size_t offset,
+    size_t length,
+    std::string text
+  )
+  : filename(filename), offset(offset), length(length), text(text) {}
 
   nlohmann::json toJson() const {
     return {
+      {"filename", filename},
       {"offset", offset},
       {"length", length},
       {"text", text}
@@ -30,6 +36,7 @@ public:
   }
 
 private:
+  std::string filename;
   size_t offset;
   size_t length;
   std::string text;
