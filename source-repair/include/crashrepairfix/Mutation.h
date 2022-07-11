@@ -52,6 +52,12 @@ public:
       {"id", id},
       {"location", location.toString()}
     };
+
+    j["replacements"] = nlohmann::json::array();
+    for (auto &replacement : replacements) {
+      j["replacements"].push_back(replacement.toJson());
+    }
+
     return j;
   }
 
