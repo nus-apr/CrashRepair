@@ -14,7 +14,7 @@ public:
   : fixLocalization(fixLocalization), mutations() {}
 
   void mutate(clang::ASTContext &context);
-  void mutate(clang::Stmt *stmt, clang::ASTContext &context);
+  void mutate(AstLinkedFixLocation &location);
 
   void save();
 
@@ -22,14 +22,14 @@ private:
   FixLocalization &fixLocalization;
   std::vector<Mutation> mutations;
 
-  void mutateConditionalStmt(clang::Stmt *stmt, clang::ASTContext &context);
-  void mutateNonConditionalStmt(clang::Stmt *stmt, clang::ASTContext &context);
-  void prependConditionalControlFlow(clang::Stmt *stmt, clang::ASTContext &context);
-  void guardStatement(clang::Stmt *stmt, clang::ASTContext &context);
-  void addConditionalBreak(clang::Stmt *stmt, clang::ASTContext &context);
-  void addConditionalContinue(clang::Stmt *stmt, clang::ASTContext &context);
-  void addConditionalReturn(clang::Stmt *stmt, clang::ASTContext &context);
-  void addConditionalVoidReturn(clang::Stmt *stmt, clang::ASTContext &context);
+  void mutateConditionalStmt(AstLinkedFixLocation &location);
+  void mutateNonConditionalStmt(AstLinkedFixLocation &location);
+  void prependConditionalControlFlow(AstLinkedFixLocation &location);
+  void guardStatement(AstLinkedFixLocation &location);
+  void addConditionalBreak(AstLinkedFixLocation &location);
+  void addConditionalContinue(AstLinkedFixLocation &location);
+  void addConditionalReturn(AstLinkedFixLocation &location);
+  void addConditionalVoidReturn(AstLinkedFixLocation &location);
 };
 
 }

@@ -30,6 +30,14 @@ public:
     );
   }
 
+  clang::Stmt* getStmt() const {
+    return stmt;
+  }
+
+  std::string getStmtClassName() const {
+    return stmt->getStmtClassName();
+  }
+
   std::string getSource() const {
     return crashrepairfix::getSource(stmt, context);
   }
@@ -40,6 +48,10 @@ public:
 
   SourceLocation const & getLocation() const {
     return fixLocation.getLocation();
+  }
+
+  bool isInsideLoop() const {
+    return crashrepairfix::isInsideLoop(stmt, context);
   }
 };
 

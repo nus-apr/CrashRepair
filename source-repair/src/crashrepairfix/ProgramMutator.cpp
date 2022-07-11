@@ -20,18 +20,20 @@ void ProgramMutator::mutate(clang::ASTContext &context) {
 
     AstLinkedFixLocation linkedLocation = AstLinkedFixLocation::create(location, stmt, context);
     spdlog::info("found matching statement: {}", linkedLocation.getSource());
-    mutate(stmt, context);
+    mutate(linkedLocation);
   }
 }
 
-void ProgramMutator::mutate(clang::Stmt *stmt, clang::ASTContext &context) {
-  spdlog::info("mutating statement [{}]: {}", stmt->getStmtClassName(), getSource(stmt, context));
+void ProgramMutator::mutate(AstLinkedFixLocation &location) {
+  spdlog::info("mutating statement [{}]: {}", location.getStmtClassName(), location.getSource());
+
+  auto *stmt = location.getStmt();
 
   if (   clang::isa<clang::SwitchCase>(stmt)
       || clang::isa<clang::SwitchStmt>(stmt)
       || clang::isa<clang::CompoundStmt>(stmt)
   ) {
-    spdlog::warn("ignoring unsupported statement kind [{}]: {}", stmt->getStmtClassName(), getSource(stmt, context));
+    spdlog::warn("ignoring unsupported statement kind [{}]: {}", location.getStmtClassName(), location.getSource());
     return;
   }
 
@@ -42,75 +44,58 @@ void ProgramMutator::mutate(clang::Stmt *stmt, clang::ASTContext &context) {
   );
 
   if (isConditionalStmt) {
-    mutateConditionalStmt(stmt, context);
+    mutateConditionalStmt(location);
   } else {
-    mutateNonConditionalStmt(stmt, context);
+    mutateNonConditionalStmt(location);
   }
 }
 
-void ProgramMutator::mutateConditionalStmt(clang::Stmt *stmt, clang::ASTContext &context) {
-  spdlog::info("mutating conditional statement [{}]: {}", stmt->getStmtClassName(), getSource(stmt, context));
+void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
+  spdlog::info("mutating conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
 }
 
-void ProgramMutator::mutateNonConditionalStmt(clang::Stmt *stmt, clang::ASTContext &context) {
-  spdlog::info("mutating non-conditional statement [{}]: {}", stmt->getStmtClassName(), getSource(stmt, context));
+void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
+  spdlog::info("mutating non-conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
 
   // TODO ensure that this is a top-level stmt
 
-  prependConditionalControlFlow(stmt, context);
-  guardStatement(stmt, context);
+  prependConditionalControlFlow(location);
+  guardStatement(location);
 
   // TODO is this an assignment?
 }
 
-void ProgramMutator::prependConditionalControlFlow(clang::Stmt *stmt, clang::ASTContext &context) {
+void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &location) {
   // TODO make sure that we can actually add a return statement!
   // TODO find parent function
-  addConditionalReturn(stmt, context);
+  addConditionalReturn(location);
 
-  if (isInsideLoop(stmt, context)) {
-    addConditionalBreak(stmt, context);
-    addConditionalContinue(stmt, context);
+  if (location.isInsideLoop()) {
+    addConditionalBreak(location);
+    addConditionalContinue(location);
   }
 }
 
-void ProgramMutator::addConditionalBreak(
-  clang::Stmt *stmt,
-  clang::ASTContext &context
-) {
-  spdlog::info("inserting conditional break before statement: {}", getSource(stmt, context));
+void ProgramMutator::addConditionalBreak(AstLinkedFixLocation &location) {
+  spdlog::info("inserting conditional break before statement: {}", location.getSource());
 }
 
-void ProgramMutator::addConditionalContinue(
-  clang::Stmt *stmt,
-  clang::ASTContext &context
-) {
-  spdlog::info("inserting conditional continue before statement: {}", getSource(stmt, context));
+void ProgramMutator::addConditionalContinue(AstLinkedFixLocation &location) {
+  spdlog::info("inserting conditional continue before statement: {}", location.getSource());
 }
 
-void ProgramMutator::addConditionalReturn(
-  clang::Stmt *stmt,
-  clang::ASTContext &context
-) {
-  spdlog::info("inserting conditional return before statement: {}", getSource(stmt, context));
+void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
+  spdlog::info("inserting conditional return before statement: {}", location.getSource());
 
   // void or non-void?
 }
 
-void ProgramMutator::addConditionalVoidReturn(
-  clang::Stmt *stmt,
-  clang::ASTContext &context
-) {
-  spdlog::info("inserting conditional void return before statement: {}", getSource(stmt, context));
+void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
+  spdlog::info("inserting conditional void return before statement: {}", location.getSource());
 }
 
-void ProgramMutator::guardStatement(
-  clang::Stmt *stmt,
-  clang::ASTContext &context
-) {
-  spdlog::info("wrapping guard around statement: {}", getSource(stmt, context));
-
-  // NOTE this is 
+void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
+  spdlog::info("wrapping guard around statement: {}", location.getSource());
 }
 
 void ProgramMutator::save() {
