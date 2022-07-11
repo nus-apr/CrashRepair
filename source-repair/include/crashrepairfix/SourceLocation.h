@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <spdlog/fmt/fmt.h>
+
 #include "Utils.h"
 
 namespace crashrepairfix {
@@ -24,6 +26,10 @@ public:
 
   bool operator<(const SourceLocation &rhs) const {
     return file < rhs.file && line < rhs.line && column < rhs.column;
+  }
+
+  std::string toString() const {
+    return fmt::format("{}:{}:{}", file, line, column);
   }
 
   static SourceLocation fromString(std::string const &str) {
