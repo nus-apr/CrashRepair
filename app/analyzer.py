@@ -133,7 +133,6 @@ def analyze():
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
         input_byte_list = list(set(input_byte_list))
         cfc_info["var-info"] = var_info
-
         emitter.sub_sub_title("Running Taint Analysis")
         builder.build_normal()
         extractor.extract_byte_code(program_path)

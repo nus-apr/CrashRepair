@@ -101,9 +101,26 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
             if int(v_col) == int(col) and int(v_line) == int(line):
                 var_info_index = (var_name, v_line, v_col, inst_add)
                 if var_info_index not in var_taint_list:
-                    var_taint_list[var_info_index] = taint_expr_list
+                    filtered_taint_list = []
+                    data_type = None
+                    for taint_expr in taint_expr_list:
+                        data_type, taint_expr = taint_expr.split(":")
+                        if data_type == "integer" and v_type not in ["int", "short", "long"]:
+                            continue
+                        if data_type == "pointer" and "*" not in v_type:
+                            continue
+                        if data_type == "float" and v_type != "float":
+                            continue
+
+                        filtered_taint_list.append(taint_expr)
+
+                    var_taint_list[var_info_index] = {
+                        "expr_list":filtered_taint_list,
+                        "data_type": data_type
+                    }
     candidate_mapping = collections.OrderedDict()
     for crash_var_name in cfc_var_info_list:
+        crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
         for crash_var_expr in crash_var_expr_list:
             found_mapping = False
@@ -112,7 +129,11 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
             crash_var_input_byte_list = extractor.extract_input_bytes_used(crash_var_sym_expr_code)
             for var_taint_info in var_taint_list:
                 var_name, v_line, v_col, v_addr = var_taint_info
-                var_expr_list = var_taint_list[var_taint_info]
+                var_expr_list = var_taint_list[var_taint_info]["expr_list"]
+                v_type = var_taint_list[var_taint_info]["data_type"]
+                if v_type != crash_var_type:
+                    # print("SKIP", var_name, crash_var_name)
+                    continue
                 for var_expr in var_expr_list:
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
@@ -146,7 +167,6 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                         subset_var_list.append((var_name, var_expr))
             # if not found_mapping and subset_var_list:
             #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
-
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
 
@@ -175,7 +195,6 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                 if int(c_line) == int(taint_line) and int(c_col) < int(taint_col):
                     continue
                 candidate_locations.append((c_line, c_col))
-
     for candidate_loc in candidate_locations:
         localized_tokens = dict()
         candidate_line, candidate_col = candidate_loc
@@ -205,7 +224,8 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
             else:
                 localized_tokens = dict()
                 break
-        if localized_tokens:
+
+        if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
             candidate_constraints.append((localized_cfc, candidate_line, candidate_col))
@@ -235,8 +255,13 @@ def localize_state_info(fix_loc, taint_map):
                 continue
             if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
                 var_info_index = (var_name, v_line, v_col, inst_add)
+                v_type = taint_value_list[0].split(":")[0]
+                value_list = [x.split(":")[1] for x in taint_value_list]
                 if var_info_index not in state_info_list:
-                    state_info_list[var_info_index] = taint_value_list
+                    state_info_list[var_info_index] = {
+                       "data_type": v_type,
+                       "values": value_list
+                    }
     return state_info_list
 
 
@@ -265,16 +290,19 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             for state in state_info:
                 state_obj = dict()
                 var_name, line, col, inst_addr = state
-                value_list = state_info[state]
+                value_list = state_info[state]["values"]
+                var_type = state_info[state]["data_type"]
                 state_obj["variable-name"] = var_name
                 state_obj["source-location"] = ":".join([src_file, str(line), str(col)])
                 state_obj["instruction-address"] = int(inst_addr)
                 state_obj["value-list"] = value_list
+                state_obj["data_type"] = var_type
                 print_list = [str(x) for x in value_list[:5]]
                 localization_obj["state"].append(state_obj)
                 state_str = "[var-name] : {0:20}".format(var_name)
                 state_str += " [var-loc] {0:4},{0:4}".format(line, col)
                 state_str += " [instruction-address]: {0:4}".format(inst_addr)
+                state_str += " [var-type]: {0:8}".format(var_type)
                 state_str += " [values]: {0:20}".format(",".join(print_list))
                 emitter.information("\t\t{ " + state_str + " }")
             localization_list.append(localization_obj)

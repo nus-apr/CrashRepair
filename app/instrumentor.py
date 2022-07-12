@@ -15,8 +15,8 @@ def instrument_klee_var_expr(source_path, var_list):
     instrument_code = ""
     for variable, line_number, col, data_type in var_list:
         print_code = "klee_print_expr(\"[var-expr] " + variable + "\", " + variable + ");\n"
-        type_print_code = "klee_print_stmt(\"[var-type]: " + variable + ":" + data_type + "\");\n"
-        print_code = print_code + type_print_code
+        # type_print_code = "klee_print_stmt(\"[var-type]: " + variable + ":" + data_type + "\");\n"
+        # print_code = print_code + type_print_code
         line_number = line_number - 1
         if line_number in insert_code.keys():
             insert_code[line_number] = insert_code[line_number] + print_code
@@ -42,7 +42,6 @@ def instrument_klee_var_expr(source_path, var_list):
 
     with open(source_path, 'w') as source_file:
         source_file.writelines(content)
-
     ret_code = 1
     while ret_code != 0:
         syntax_fix_command = "clang-tidy --fix-errors " + source_path

@@ -380,6 +380,7 @@ def read_symbolic_expressions(trace_file_path):
     var_expr_map = OrderedDict()
     if os.path.exists(trace_file_path):
         with open(trace_file_path, 'r') as trace_file:
+            var_name = ""
             for line in trace_file:
                 if '[var-expr]' in line:
                     line = line.split("[var-expr] ")[-1]
@@ -391,8 +392,7 @@ def read_symbolic_expressions(trace_file_path):
                     var_expr_map[var_name]['expr_list'] .append(var_expr)
                 if '[var-type]' in line:
                     line = line.split("[var-type]: ")[-1]
-                    var_name = line.split(":")[0]
-                    var_type = line.split(":")[1]
+                    var_type = line.strip()
                     var_type = var_type.replace("\n", "")
                     var_expr_map[var_name]['data_type'] = var_type
     return var_expr_map
@@ -429,11 +429,13 @@ def read_tainted_expressions(taint_log_path):
             for line in taint_file:
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
-                    source_loc, taint_value = line.split(": ")
+                    source_loc, data_type, taint_value = line.split(": ")
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
-                    taint_map[source_loc].append(taint_value.replace("\n",""))
+                    taint_value =  taint_value.replace("\n","")
+                    taint_map[source_loc].append("{}:{}".format(data_type.strip(),taint_value))
     return taint_map
+
 
 def read_taint_values(taint_log_path):
     emitter.normal("\tcollecting tainted concrete values")
@@ -443,7 +445,7 @@ def read_taint_values(taint_log_path):
             for line in taint_file:
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
-                    source_loc, taint_str = line.split(": ")
+                    source_loc, data_type, taint_str = line.split(": ")
                     taint_str = taint_str.replace("\n", "")
                     if "_ bv" in taint_str:
                         taint_str = taint_str.split(" ")[1]
@@ -455,7 +457,7 @@ def read_taint_values(taint_log_path):
                         taint_value = 0
                     else:
                         taint_value = int(taint_str.replace("\n", "").replace("bv", ""))
-                    taint_map[source_loc].append(taint_value)
+                    taint_map[source_loc].append("{}:{}".format(data_type.strip(),taint_value))
     return taint_map
 
 
