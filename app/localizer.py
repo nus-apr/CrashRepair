@@ -116,8 +116,11 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                 for var_expr in var_expr_list:
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
-                    if not var_input_byte_list:
-                        continue
+                    if not var_input_byte_list and not crash_var_input_byte_list:
+                        if crash_var_expr_list == var_expr_list:
+                            if crash_var_name not in candidate_mapping:
+                                candidate_mapping[crash_var_name] = set()
+                            candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
                     if var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
