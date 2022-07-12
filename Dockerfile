@@ -42,7 +42,7 @@ RUN git clone https://github.com/klee/klee-uclibc.git . && \
     make -j2
 ENV KLEE_VERSION=2.0
 WORKDIR /klee
-ARG KLEE_REVISION=5b04df4f
+ARG KLEE_REVISION=d624960e53
 RUN git clone https://github.com/rshariffdeen/klee.git source \
  && cd source \
  && git checkout "${KLEE_REVISION}"

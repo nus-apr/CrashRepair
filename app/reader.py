@@ -394,6 +394,13 @@ def read_symbolic_expressions(trace_file_path):
                     line = line.split("[var-type]: ")[-1]
                     var_type = line.strip()
                     var_type = var_type.replace("\n", "")
+
+                    if var_type in ["int", "short", "long"]:
+                        var_type = "integer"
+                    elif "*" in var_type:
+                        var_type = "pointer"
+                    if var_type in ["float"]:
+                        var_type = "float"
                     var_expr_map[var_name]['data_type'] = var_type
     return var_expr_map
 

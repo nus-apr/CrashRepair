@@ -132,8 +132,8 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                 var_expr_list = var_taint_list[var_taint_info]["expr_list"]
                 v_type = var_taint_list[var_taint_info]["data_type"]
                 if v_type != crash_var_type:
-                    # print("SKIP", var_name, crash_var_name)
                     continue
+
                 for var_expr in var_expr_list:
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
@@ -214,6 +214,8 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                         continue
                     if selected_line > m_line or (selected_line == m_line
                                                    and selected_col > m_col):
+                        continue
+                    if selected_expr and len(m_expr) > len(selected_expr):
                         continue
                     selected_expr = m_expr
                     selected_col = m_col
