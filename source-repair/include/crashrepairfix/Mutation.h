@@ -1,16 +1,8 @@
-// Mutation::toJSON
-// - id
-// - location
-// - replacements
-// Mutations::toJSON
-// ProgramMutator
-
 #pragma once
 
 #include <string>
 #include <vector>
 
-#include <dtl/dtl.hpp>
 #include <nlohmann/json.hpp>
 
 #include "SourceLocation.h"
@@ -40,6 +32,10 @@ public:
   }
   static Replacement prepend(std::string const &text, std::string const &filename, size_t offset) {
     return Replacement(filename, offset, 0, text);
+  }
+
+  std::string const & getFilename() const {
+    return filename;
   }
 
   nlohmann::json toJson() const {
