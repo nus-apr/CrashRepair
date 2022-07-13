@@ -105,7 +105,8 @@ void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
 
 void ProgramMutator::create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements) {
   size_t mutantId = mutations.size();
-  mutations.emplace_back(mutantId, location.getLocation(), std::move(replacements));
+  std::string diff = diffGenerator.diff(replacements);
+  mutations.emplace_back(mutantId, location.getLocation(), std::move(replacements), diff);
 }
 
 void ProgramMutator::save() {

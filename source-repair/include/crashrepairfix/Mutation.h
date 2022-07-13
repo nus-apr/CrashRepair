@@ -59,8 +59,9 @@ public:
   Mutation(
     size_t id,
     SourceLocation const &location,
-    std::vector<Replacement> const &replacements
-  ) : id(id), location(location), replacements(replacements) {}
+    std::vector<Replacement> const &replacements,
+    std::string const &diff
+  ) : id(id), location(location), replacements(replacements), diff(diff) {}
 
   size_t getId() const {
     return id;
@@ -69,7 +70,8 @@ public:
   nlohmann::json toJson() const {
     nlohmann::json j = {
       {"id", id},
-      {"location", location.toString()}
+      {"location", location.toString()},
+      {"diff", diff}
     };
 
     j["replacements"] = nlohmann::json::array();
@@ -84,6 +86,7 @@ private:
   size_t id;
   SourceLocation location;
   std::vector<Replacement> replacements;
+  std::string diff;
 };
 
 }

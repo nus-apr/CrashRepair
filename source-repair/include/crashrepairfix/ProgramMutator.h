@@ -3,6 +3,7 @@
 #include <clang/AST/ASTContext.h>
 
 #include "AstLinkedFixLocation.h"
+#include "DiffGenerator.h"
 #include "FixLocalization.h"
 #include "Mutation.h"
 
@@ -11,7 +12,7 @@ namespace crashrepairfix {
 class ProgramMutator {
 public:
   ProgramMutator(FixLocalization &fixLocalization)
-  : fixLocalization(fixLocalization), mutations() {}
+  : diffGenerator(), fixLocalization(fixLocalization), mutations() {}
 
   void mutate(clang::ASTContext &context);
   void mutate(AstLinkedFixLocation &location);
@@ -19,6 +20,7 @@ public:
   void save();
 
 private:
+  DiffGenerator diffGenerator;
   FixLocalization &fixLocalization;
   std::vector<Mutation> mutations;
 
