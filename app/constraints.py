@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-from app import emitter, utilities, converter
+from app import emitter, utilities, converter, values
 
 SymbolType = {
                  "INT_CONST": "",
@@ -20,6 +20,9 @@ SymbolType = {
                  "OP_AND": "&&",
                  "OP_OR": "||",
                  "OP_NOT": "!",
+
+                 "OP_INCREMENT": "++",
+                 "OP_DECREMENT": "--",
 
                  "OP_ASSIGN": "=",
                  "OP_ARITH_MINUS": "-",
@@ -66,6 +69,8 @@ class ConstraintSymbol:
             "OP_ARITH_PLUS",
             "OP_ARITH_DIVIDE",
             "OP_ARITH_MUL",
+            "OP_INCREMENT",
+            "OP_DECREMENT"
         ]
         return self._m_cons_type in operator_type_list
 
@@ -99,6 +104,8 @@ class ConstraintExpression:
     _hasLetVal = False
     _m_mapping = None
     _is_leaf = False
+    _sizeof = None
+
 
     def __init__(self, c_symbol, l_expr, r_expr):
         self._m_symbol = c_symbol
@@ -141,6 +148,9 @@ class ConstraintExpression:
 
     def to_string(self):
         expr_str = str(self.get_symbol())
+        if self._m_symbol.is_sizeof():
+            if self._sizeof:
+                return self._sizeof
         if not self.is_leaf():
             l_expr = None
             r_expr = None
@@ -152,13 +162,18 @@ class ConstraintExpression:
             if l_expr and r_expr:
                 expr_str = "({} {} {})".format(l_expr, expr_str, r_expr)
             elif r_expr:
-                expr_str = "({} {})".format(expr_str, r_expr)
+                if self._m_symbol.is_sizeof():
+                    expr_str = "{}{}".format(expr_str, r_expr)
+                else:
+                    expr_str = "({} {})".format(expr_str, r_expr)
         return expr_str
 
     def get_symbol_list(self):
         symbol_list = []
         if self._m_symbol.is_int_var() or self._m_symbol.is_real_var():
             symbol_list = [self.get_symbol()]
+        elif self._m_symbol.is_sizeof():
+            return [self.to_string()]
         if self._m_lvalue:
             symbol_list = symbol_list + self._m_lvalue.get_symbol_list()
         if self._m_rvalue:
@@ -166,11 +181,36 @@ class ConstraintExpression:
         return symbol_list
 
 
+    def resolve_sizeof(self, cfc_var_info_list):
+        if self._m_symbol.is_sizeof():
+            ptr_name = self.get_r_expr().to_string()
+            if ptr_name in cfc_var_info_list:
+                crash_var_expr_list = cfc_var_info_list[ptr_name]['expr_list']
+                if len(crash_var_expr_list) > 1:
+                    emitter.error("More than one pointer for SizeOf resolution")
+                    utilities.error_exit("Unhandled Exception")
+                symbolic_ptr = crash_var_expr_list[0].split(" ")[1]
+                symbolic_size = values.MEMORY_TRACK[symbolic_ptr]['size']
+                self._sizeof = symbolic_size
+
+
+        if not self.is_leaf():
+            if self.get_r_expr() is not None:
+                self.get_r_expr().resolve_sizeof(cfc_var_info_list)
+            if self.get_l_expr() is not None:
+                self.get_l_expr().resolve_sizeof(cfc_var_info_list)
+
+
+
     def update_symbols(self, symbol_mapping):
         if self._m_symbol.is_int_var() or self._m_symbol.is_real_var():
             symbol_str = self.get_symbol()
             if symbol_str in symbol_mapping:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
+        elif self._m_symbol.is_sizeof():
+            symbol_str = self.to_string()
+            if symbol_str in symbol_mapping:
+                self._sizeof = symbol_mapping[symbol_str]
         if self._m_lvalue:
             self._m_lvalue.update_symbols(symbol_mapping)
         if self._m_rvalue:
@@ -233,7 +273,8 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
         child_ast = ast_node["inner"][0]
-        constraint_expr = make_unary_expression(constraint_symbol, child_ast)
+        child_expr = generate_expr_for_ast(child_ast)
+        constraint_expr = make_unary_expression(constraint_symbol, child_expr)
         return constraint_expr
     elif node_type == "Macro":
         utilities.error_exit("Unhandled node type for Expression: {}".format(node_type))
