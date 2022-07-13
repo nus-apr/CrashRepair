@@ -13,3 +13,6 @@
 [submodule "source-repair/extern/spdlog"]
 	path = source-repair/extern/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "source-repair/extern/dtl"]
+	path = source-repair/extern/dtl
+	url = https://github.com/cubicdaiya/dtl
