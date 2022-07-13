@@ -66,10 +66,9 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
 }
 
 void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &location) {
-  // TODO make sure that we can actually add a return statement!
-  // TODO find parent function
-  addConditionalReturn(location);
-
+  if (location.isInsideFunction()) {
+    addConditionalReturn(location);
+  }
   if (location.isInsideLoop()) {
     addConditionalBreak(location);
     addConditionalContinue(location);
@@ -85,13 +84,19 @@ void ProgramMutator::addConditionalContinue(AstLinkedFixLocation &location) {
 }
 
 void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
-  spdlog::info("inserting conditional return before statement: {}", location.getSource());
-
-  // void or non-void?
+  if (location.isInsideVoidFunction()) {
+    addConditionalVoidReturn(location);
+  } else {
+    addConditionalNonVoidReturn(location);
+  }
 }
 
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());
+}
+
+void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {
+  spdlog::info("inserting conditional non-void return before statement: {}", location.getSource());
 }
 
 void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {

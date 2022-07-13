@@ -65,6 +65,14 @@ public:
   bool isInsideLoop() const {
     return crashrepairfix::isInsideLoop(stmt, context);
   }
+
+  bool isInsideFunction() const {
+    return parentFunction != nullptr;
+  }
+
+  bool isInsideVoidFunction() const {
+    return isInsideFunction() && parentFunction->getReturnType().getAsString() == "void";
+  }
 };
 
 }

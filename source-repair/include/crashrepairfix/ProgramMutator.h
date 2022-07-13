@@ -30,6 +30,7 @@ private:
   void addConditionalContinue(AstLinkedFixLocation &location);
   void addConditionalReturn(AstLinkedFixLocation &location);
   void addConditionalVoidReturn(AstLinkedFixLocation &location);
+  void addConditionalNonVoidReturn(AstLinkedFixLocation &location);
 };
 
 }
