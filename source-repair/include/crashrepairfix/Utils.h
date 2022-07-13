@@ -19,6 +19,8 @@ std::string getSource(clang::Stmt const *stmt, clang::SourceManager const &sourc
 
 std::string getSource(clang::Stmt const *stmt, clang::ASTContext const &context);
 
+std::vector<std::string> getLines(std::string const &s);
+
 std::string yesOrNo(bool status);
 
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context);

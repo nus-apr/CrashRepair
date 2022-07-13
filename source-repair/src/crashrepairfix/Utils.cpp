@@ -1,5 +1,8 @@
 #include <crashrepairfix/Utils.h>
 
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <queue>
 
 namespace crashrepairfix {
@@ -13,6 +16,16 @@ std::vector<std::string> split(const std::string &s, char delim) {
     elems.push_back(std::move(item));
   }
   return elems;
+}
+
+std::vector<std::string> getLines(std::string const &s) {
+  std::vector<std::string> lines;
+  std::stringstream ss(s);
+  std::string line;    
+  while (std::getline(ss, line)) {
+    lines.push_back(std::move(line));
+  }
+  return lines;
 }
 
 std::string getSource(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
