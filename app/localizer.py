@@ -148,7 +148,9 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                             if "width" in crash_var_expr_list:
                                 crash_size_bits = int(crash_var_expr_list["size"].replace("bv", ""))
                                 crash_size_width = int(crash_var_expr_list["width"])
-                                crash_size_bytes = crash_size_bits/crash_size_width
+                                crash_size_bytes = -1
+                                if crash_size_width > 0:
+                                    crash_size_bytes = crash_size_bits/crash_size_width
                                 var_size_bytes = int(var_expr_list[0].split(" ")[1].replace("bv", ""))
                                 if var_size_bytes == crash_size_bytes:
                                     if crash_var_name not in candidate_mapping:
@@ -179,6 +181,7 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                         subset_var_list.append((var_name, var_expr))
             # if not found_mapping and subset_var_list:
             #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
+
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
 
@@ -317,7 +320,7 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 state_str += " [var-loc] {0:4},{0:4}".format(line, col)
                 state_str += " [instruction-address]: {0:4}".format(inst_addr)
                 state_str += " [var-type]: {0:8}".format(var_type)
-                state_str += " [values]: {0:20}".format(",".join(print_list))
+                state_str += " [values]: {0:2}".format(",".join(print_list)[:10])
                 emitter.information("\t\t{ " + state_str + " }")
             localization_list.append(localization_obj)
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)

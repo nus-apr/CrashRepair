@@ -21,6 +21,9 @@ SymbolType = {
                  "OP_OR": "||",
                  "OP_NOT": "!",
 
+                 "OP_INCREMENT": "++",
+                 "OP_DECREMENT": "--",
+
                  "OP_ASSIGN": "=",
                  "OP_ARITH_MINUS": "-",
                  "OP_ARITH_PLUS": "+",
@@ -66,6 +69,8 @@ class ConstraintSymbol:
             "OP_ARITH_PLUS",
             "OP_ARITH_DIVIDE",
             "OP_ARITH_MUL",
+            "OP_INCREMENT",
+            "OP_DECREMENT"
         ]
         return self._m_cons_type in operator_type_list
 
@@ -268,7 +273,8 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
         child_ast = ast_node["inner"][0]
-        constraint_expr = make_unary_expression(constraint_symbol, child_ast)
+        child_expr = generate_expr_for_ast(child_ast)
+        constraint_expr = make_unary_expression(constraint_symbol, child_expr)
         return constraint_expr
     elif node_type == "Macro":
         utilities.error_exit("Unhandled node type for Expression: {}".format(node_type))
