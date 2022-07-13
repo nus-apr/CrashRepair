@@ -62,6 +62,12 @@ public:
     return fixLocation.getLocation();
   }
 
+  bool isConditionalStmt() const {
+    return clang::isa<clang::IfStmt>(stmt)
+      || clang::isa<clang::ForStmt>(stmt)
+      || clang::isa<clang::WhileStmt>(stmt);
+  }
+
   bool isInsideLoop() const {
     return crashrepairfix::isInsideLoop(stmt, context);
   }

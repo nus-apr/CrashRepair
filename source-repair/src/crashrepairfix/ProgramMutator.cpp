@@ -33,17 +33,11 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
       || clang::isa<clang::SwitchStmt>(stmt)
       || clang::isa<clang::CompoundStmt>(stmt)
   ) {
-    spdlog::warn("ignoring unsupported statement kind [{}]: {}", location.getStmtClassName(), location.getSource());
+    spdlog::warn("ignoring unsupported statement [kind: {}]: {}", location.getStmtClassName(), location.getSource());
     return;
   }
 
-  bool isConditionalStmt = (
-       clang::isa<clang::IfStmt>(stmt)
-    || clang::isa<clang::ForStmt>(stmt)
-    || clang::isa<clang::WhileStmt>(stmt)
-  );
-
-  if (isConditionalStmt) {
+  if (location.isConditionalStmt()) {
     mutateConditionalStmt(location);
   } else {
     mutateNonConditionalStmt(location);
