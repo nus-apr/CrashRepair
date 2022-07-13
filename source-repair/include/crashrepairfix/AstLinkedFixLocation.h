@@ -10,12 +10,18 @@ private:
   FixLocation const &fixLocation;
   clang::Stmt *stmt;
   clang::ASTContext &context;
+  clang::FunctionDecl const *parentFunction;
 
   AstLinkedFixLocation(
     FixLocation const &fixLocation,
     clang::Stmt *stmt,
-    clang::ASTContext &context
-  ) : fixLocation(fixLocation), stmt(stmt), context(context) {}
+    clang::ASTContext &context,
+    clang::FunctionDecl const *parentFunction
+  ) : fixLocation(fixLocation),
+      stmt(stmt),
+      context(context),
+      parentFunction(parentFunction)
+  {}
 
 public:
   static AstLinkedFixLocation create(
@@ -23,15 +29,21 @@ public:
     clang::Stmt *stmt,
     clang::ASTContext &context
   ) {
+    auto parentFunction = getParentFunctionDecl(stmt, context);
     return AstLinkedFixLocation(
       fixLocation,
       stmt,
-      context
+      context,
+      parentFunction
     );
   }
 
   clang::Stmt* getStmt() const {
     return stmt;
+  }
+
+  clang::FunctionDecl const * getParentFunction() const {
+    return parentFunction;
   }
 
   std::string getStmtClassName() const {

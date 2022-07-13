@@ -1,5 +1,7 @@
 #include <crashrepairfix/Utils.h>
 
+#include <queue>
+
 namespace crashrepairfix {
 
 // adapted from https://stackoverflow.com/a/27511119
@@ -51,6 +53,31 @@ bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context) {
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context) {
   auto node = clang::DynTypedNode::create(*stmt);
   return isInsideLoop(node, context);
+}
+
+clang::FunctionDecl const * getParentFunctionDecl(clang::Stmt const *stmt, clang::ASTContext &context) {
+  auto node = clang::DynTypedNode::create(*stmt);
+  return getParentFunctionDecl(node, context);
+}
+
+clang::FunctionDecl const * getParentFunctionDecl(clang::DynTypedNode node, clang::ASTContext &context) {
+  std::queue<clang::DynTypedNode> q;
+  for (auto parent : context.getParents(node)) {
+    q.push(parent);
+  }
+
+  while (!q.empty()) {
+    node = q.front();
+    if (auto functionDecl = node.get<clang::FunctionDecl>()) {
+      return functionDecl;
+    }
+    for (auto parent : context.getParents(node)) {
+      q.push(parent);
+    }
+    q.pop();
+  }
+
+  return nullptr;
 }
 
 }

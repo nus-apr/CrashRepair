@@ -24,4 +24,7 @@ std::string yesOrNo(bool status);
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context);
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context);
 
+clang::FunctionDecl const * getParentFunctionDecl(clang::Stmt const *stmt, clang::ASTContext &context);
+clang::FunctionDecl const * getParentFunctionDecl(clang::DynTypedNode node, clang::ASTContext &context);
+
 }
