@@ -37,6 +37,7 @@ target_include_directories(crashrepairfix
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     ../../include
+    ../../extern/dtl/include
 )
 
 install(

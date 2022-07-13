@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include <dtl/dtl.hpp>
 #include <nlohmann/json.hpp>
 
 #include "SourceLocation.h"
