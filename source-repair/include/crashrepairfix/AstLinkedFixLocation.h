@@ -42,9 +42,15 @@ public:
     return stmt;
   }
 
+  clang::ASTContext const & getContext() const {
+    return context;
+  }
+
   clang::FunctionDecl const * getParentFunction() const {
     return parentFunction;
   }
+
+  // TODO expose crash-free condition provided by underlying fix location
 
   std::string getStmtClassName() const {
     return stmt->getStmtClassName();

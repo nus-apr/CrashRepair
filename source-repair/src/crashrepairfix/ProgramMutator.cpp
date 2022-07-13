@@ -3,11 +3,9 @@
 #include <crashrepairfix/Utils.h>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 
 using json = nlohmann::json;
-
-// TODO bundle clang::Stmt, clang::ASTContext, and FixLocation into a single data structure
-// - can also add clang::FunctionDecl for parent function
 
 namespace crashrepairfix {
 
@@ -87,6 +85,13 @@ void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
 
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());
+
+  // NOTE this code is in here solely to test the Mutation class functionality
+  auto cfcSource = "5 < 10";  // TODO Expr.toSource();
+  auto insert = fmt::format("if (!({})) {{ return; }} ", cfcSource);
+  spdlog::info("inserting code before statement: {}", insert);
+
+  auto replacement = Replacement::prepend(insert, location);
 }
 
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {
