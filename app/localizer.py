@@ -88,6 +88,7 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     function_range = function_ast["range"]
     func_line_range = extractor.extract_line_range(src_file, function_range)
     var_info_list = extractor.extract_var_list(function_ast, src_file)
+
     var_taint_list = collections.OrderedDict()
     for taint_info in taint_map:
         c_file, line, col, inst_add = taint_info.split(":")
@@ -107,17 +108,17 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                         data_type, taint_expr = taint_expr.split(":")
                         if data_type == "integer" and v_type not in ["int", "short", "long"]:
                             continue
-                        if data_type == "pointer" and "*" not in v_type:
+                        if data_type == "pointer" and "*" not in v_type and "[" not in v_type:
                             continue
                         if data_type == "float" and v_type != "float":
                             continue
-
                         filtered_taint_list.append(taint_expr)
 
                     var_taint_list[var_info_index] = {
                         "expr_list":filtered_taint_list,
                         "data_type": data_type
                     }
+
     candidate_mapping = collections.OrderedDict()
     for crash_var_name in cfc_var_info_list:
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
@@ -132,8 +133,9 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                 var_expr_list = var_taint_list[var_taint_info]["expr_list"]
                 v_type = var_taint_list[var_taint_info]["data_type"]
                 if v_type != crash_var_type:
+                    # print("SKIP", crash_var_name, var_name, crash_var_type, v_type)
                     continue
-
+                # print("MATCH", crash_var_name, var_name, crash_var_type, v_type)
                 for var_expr in var_expr_list:
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
@@ -142,6 +144,16 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
                             candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
+                        else:
+                            if "width" in crash_var_expr_list:
+                                crash_size_bits = int(crash_var_expr_list["size"].replace("bv", ""))
+                                crash_size_width = int(crash_var_expr_list["width"])
+                                crash_size_bytes = crash_size_bits/crash_size_width
+                                var_size_bytes = int(var_expr_list[0].split(" ")[1].replace("bv", ""))
+                                if var_size_bytes == crash_size_bytes:
+                                    if crash_var_name not in candidate_mapping:
+                                        candidate_mapping[crash_var_name] = set()
+                                    candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
                     if var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
@@ -178,12 +190,14 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
     src_file, taint_line, taint_col = taint_loc.split(":")
     crash_loc = cfc_info["loc"]
     cfc_expr = cfc_info["expr"]
-    # cfc_expr_str = cfc_expr.to_string()
     cfc_var_info_list = cfc_info["var-info"]
+    # cfc_expr.resolve_sizeof(cfc_var_info_list)
+    cfc_expr_str = cfc_expr.to_string()
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
     candidate_mapping = get_candidate_map_for_func(func_name, taint_map, src_file,
                                                    function_ast, cfc_var_info_list)
     cfc_tokens = cfc_expr.get_symbol_list()
+
     for c_t in cfc_tokens:
         c_t_lookup = c_t.replace("(", "").replace(")", "")
         if c_t_lookup in candidate_mapping:
@@ -195,6 +209,7 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                 if int(c_line) == int(taint_line) and int(c_col) < int(taint_col):
                     continue
                 candidate_locations.append((c_line, c_col))
+
     for candidate_loc in candidate_locations:
         localized_tokens = dict()
         candidate_line, candidate_col = candidate_loc
@@ -223,9 +238,6 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
 
                 if selected_expr:
                     localized_tokens[c_t_lookup] = selected_expr
-            else:
-                localized_tokens = dict()
-                break
 
         if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)

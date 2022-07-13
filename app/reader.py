@@ -393,13 +393,13 @@ def read_symbolic_expressions(trace_file_path):
                 if '[var-type]' in line:
                     line = line.split("[var-type]: ")[-1]
                     var_type = line.strip()
-                    var_type = var_type.replace("\n", "")
+                    var_type = var_type.split(":")[-1].replace("\n", "")
 
                     if var_type in ["int", "short", "long"]:
                         var_type = "integer"
-                    elif "*" in var_type:
+                    elif "*" in var_type or "[" in var_type:
                         var_type = "pointer"
-                    if var_type in ["float"]:
+                    elif var_type in ["float"]:
                         var_type = "float"
                     var_expr_map[var_name]['data_type'] = var_type
     return var_expr_map
@@ -442,6 +442,29 @@ def read_tainted_expressions(taint_log_path):
                     taint_value =  taint_value.replace("\n","")
                     taint_map[source_loc].append("{}:{}".format(data_type.strip(),taint_value))
     return taint_map
+
+def read_memory_values(memory_log_path):
+    emitter.normal("\tcollecting memory allocations/de-allocations")
+    memory_map = OrderedDict()
+    if os.path.exists(memory_log_path):
+        with open(memory_log_path, 'r') as track_file:
+            for line in track_file:
+                if 'KLEE: MemoryTrack:' in line:
+                    line = line.replace("KLEE: MemoryTrack:", "").strip()
+                    values = line.split(" ")
+                    address = values[1]
+                    size = values[3]
+                    ptr_width = int(values[4].split(")(")[-1].replace(")", "")) / 8
+                    # size_in_bits = int(values[3].replace("bv", ""))
+
+                    # size_in_bytes = 0
+                    # if ptr_width > 0:
+                    #     size_in_bytes = size_in_bits / ptr_width
+                    memory_map[address] = {
+                        "width": int(ptr_width),
+                        "size": size,
+                    }
+    return memory_map
 
 
 def read_taint_values(taint_log_path):

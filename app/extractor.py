@@ -254,7 +254,7 @@ def extract_var_dec_list(ast_node, file_path):
         var_type = None
         if "type" in ast_node:
             var_type = str(ast_node['type']['qualType'])
-        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        begin_loc = extract_loc(file_path, ast_node["loc"])
         _, line_number, column_number = begin_loc
         var_list.append((var_name, line_number, column_number, var_type))
         return var_list
@@ -282,6 +282,12 @@ def extract_var_ref_list(ast_node, file_path):
         right_var_list = extract_var_ref_list(right_side, file_path)
         left_var_list = extract_var_ref_list(left_side, file_path)
         operands_var_list = right_var_list + left_var_list
+        if ast_node['opcode'] == "=":
+            begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+            data_type = left_side["type"]["qualType"]
+            _, line_number, col_number = begin_loc
+            assignment_var_name = converter.convert_node_to_str(left_side)
+            var_list.append((str(assignment_var_name), line_number, col_number, data_type))
         for var_name, line_number, col_number, var_type in operands_var_list:
             var_list.append((str(var_name), line_number, col_number, str(var_type)))
         return var_list

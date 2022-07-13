@@ -1,3 +1,4 @@
+import collections
 import os
 import app.configuration
 import app.utilities
@@ -112,15 +113,30 @@ def analyze():
         # assert exit_code == 0
         expr_trace_log = klee_concolic_out_dir + "/expr.log"
         var_info = reader.read_symbolic_expressions(expr_trace_log)
+
+        memory_track_log = klee_concolic_out_dir + "/memory.log"
+        values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
         input_byte_list = []
+        updated_var_info = collections.OrderedDict()
         for var_name in var_info:
             sym_expr_list = var_info[var_name]["expr_list"]
-            # value_list = var_info[var_name]["value_list"]
-            # var_type = var_info[var_name]["data_type"]
-            # print(var_name)
-            # print(value_list)
-            # print(sym_expr_list)
+            var_type = var_info[var_name]["data_type"]
+            updated_var_info[var_name] = var_info[var_name]
+            if var_type == "pointer":
+                if len(sym_expr_list) > 1 :
+                    emitter.error("More than one value for pointer")
+                if crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
+                    symbolic_ptr = sym_expr_list[0].split(" ")[1]
+                    sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
+                    sizeof_name = "sizeof {}".format(var_name)
+                    updated_var_info[sizeof_name] = {
+                        "expr_list": sizeof_expr_list,
+                        "data_type": "integer"
+                    }
+
+        for var_name in updated_var_info:
             tainted_byte_list = []
+            sym_expr_list = updated_var_info[var_name]["expr_list"]
             for sym_expr in sym_expr_list:
                 sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
                 tainted_byte_list = extractor.extract_input_bytes_used(sym_expr_code)
@@ -131,8 +147,9 @@ def analyze():
             input_byte_list = input_byte_list + tainted_byte_list
             tainted_bytes = [str(i) for i in tainted_byte_list]
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
+
         input_byte_list = list(set(input_byte_list))
-        cfc_info["var-info"] = var_info
+        cfc_info["var-info"] = updated_var_info
         emitter.sub_sub_title("Running Taint Analysis")
         builder.build_normal()
         extractor.extract_byte_code(program_path)
