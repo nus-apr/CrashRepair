@@ -27,7 +27,7 @@ private:
   void cacheFileContents(std::string const &filename);
 
   // Applies a set of replacements to a given file and returns the mutated contents of that file
-  std::string apply(std::vector<Replacement> const &replacements);
+  std::string apply(std::string const &original, std::vector<Replacement> const &replacements);
 
 };
 

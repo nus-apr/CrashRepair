@@ -38,6 +38,18 @@ public:
     return filename;
   }
 
+  std::string const & getText() const {
+    return text;
+  }
+
+  size_t getOffset() const {
+    return offset;
+  }
+
+  size_t getLength() const {
+    return length;
+  }
+
   nlohmann::json toJson() const {
     return {
       {"filename", filename},

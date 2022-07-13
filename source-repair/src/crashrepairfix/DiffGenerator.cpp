@@ -1,6 +1,7 @@
 #include <crashrepairfix/DiffGenerator.h>
 
 #include <dtl/dtl.hpp>
+#include <spdlog/fmt/fmt.h>
 
 #include <assert.h>
 
@@ -28,7 +29,7 @@ std::string DiffGenerator::diff(std::vector<Replacement> const &replacements) {
 
   std::string filename = replacements[0].getFilename();
   std::string const &originalContents = getOriginalSource(filename);
-  std::string mutatedContents = apply(replacements);
+  std::string mutatedContents = apply(originalContents, replacements);
 
   std::vector<std::string> originalLines = getLines(originalContents);
   std::vector<std::string> mutatedLines = getLines(mutatedContents);
@@ -42,14 +43,21 @@ std::string DiffGenerator::diff(std::vector<Replacement> const &replacements) {
   return buffer.str();
 }
 
-std::string DiffGenerator::apply(std::vector<Replacement> const &replacements) {
-  // TODO for now we assume that the replacements are correctly ordered
-  std::string filename = replacements[0].getFilename();
-  [[maybe_unused]] std::string const &originalContents = getOriginalSource(filename);
+std::string DiffGenerator::apply(std::string const &original, std::vector<Replacement> const &replacements) {
+  // TODO we currently assume all replacements are in the correct order
+  // apply each replacement in order (work from end of file to beginning)
+  std::string mutated = original;
 
-  // TODO implement!
-  // return originalContents;
-  return "foobar";
+  for (auto const &replacement : replacements) {
+    mutated = fmt::format(
+      "{}{}{}",
+      mutated.substr(0, replacement.getOffset()),
+      replacement.getText(),
+      mutated.substr(replacement.getOffset() + replacement.getLength())
+    );
+  }
+
+  return mutated;
 }
 
 }
