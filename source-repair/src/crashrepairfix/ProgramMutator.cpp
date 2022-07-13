@@ -92,6 +92,7 @@ void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting code before statement: {}", insert);
 
   auto replacement = Replacement::prepend(insert, location);
+  create(location, {replacement});
 }
 
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {
@@ -100,6 +101,11 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
 
 void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
   spdlog::info("wrapping guard around statement: {}", location.getSource());
+}
+
+void ProgramMutator::create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements) {
+  size_t mutantId = mutations.size();
+  mutations.emplace_back(mutantId, location.getLocation(), std::move(replacements));
 }
 
 void ProgramMutator::save() {

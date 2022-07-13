@@ -22,6 +22,8 @@ private:
   FixLocalization &fixLocalization;
   std::vector<Mutation> mutations;
 
+  void create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements);
+
   void mutateConditionalStmt(AstLinkedFixLocation &location);
   void mutateNonConditionalStmt(AstLinkedFixLocation &location);
   void prependConditionalControlFlow(AstLinkedFixLocation &location);
