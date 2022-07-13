@@ -446,6 +446,10 @@ def read_tainted_expressions(taint_log_path):
 def read_memory_values(memory_log_path):
     emitter.normal("\tcollecting memory allocations/de-allocations")
     memory_map = OrderedDict()
+    memory_map["bv0"] = {
+        "size": "(_ bv0 64)(0)",
+        "width": 1
+    }
     if os.path.exists(memory_log_path):
         with open(memory_log_path, 'r') as track_file:
             for line in track_file:
