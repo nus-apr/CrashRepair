@@ -212,10 +212,10 @@ def read_conf_file():
                 if not os.path.isfile(poc_file):
                     poc_path = values.CONF_DIR_EXPERIMENT + "/" + poc_file
                     if os.path.isfile(poc_path):
-                        poc_path= poc_path
+                        poc_file= poc_path
                     else:
-                        error_exit("Test file " + poc_path + " not found")
-                updated_poc_list.append(poc_path)
+                        error_exit("Test file " + poc_file + " not found")
+                updated_poc_list.append(os.path.abspath(poc_file))
             values.CONF_POC_LIST = updated_poc_list
         elif definitions.CONF_LOW_BOUND in configuration:
             values.CONF_LOW_BOUND = int(configuration.replace(definitions.CONF_LOW_BOUND, ''))
