@@ -28,7 +28,7 @@ def write_as_json(data, output_file_path):
 
 def run_analyze(test_dir):
     os.chdir(test_dir)
-    analyze_command = "git clean -f; crepair --conf=repair.conf . > analyze.log 2>&1"
+    analyze_command = "git clean -f; crepair --conf=repair.conf > analyze.log 2>&1"
     process = subprocess.Popen(analyze_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     process.wait()
     ret_code = process.returncode
@@ -38,6 +38,8 @@ def run_analyze(test_dir):
             if s.find(b'FATAL ERROR') != -1:
                 result = "ERROR"
             if s.find(b'Stack dump') != -1:
+                result = "ERROR"
+            if s.find(b'Runtime Error') != -1:
                 result = "ERROR"
     return result
 

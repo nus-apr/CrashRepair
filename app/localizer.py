@@ -4,7 +4,8 @@
 import sys
 import os
 import collections
-from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, constraints
+from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, \
+    utilities
 import ctypes
 import copy
 
@@ -323,6 +324,9 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 state_str += " [values]: {0:2}".format(",".join(print_list)[:10])
                 emitter.information("\t\t{ " + state_str + " }")
             localization_list.append(localization_obj)
+    if not localization_list:
+        emitter.error("Unable to Localize a Crash Free Constraint")
+        utilities.error_exit("Analysis Failed")
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))
 
