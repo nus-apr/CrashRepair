@@ -1,6 +1,6 @@
 [
   {
-    "fix-location": "/CrashRepair/tests/bug-types/div-zero/div-zero-1/src/test.c:19:7",
+    "fix-location": "/CrashRepair/tests/bug-types/div-zero/arithmetic-divisor/src/test.c:19:7",
     "constraint": {
       "type": "OP_NEQ",
       "symbol": "!=",
