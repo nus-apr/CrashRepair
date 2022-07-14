@@ -300,7 +300,8 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             state_info = localize_state_info(localized_loc, taint_map)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
             localization_obj["fix-location"] = localized_loc
-            localization_obj["constraint"] = localized_cfc.to_json()
+            localization_obj["constraint-text"] = localized_cfc.to_string()
+            localization_obj["constraint-ast"] = localized_cfc.to_json()
             localization_obj["state"] = list()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
             emitter.highlight("\t[state information]:")
