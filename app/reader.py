@@ -449,7 +449,7 @@ def read_memory_values(memory_log_path):
     emitter.normal("\tcollecting memory allocations/de-allocations")
     memory_map = OrderedDict()
     memory_map["bv0"] = {
-        "size": "(_ bv0 64)(0)",
+        "size": "bv0",
         "width": 1
     }
     if os.path.exists(memory_log_path):
