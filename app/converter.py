@@ -257,7 +257,9 @@ def convert_array_subscript(ast_node, only_string=False):
         print(array_node)
         print(ast_node)
         utilities.error_exit("Unknown data type for array_subscript")
-    var_list.append((iterator_name.replace("[", "").replace("]", ""), iterator_type))
+    iterator_name = iterator_name.replace("[", "").replace("]", "")
+    if not str(iterator_name).isnumeric():
+        var_list.append((iterator_name, iterator_type))
     if only_string:
         return var_name
     return var_name, var_data_type, var_list
