@@ -89,7 +89,6 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     function_range = function_ast["range"]
     func_line_range = extractor.extract_line_range(src_file, function_range)
     var_info_list = extractor.extract_var_list(function_ast, src_file)
-
     var_taint_list = collections.OrderedDict()
     for taint_info in taint_map:
         c_file, line, col, inst_add = taint_info.split(":")
@@ -201,7 +200,6 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
     candidate_mapping = get_candidate_map_for_func(func_name, taint_map, src_file,
                                                    function_ast, cfc_var_info_list)
     cfc_tokens = cfc_expr.get_symbol_list()
-
     for c_t in cfc_tokens:
         c_t_lookup = c_t.replace("(", "").replace(")", "")
         if c_t_lookup in candidate_mapping:
@@ -242,7 +240,6 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
 
                 if selected_expr:
                     localized_tokens[c_t_lookup] = selected_expr
-
         if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)

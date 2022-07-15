@@ -30,6 +30,9 @@ SymbolType = {
                  "OP_ARITH_DIVIDE": "/",
                  "OP_ARITH_MUL": "*",
 
+                 "OP_SHIFT_RIGHT": ">>",
+                 "OP_SHIFT_LEFT": "<<",
+
                  "OP_LET": "let ",
                  "NULL_VAL": "null",
                  "OP_SIZE_OF": "sizeof "
@@ -70,7 +73,9 @@ class ConstraintSymbol:
             "OP_ARITH_DIVIDE",
             "OP_ARITH_MUL",
             "OP_INCREMENT",
-            "OP_DECREMENT"
+            "OP_DECREMENT",
+            "OP_SHIFT_RIGHT",
+            "OP_SHIFT_LEFT"
         ]
         return self._m_cons_type in operator_type_list
 
@@ -178,7 +183,7 @@ class ConstraintExpression:
             symbol_list = symbol_list + self._m_lvalue.get_symbol_list()
         if self._m_rvalue:
             symbol_list = symbol_list + self._m_rvalue.get_symbol_list()
-        return symbol_list
+        return list(set(symbol_list))
 
 
     def resolve_sizeof(self, cfc_var_info_list):
@@ -215,6 +220,12 @@ class ConstraintExpression:
             self._m_lvalue.update_symbols(symbol_mapping)
         if self._m_rvalue:
             self._m_rvalue.update_symbols(symbol_mapping)
+
+
+def build_op_symbol(symbol_str):
+    op_type = next(key for key, value in SymbolType.items() if value == symbol_str)
+    symbolic_op = make_constraint_symbol(symbol_str, op_type)
+    return symbolic_op
 
 
 def make_constraint_symbol(c_symbol, c_type):
@@ -326,15 +337,11 @@ def generate_int_overflow_constraint(binary_node):
     binary_left_expr = generate_expr_for_ast(binary_left_ast)
 
     # second generate the constraint logical-operator
-    constraint_op_str = "<="
-    constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
-    constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
+    less_than_eq_op = build_op_symbol("<=")
 
     # last, generate the right-side expression
     crash_op_converter = {"*": "/", "+": "-", "-": "+"}
-    inverted_binary_op_str = crash_op_converter[binary_op_str]
-    inverted_binary_op_type = next(key for key, value in SymbolType.items() if value == inverted_binary_op_str)
-    inverted_op = make_constraint_symbol(inverted_binary_op_str, inverted_binary_op_type)
+    inverted_op = build_op_symbol(crash_op_converter[binary_op_str])
 
     check_val_str = "INT_MAX"
     check_val_type = "INT_CONST"
@@ -344,7 +351,7 @@ def generate_int_overflow_constraint(binary_node):
 
     constraint_left_expr = binary_left_expr
     constraint_right_expr = make_binary_expression(inverted_op, check_val_expr, binary_right_expr)
-    constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
+    constraint_expr = make_binary_expression(less_than_eq_op, constraint_left_expr, constraint_right_expr)
     return constraint_expr
 
 
@@ -364,18 +371,73 @@ def generate_memory_overflow_constraint(reference_node):
         constraint_left_expr = generate_expr_for_ast(iterator_node)
 
         # second generate the constraint logical-operator
-        constraint_op_str = "<="
-        constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
-        constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
+        less_than_eq_op = build_op_symbol("<=")
 
         # last generate the expression for array size
-        sizeof_op_str = "sizeof "
-        sizeof_op_type = next(key for key, value in SymbolType.items() if value == sizeof_op_str)
-        sizeof_op = make_constraint_symbol(sizeof_op_str, sizeof_op_type)
-
+        sizeof_op = build_op_symbol("sizeof ")
         array_expr = generate_expr_for_ast(array_node)
         constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
-        constraint_expr = make_binary_expression(constraint_op, constraint_left_expr, constraint_right_expr)
+        constraint_expr = make_binary_expression(less_than_eq_op, constraint_left_expr, constraint_right_expr)
     return constraint_expr
 
+
+def generate_shift_overflow_constraint(shift_node):
+    binary_left_ast = shift_node["inner"][0]
+    binary_right_ast = shift_node["inner"][1]
+    binary_op_str = shift_node["opcode"]
+
+    # Generating a constraint of type INT_MAX >> {} < {} && 0 < {} < bit width
+    # first generate the expressions for the two operands
+    binary_left_expr = generate_expr_for_ast(binary_left_ast)
+    binary_right_expr = generate_expr_for_ast(binary_right_ast)
+    result_data_type = binary_left_ast["type"]["qualType"]
+    type_min, type_max = get_type_limits(result_data_type)
+    max_val_symbol = make_constraint_symbol(type_max, "INT_CONST")
+    max_val_expr = make_symbolic_expression(max_val_symbol)
+
+    less_than_op = build_op_symbol("<")
+    shift_op = build_op_symbol(">>")
+    shifted_value_expr = make_binary_expression(shift_op, max_val_expr, binary_right_expr)
+    first_constraint_expr = make_binary_expression(less_than_op, shifted_value_expr, binary_left_expr)
+
+
+    # next generate the second constraint 0 < {} < bit width
+    type_width = get_type_width(result_data_type)
+    width_val_symbol = make_constraint_symbol(str(type_width), "INT_CONST")
+    width_val_expr = make_symbolic_expression(width_val_symbol)
+    zero_symbol = make_constraint_symbol("0", "INT_CONST")
+    zero_expr = make_symbolic_expression(zero_symbol)
+    first_predicate_expr = make_binary_expression(less_than_op, zero_expr, binary_right_expr)
+    second_predicate_expr = make_binary_expression(less_than_op, binary_right_expr, width_val_expr)
+    and_op = build_op_symbol("&&")
+    second_constraint_expr = make_binary_expression(and_op, first_predicate_expr, second_predicate_expr)
+
+    # last, concatenate both constraints into one
+    constraint_expr = make_binary_expression(and_op, first_constraint_expr, second_constraint_expr)
+    return constraint_expr
+
+
+def get_type_limits(data_type):
+    if data_type == "int":
+        return "INT_MIN", "INT_MAX"
+    elif data_type == "short":
+        return "SHRT_MIN", "SHRT_MAX"
+    elif data_type == "long":
+        return  "LONG_MIN", "LONG_MAX"
+    elif data_type == "unsigned int":
+        return "0", "UINT_MAX"
+    else:
+        utilities.error_exit("Unknown data type for limit constraints: {}".format(data_type))
+
+
+
+def get_type_width(data_type):
+    if data_type in ["int", "unsigned int"]:
+        return 4
+    elif data_type == "short":
+        return 2
+    elif data_type == "long":
+        return 8
+    else:
+        utilities.error_exit("Unknown data type for width constraints: {}".format(data_type))
 

@@ -262,6 +262,8 @@ def collect_klee_crash_info(trace_file_path):
         crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
     elif "out of bound pointer" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMORY_OVERFLOW
+    elif "overflow on shift operation" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
 
 

@@ -267,14 +267,17 @@ def extract_var_dec_list(ast_node, file_path):
 def extract_var_ref_list(ast_node, file_path):
     var_list = list()
     child_count = 0
-    if not ast_node:
-        return var_list
+    node_type = ast_node["kind"]
+    if node_type == "ImplicitCastExpr":
+        ast_node = ast_node["inner"][0]
+        node_type = ast_node["kind"]
     if "inner" in ast_node:
         child_count = len(ast_node['inner'])
-    node_type = ast_node["kind"]
+    if not ast_node:
+        return var_list
+
     if node_type in ["ReturnStmt"]:
-        child_list = ast_node['inner']
-        if len(child_list) == 0:
+        if child_count == 0:
             return var_list
     if node_type == "BinaryOperator":
         left_side = ast_node['inner'][0]
@@ -443,6 +446,18 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             if "[" in var_node[0]:
                 var_list.remove(var_node)
         cfc = constraints.generate_memory_overflow_constraint(target_ast)
+    elif crash_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["<<", ">>"])
+        crash_op_ast = None
+        for binary_op_ast in binaryop_list:
+            if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
+                crash_op_ast = binary_op_ast
+                break
+        if crash_op_ast is None:
+            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            utilities.error_exit("Unable to generate crash free constraint")
+        var_list = extract_var_list(crash_op_ast, src_file)
+        cfc = constraints.generate_shift_overflow_constraint(crash_op_ast)
     else:
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
