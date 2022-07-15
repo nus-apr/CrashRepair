@@ -3,6 +3,7 @@
 
 import sys
 import os
+import operator
 import collections
 from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, \
     utilities
@@ -188,7 +189,7 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
 def localize_cfc(taint_loc, cfc_info, taint_map):
     localized_cfc = None
     candidate_constraints = list()
-    candidate_locations = list()
+    candidate_locations = set()
     src_file, taint_line, taint_col = taint_loc.split(":")
     crash_loc = cfc_info["loc"]
     cfc_expr = cfc_info["expr"]
@@ -209,9 +210,9 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                     continue
                 if int(c_line) == int(taint_line) and int(c_col) < int(taint_col):
                     continue
-                candidate_locations.append((c_line, c_col))
-
-    for candidate_loc in candidate_locations:
+                candidate_locations.add((c_line, c_col))
+    sorted_candidate_locations = sorted(candidate_locations, key=operator.itemgetter(0, 1))
+    for candidate_loc in sorted_candidate_locations:
         localized_tokens = dict()
         candidate_line, candidate_col = candidate_loc
         for c_t in cfc_tokens:
