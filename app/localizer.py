@@ -110,10 +110,9 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                             continue
                         if data_type == "pointer" and "*" not in v_type and "[" not in v_type:
                             continue
-                        if data_type == "float" and v_type != "float":
+                        if data_type == "double" and v_type != "double":
                             continue
                         filtered_taint_list.append(taint_expr)
-
                     var_taint_list[var_info_index] = {
                         "expr_list":filtered_taint_list,
                         "data_type": data_type

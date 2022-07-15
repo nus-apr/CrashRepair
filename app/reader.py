@@ -401,8 +401,8 @@ def read_symbolic_expressions(trace_file_path):
                         var_type = "integer"
                     elif "*" in var_type or "[" in var_type:
                         var_type = "pointer"
-                    elif var_type in ["float"]:
-                        var_type = "float"
+                    elif var_type in ["double", "float"]:
+                        var_type = "double"
                     var_expr_map[var_name]['data_type'] = var_type
     return var_expr_map
 
@@ -442,6 +442,8 @@ def read_tainted_expressions(taint_log_path):
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
                     taint_value =  taint_value.replace("\n","")
+                    if data_type.strip() == "float":
+                        data_type = "double"
                     taint_map[source_loc].append("{}:{}".format(data_type.strip(),taint_value))
     return taint_map
 
