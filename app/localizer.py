@@ -231,14 +231,18 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                     if selected_line > m_line or (selected_line == m_line
                                                    and selected_col > m_col):
                         continue
-                    if selected_expr and len(m_expr) > len(selected_expr):
-                        continue
                     selected_expr = m_expr
                     selected_col = m_col
                     selected_line = m_line
 
                 if selected_expr:
-                    localized_tokens[c_t_lookup] = selected_expr
+                    if c_t_lookup in localized_tokens:
+                        current_mapping = localized_tokens[c_t_lookup]
+                        if current_mapping != c_t_lookup:
+                            if len(current_mapping) > len(selected_expr):
+                                localized_tokens[c_t_lookup] = selected_expr
+                    else:
+                        localized_tokens[c_t_lookup] = selected_expr
         if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
