@@ -267,6 +267,8 @@ def extract_var_dec_list(ast_node, file_path):
 def extract_var_ref_list(ast_node, file_path):
     var_list = list()
     child_count = 0
+    if not ast_node:
+        return var_list
     node_type = ast_node["kind"]
     if node_type == "ImplicitCastExpr":
         ast_node = ast_node["inner"][0]
@@ -770,6 +772,8 @@ def extract_input_bytes_used(sym_expr):
 
 
 def extract_line(file_path, ast_loc_info):
+    if "expansionLoc" in ast_loc_info:
+        ast_loc_info = ast_loc_info["expansionLoc"]
     offset = int(ast_loc_info["offset"])
     if file_path not in values.AST_OFFSET_MAP:
         values.AST_OFFSET_MAP[file_path] = generator.generate_offset_to_line(file_path)
@@ -792,6 +796,8 @@ def extract_col_range(ast_loc_info):
 
 
 def extract_loc(file_path, ast_loc_info):
+    if "expansionLoc" in ast_loc_info:
+        ast_loc_info = ast_loc_info["expansionLoc"]
     col = ast_loc_info["col"]
     line = extract_line(file_path, ast_loc_info)
     return file_path, line, col

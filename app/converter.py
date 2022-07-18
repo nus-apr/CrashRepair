@@ -224,8 +224,8 @@ def convert_array_subscript(ast_node, only_string=False):
         iterator_name, iterator_type, _ = convert_array_iterator(iterator_node)
         var_name = array_name + iterator_name
     elif array_type == "MemberExpr":
-        array_name = str(array_node['referencedDecl']['name'])
-        array_data_type = None
+        # array_name = str(array_node['referencedDecl']['name'])
+        # array_data_type = None
         if "type" in array_node.keys():
             array_data_type = str(array_node["type"]["qualType"])
         if len(ast_node["inner"]) > 1:
