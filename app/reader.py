@@ -397,7 +397,7 @@ def read_symbolic_expressions(trace_file_path):
                     var_type = line.strip()
                     var_type = var_type.split(":")[-1].replace("\n", "")
 
-                    if var_type in ["int", "short", "long"]:
+                    if var_type in definitions.INTEGER_TYPES:
                         var_type = "integer"
                     elif "*" in var_type or "[" in var_type:
                         var_type = "pointer"

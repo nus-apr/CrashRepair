@@ -107,7 +107,7 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                     data_type = None
                     for taint_expr in taint_expr_list:
                         data_type, taint_expr = taint_expr.split(":")
-                        if data_type == "integer" and v_type not in ["int", "short", "long"]:
+                        if data_type == "integer" and v_type not in definitions.INTEGER_TYPES:
                             continue
                         if data_type == "pointer" and "*" not in v_type and "[" not in v_type:
                             continue
