@@ -59,7 +59,6 @@ RUN mkdir build && \
     make
 ENV PATH=/klee/build/bin/:${PATH}
 ENV LLVM_COMPILER=clang
-RUN add-apt-repository -y ppa:deadsnakes/ppa
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y  --no-install-recommends --force-yes \
     bear \
     python3.8 \
