@@ -15,6 +15,9 @@
 #include <crashrepairfix/FixLocalization.h>
 #include <crashrepairfix/ProgramMutator.h>
 
+// DEBUGGING
+#include <crashrepairfix/Grammar.h>
+
 using namespace clang;
 using namespace clang::ast_matchers;
 using namespace clang::tooling;
@@ -82,6 +85,8 @@ int main(int argc, const char **argv) {
   spdlog::set_level(spdlog::level::debug);
 
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
+
+  crashrepair::parse("x + y * 7");
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
   ProgramMutator mutator(fixLocalization);

@@ -1,5 +1,6 @@
 add_executable(crashrepairfix
   crashrepairfix.cpp
+  Grammar.cpp
   DiffGenerator.cpp
   ProgramMutator.cpp
   Utils.cpp
