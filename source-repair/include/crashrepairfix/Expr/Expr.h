@@ -73,21 +73,17 @@ public:
     return result;
   }
 
-  /** Returns the immediate children in this expression subtree. */
-  // virtual std::vector<Expr const *> children() const {
-  //   return {};
-  // }
-  // virtual std::vector<Expr *> children() {
-  //   return {};
-  // }
-
   /** Returns a deep copy of this expression. */
   virtual std::unique_ptr<Expr> copy() const = 0;
 
   /** Returns the kind of this expression */
   virtual Kind getExprKind() const = 0;
 
+  /** Returns the type of the result produced by this expression */
+  virtual ResultType getResultType() const = 0;
+
 protected:
+  Expr() : children() {}
   Expr(std::vector<std::unique_ptr<Expr>> children) : children(std::move(children)) {}
 
   std::vector<std::unique_ptr<Expr>> children;

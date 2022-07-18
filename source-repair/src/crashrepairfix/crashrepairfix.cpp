@@ -86,7 +86,7 @@ int main(int argc, const char **argv) {
 
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
-  crashrepair::parse("x + y * 7");
+  crashrepairfix::parse("x + y * 7");
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
   ProgramMutator mutator(fixLocalization);

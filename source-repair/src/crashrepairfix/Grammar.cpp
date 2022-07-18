@@ -12,7 +12,7 @@ using namespace tao::pegtl;
 // https://github.com/taocpp/PEGTL/blob/main/src/example/pegtl/parse_tree.cpp
 // https://github.com/taocpp/PEGTL/blob/main/include/tao/pegtl/contrib/parse_tree.hpp
 
-namespace crashrepair {
+namespace crashrepairfix {
 
 struct integer : plus<digit> {};
 // TODO what's legal?
