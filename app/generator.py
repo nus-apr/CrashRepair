@@ -446,7 +446,6 @@ def generate_constant_value_list(sym_path):
     for const_name in gen_const_list:
         bit_vector = gen_const_list[const_name]
         const_value = utilities.get_signed_value(bit_vector)
-        print(const_name, const_value)
         const_val_list[const_name] = const_value
 
     emitter.data("Generated Constant List", const_val_list)
@@ -1162,13 +1161,16 @@ def generate_formula_from_patch(patch):
 
 
 def generate_z3_code_for_expr(var_expr, var_name, bit_size):
+    select_list = [x.group() for x in re.finditer(r'select (.*?)\)', var_expr)]
     var_name = var_name + "_" + str(bit_size)
     if bit_size == 64:
         zero = "x0000000000000000"
     else:
         zero = "x00000000"
     code = "(set-logic QF_AUFBV )\n"
-    code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
+    for sel_expr in select_list:
+        symbolic_source = sel_expr.split(" ")[2]
+        code += "(declare-fun {} () (Array (_ BitVec 32) (_ BitVec 8) ) )\n".format(symbolic_source)
     code += "(declare-fun " + var_name + "() (_ BitVec " + str(bit_size) + "))\n"
     # code += "(declare-fun b () (_ BitVec " + str(bit_size) + "))\n"
     code += "(assert (= " + var_name + " " + var_expr + "))\n"
@@ -1194,7 +1196,7 @@ def generate_z3_code_for_var(var_expr, var_name):
             code = generate_z3_code_for_expr(var_expr, var_name, 32)
 
     elif extend_56_count > 0:
-        code = generate_z3_code_for_expr(var_expr, var_name, 64)
+        code = generate_z3_code_for_expr(var_expr, var_name, 32)
 
     elif extend_32_count > 0:
         if "extend 32" in var_expr.split(") ")[0]:
@@ -1217,13 +1219,26 @@ def generate_z3_code_for_var(var_expr, var_name):
     return code
 
 
+def generate_source_definitions(sym_expr_a, sym_expr_b):
+    source_list_a = extractor.extract_input_bytes_used(sym_expr_a)
+    source_list_b = extractor.extract_input_bytes_used(sym_expr_b)
+    source_def_str = ""
+    source_list = list(set(source_list_a + source_list_b))
+    for source in source_list:
+        source_name, _ = source.split("_")
+        source_def_str = source_def_str + \
+                         ("(declare-fun {} () (Array (_ BitVec 32) (_ BitVec 8) ) )\n".
+                               format(source_name))
+    return source_def_str
+
+
 def generate_definitions(sym_expr_a, sym_expr_b):
     lines_a = sym_expr_a.split("\n")
-    var_dec_a = lines_a[2]
-    sym_expr_a = lines_a[3]
+    var_dec_a = [x for x in lines_a if "declare" in x][-1]
+    sym_expr_a = [x for x in lines_a if "assert" in x][0]
     lines_b = sym_expr_b.split("\n")
-    var_dec_b = lines_b[2]
-    sym_expr_b = lines_b[3]
+    var_dec_b = [x for x in lines_b if "declare" in x][-1]
+    sym_expr_b = [x for x in lines_b if "assert" in x][0]
     var_name_a = str(var_dec_a.split(" ")[1]).replace("()", "")
     var_name_b = str(var_dec_b.split(" ")[1]).replace("()", "")
 
@@ -1256,15 +1271,15 @@ def generate_definitions(sym_expr_a, sym_expr_b):
         sym_expr_a = sym_expr_a.replace(var_name_a, var_name_a + "_a")
         var_dec_a = var_dec_a.replace(var_name_a, var_name_a + "_a")
         var_name_a = var_name_a + "_a"
-    return ((var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b))
+    return (var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b)
 
 
-def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
-    def_a, def_b = generate_definitions(sym_expr_a, sym_expr_b)
+def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
+    def_a, def_b = generate_definitions(sym_expr_code_a, sym_expr_code_b)
     var_name_a, sym_expr_a, var_dec_a = def_a
     var_name_b, sym_expr_b, var_dec_b = def_b
     code = "(set-logic QF_AUFBV )\n"
-    code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
+    code += generate_source_definitions(sym_expr_code_a, sym_expr_code_b)
     code += var_dec_a + "\n"
     code += var_dec_b + "\n"
     code += sym_expr_a + "\n"
@@ -1274,12 +1289,13 @@ def generate_z3_code_for_equivalence(sym_expr_a, sym_expr_b):
     return code
 
 
-def generate_z3_code_for_offset(sym_expr_a, sym_expr_b):
-    def_a, def_b = generate_definitions(sym_expr_a, sym_expr_b)
+def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
+    def_a, def_b = generate_definitions(sym_expr_code_a, sym_expr_code_b)
     var_name_a, sym_expr_a, var_dec_a = def_a
     var_name_b, sym_expr_b, var_dec_b = def_b
+
     code = "(set-logic QF_AUFBV )\n"
-    code += "(declare-fun A-data () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
+    code += generate_source_definitions(sym_expr_code_a, sym_expr_code_b)
     code += var_dec_a + "\n"
     code += var_dec_b + "\n"
     if "_64" in var_name_b or "_64" in var_name_a:

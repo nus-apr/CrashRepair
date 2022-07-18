@@ -138,8 +138,8 @@ def analyze():
             tainted_byte_list = []
             sym_expr_list = updated_var_info[var_name]["expr_list"]
             for sym_expr in sym_expr_list:
-                sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-                tainted_byte_list = extractor.extract_input_bytes_used(sym_expr_code)
+                var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
+                tainted_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                 # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
                 #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
                 #     break

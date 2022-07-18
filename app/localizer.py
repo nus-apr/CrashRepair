@@ -26,8 +26,8 @@ def generate_fix_locations(marked_byte_list, taint_map):
         taint_loc = ":".join([src_file, line, col])
         taint_expr_list = taint_map[taint_info]['symbolic-list']
         for taint_value in taint_expr_list:
-            sym_expr_code = generator.generate_z3_code_for_var(taint_value, "TAINT")
-            tainted_bytes = extractor.extract_input_bytes_used(sym_expr_code)
+            taint_expr_code = generator.generate_z3_code_for_var(taint_value, "TAINT")
+            tainted_bytes = extractor.extract_input_bytes_used(taint_expr_code)
             if not tainted_bytes and len(taint_value) > 16:
                 tainted_bytes = [taint_value.split(" ")[1]]
             if taint_loc not in loc_to_byte_map:

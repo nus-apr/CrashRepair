@@ -753,7 +753,7 @@ def extract_keys_from_model(model):
 def extract_input_bytes_used(sym_expr):
     input_byte_list = list()
     script_lines = str(sym_expr).split("\n")
-    value_line = script_lines[3]
+    value_line = [x for x in script_lines if "assert" in x][0]
     if "select" in value_line:
         select_list = [x.group() for x in re.finditer(r'select (.*?)\)', value_line)]
         for sel_expr in select_list:
