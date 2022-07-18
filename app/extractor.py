@@ -751,36 +751,21 @@ def extract_keys_from_model(model):
 
 
 def extract_input_bytes_used(sym_expr):
-    # print(sym_expr)
-    model_a = ""
-    try:
-        model_a = generator.generate_model(sym_expr)
-    except Exception:
-        emitter.debug("\t\t[warning] exception in generating model")
-    # print("model-a")
-    # print(model_a)
     input_byte_list = list()
-    if model_a is not None:
-        input_byte_list = extract_keys_from_model(model_a)
-        if not input_byte_list:
-            script_lines = str(sym_expr).split("\n")
-            value_line = script_lines[3]
-            if "A-data" in value_line:
-                tokens = value_line.split("A-data")
-                if len(tokens) > 2:
-                    for token in tokens[1:]:
-                        byte_index = ((token.split(")")[0]).split("bv")[1]).split(" ")[0]
-                        input_byte_list.append(int(byte_index))
-                    emitter.debug("\t\t\twarning: manual inspection of bytes")
-                elif len(tokens) == 2:
-                    byte_index = ((tokens[1].split(")")[0]).split("bv")[1]).split(" ")[0]
-                    input_byte_list.append(int(byte_index))
-                else:
-                   utilities.error_exit("unexpected error in extracting input bytes")
+    script_lines = str(sym_expr).split("\n")
+    value_line = script_lines[3]
+    if "select" in value_line:
+        select_list = [x.group() for x in re.finditer(r'select (.*?)\)', value_line)]
+        for sel_expr in select_list:
+            symbolic_source = sel_expr.split(" ")[2]
+            byte_index = sel_expr.split(" ")[4].replace("bv", "")
+            input_byte_list.append("{}_{}".format(symbolic_source, byte_index))
+            emitter.debug("\t\t\twarning: manual inspection of bytes")
+
     # print("input byte list")
     # print(input_byte_list)
     if input_byte_list:
-        input_byte_list.sort()
+        input_byte_list = sorted(input_byte_list)
     return input_byte_list
 
 
