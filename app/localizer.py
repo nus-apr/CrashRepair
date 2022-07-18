@@ -71,8 +71,8 @@ def generate_fix_locations(marked_byte_list, taint_map):
                     continue
                 if set(marked_byte_list) <= set(observed_tainted_bytes):
                     fix_locations[source_loc] = func_name
-                    break
     sorted_fix_locations = []
+
     cached_list = []
     for taint_info in taint_map.keys():
         src_file, line, col, inst_addr = taint_info.split(":")
@@ -123,6 +123,8 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     for crash_var_name in cfc_var_info_list:
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
+        if "sizeof " in crash_var_name:
+            crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["size"])]
         for crash_var_expr in crash_var_expr_list:
             found_mapping = False
             subset_var_list = list()
@@ -145,18 +147,19 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                                 candidate_mapping[crash_var_name] = set()
                             candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
                         else:
+                            crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
                             if "width" in crash_var_expr_list:
                                 crash_size_bits = int(crash_var_expr_list["size"].replace("bv", ""))
                                 crash_size_width = int(crash_var_expr_list["width"])
                                 crash_size_bytes = -1
                                 if crash_size_width > 0:
-                                    crash_size_bytes = crash_size_bits/crash_size_width
+                                    crash_size_bytes = int(crash_size_bits/crash_size_width)
                                 var_size_bytes = int(var_expr_list[0].split(" ")[1].replace("bv", ""))
                                 if var_size_bytes == crash_size_bytes:
                                     if crash_var_name not in candidate_mapping:
                                         candidate_mapping[crash_var_name] = set()
                                     candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
-                    if var_input_byte_list == crash_var_input_byte_list:
+                    elif var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
                         if oracle.is_satisfiable(z3_eq_code):
@@ -173,15 +176,15 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                                 if len(str(offset)) > 16:
                                     number = offset & 0xFFFFFFFF
                                     offset = ctypes.c_long(number).value
-                                mapping = "({} - {})".format(var_name, offset)
-                                if crash_var_name not in candidate_mapping:
-                                    candidate_mapping[crash_var_name] = set()
-                                candidate_mapping[crash_var_name].add((mapping, v_line, v_col, v_addr))
+                                if offset < 1000:
+                                    mapping = "({} - {})".format(var_name, offset)
+                                    if crash_var_name not in candidate_mapping:
+                                        candidate_mapping[crash_var_name] = set()
+                                    candidate_mapping[crash_var_name].add((mapping, v_line, v_col, v_addr))
                     elif set(var_input_byte_list) <= set(crash_var_input_byte_list):
                         subset_var_list.append((var_name, var_expr))
             # if not found_mapping and subset_var_list:
             #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
-
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
 
@@ -206,11 +209,12 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
             candidate_list = candidate_mapping[c_t_lookup]
             for candidate in candidate_list:
                 c_mapping, c_line, c_col, _ = candidate
-                if int(c_line) < int(taint_line):
+                if int(c_line) > int(taint_line):
                     continue
-                if int(c_line) == int(taint_line) and int(c_col) < int(taint_col):
+                if int(c_line) == int(taint_line) and int(c_col) > int(taint_col):
                     continue
-                candidate_locations.add((c_line, c_col))
+                candidate_locations.add((int(c_line), int(c_col)))
+                candidate_locations.add((int(taint_line), int(taint_col)))
     sorted_candidate_locations = sorted(candidate_locations, key=operator.itemgetter(0, 1))
     for candidate_loc in sorted_candidate_locations:
         localized_tokens = dict()
@@ -291,6 +295,7 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
         emitter.highlight("\t[taint-loc] {}".format(taint_loc))
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     localization_list = list()
+    localized_loc_list = list()
     for func_name, tainted_fix_loc in tainted_fix_locations:
         src_file = tainted_fix_loc.split(":")[0]
         candidate_constraints = localize_cfc(tainted_fix_loc, cfc_info, taint_map)
@@ -298,6 +303,9 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             localization_obj = dict()
             localized_cfc, localized_line, localized_col = candidate_info
             localized_loc = ":".join([src_file, str(localized_line), str(localized_col)])
+            if localized_loc in localized_loc_list:
+                continue
+            localized_loc_list.append(localized_loc)
             state_info = localize_state_info(localized_loc, taint_map)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
             localization_obj["fix-location"] = localized_loc
@@ -305,8 +313,8 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             localization_obj["constraint-ast"] = localized_cfc.to_json()
             localization_obj["state"] = list()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
-            emitter.highlight("\t[state information]:")
-            emitter.highlight("\t" + "="*60)
+            # emitter.highlight("\t[state information]:")
+            # emitter.highlight("\t" + "="*60)
             for state in state_info:
                 state_obj = dict()
                 var_name, line, col, inst_addr = state
@@ -319,12 +327,12 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
                 state_obj["data_type"] = var_type
                 print_list = [str(x) for x in value_list[:5]]
                 localization_obj["state"].append(state_obj)
-                state_str = "[var-name] : {0:20}".format(var_name)
-                state_str += " [var-loc] {0:4},{0:4}".format(line, col)
-                state_str += " [instruction-address]: {0:4}".format(inst_addr)
-                state_str += " [var-type]: {0:8}".format(var_type)
-                state_str += " [values]: {0:2}".format(",".join(print_list)[:10])
-                emitter.information("\t\t{ " + state_str + " }")
+                # state_str = "[var-name] : {0:20}".format(var_name)
+                # state_str += " [var-loc] {0:4},{0:4}".format(line, col)
+                # state_str += " [instruction-address]: {0:4}".format(inst_addr)
+                # state_str += " [var-type]: {0:8}".format(var_type)
+                # state_str += " [values]: {0:2}".format(",".join(print_list)[:10])
+                # emitter.information("\t\t{ " + state_str + " }")
             localization_list.append(localization_obj)
     if not localization_list:
         emitter.error("Unable to Localize a Crash Free Constraint")

@@ -322,8 +322,8 @@ def extract_var_ref_list(ast_node, file_path):
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, col_number = begin_loc
         var_list.append((str(var_name), line_number, col_number, var_type))
-        for aux_var_name, aux_var_type in auxilary_list:
-            var_list.append((str(aux_var_name), line_number, col_number, aux_var_type))
+        # for aux_var_name, aux_var_type in auxilary_list:
+        #     var_list.append((str(aux_var_name), line_number, col_number, aux_var_type))
         return var_list
     if node_type in ["MemberExpr"]:
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
@@ -377,7 +377,7 @@ def extract_var_list(ast_node, file_path):
             child_var_dec_list = extract_var_dec_list(child_node, file_path)
             child_var_ref_list = extract_var_ref_list(child_node, file_path)
             variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
-    return variable_list
+    return list(set(variable_list))
 
 
 def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):

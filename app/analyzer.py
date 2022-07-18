@@ -178,4 +178,5 @@ def analyze():
                 "concrete-list": concrete_value_list,
                 "symbolic-list": symbolic_value_list
             }
+
         return input_byte_list, taint_map, cfc_info

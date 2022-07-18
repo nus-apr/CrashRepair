@@ -1184,6 +1184,8 @@ def generate_z3_code_for_var(var_expr, var_name):
     var_name = str(var_name).replace("->", "")
     var_name = str(var_name).replace("[", "-")
     var_name = str(var_name).replace("]", "-")
+    if "sizeof " in var_name:
+        var_name = "_".join(var_name.split(" "))
     count_64 = int(var_expr.count("64)"))
     count_bracket = int(var_expr.count(")"))
     extend_32_count = int(var_expr.count("extend 32)"))
