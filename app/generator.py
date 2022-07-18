@@ -7,7 +7,7 @@ from pysmt.shortcuts import Not, And, Or
 import os
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.typing import BV32, BV8, ArrayType
-from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat
+from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, is_sat
 from app import emitter, values, reader, definitions, extractor, oracle, utilities, parser, configuration
 import re
 import struct
@@ -1186,38 +1186,14 @@ def generate_z3_code_for_var(var_expr, var_name):
     var_name = str(var_name).replace("]", "-")
     if "sizeof " in var_name:
         var_name = "_".join(var_name.split(" "))
-    count_64 = int(var_expr.count("64)"))
-    count_bracket = int(var_expr.count(")"))
-    extend_32_count = int(var_expr.count("extend 32)"))
-    extend_56_count = int(var_expr.count("extend 56)"))
-
-    if count_bracket == 1:
-        if count_64 == 1:
-            code = generate_z3_code_for_expr(var_expr, var_name, 64)
-        else:
-            code = generate_z3_code_for_expr(var_expr, var_name, 32)
-
-    elif extend_56_count > 0:
+    try:
         code = generate_z3_code_for_expr(var_expr, var_name, 32)
-
-    elif extend_32_count > 0:
-        if "extend 32" in var_expr.split(") ")[0]:
-            code = generate_z3_code_for_expr(var_expr, var_name, 64)
-        elif " 64" in var_expr.split(") ")[0]:
-            code = generate_z3_code_for_expr(var_expr, var_name, 64)
-        else:
-            # print(var_expr)
-            var_expr = "((_ zero_extend 32) " + var_expr + " )"
-            code = generate_z3_code_for_expr(var_expr, var_name, 64)
-    else:
-        try:
-            var_expr_new = "((_ zero_extend 32) " + var_expr + " )"
-            code = generate_z3_code_for_expr(var_expr_new, var_name, 64)
-            parser = SmtLibParser()
-            script = parser.get_script(cStringIO(code))
-            formula = script.get_last_formula()
-        except Exception as exception:
-            code = generate_z3_code_for_expr(var_expr, var_name, 64)
+        parser = SmtLibParser()
+        script = parser.get_script(cStringIO(code))
+        formula = script.get_last_formula()
+        result = is_sat(formula, solver_name="z3")
+    except Exception as exception:
+        code = generate_z3_code_for_expr(var_expr, var_name, 64)
     return code
 
 

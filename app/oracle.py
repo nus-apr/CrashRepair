@@ -241,9 +241,8 @@ def is_satisfiable(z3_code):
         formula = script.get_last_formula()
         result = is_sat(formula, solver_name="z3")
     except Exception as ex:
-        message = str(ex)
-        emitter.warning("\t\t[warning] Z3 Exception: {}".format(message))
-        # print(z3_code)
+        emitter.warning("\t\t[warning] Z3 Exception")
+        print(z3_code)
     return result
 
 
