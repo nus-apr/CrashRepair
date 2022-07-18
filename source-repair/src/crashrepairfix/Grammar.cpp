@@ -1,5 +1,7 @@
 #include <crashrepairfix/Grammar.h>
 
+#include <spdlog/spdlog.h>
+
 #include <tao/pegtl.hpp>
 #include <tao/pegtl/contrib/parse_tree.hpp>
 #include <tao/pegtl/contrib/parse_tree_to_dot.hpp>
@@ -93,9 +95,17 @@ using selector = parse_tree::selector<
 
 struct node : parse_tree::basic_node<node> {};
 
+void convert(tao::pegtl::parse_tree::node &root) {
+  spdlog::debug("is root? {}", root.is_root());
+  spdlog::debug("real root type: {}", root.children[0]->type);
+
+  // what type of node are we dealing with?
+}
+
 void parse(std::string const &code) {
   memory_input input(code, "");
-  if (const auto root = parse_tree::parse<grammar, node, selector>(input)) {
+  if (const auto root = parse_tree::parse<grammar, selector>(input)) {
+    convert(*root);
     parse_tree::print_dot(std::cout, *root);
   }
 }
