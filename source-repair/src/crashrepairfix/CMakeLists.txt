@@ -19,6 +19,7 @@ set_target_properties(crashrepairfix
 target_link_libraries(crashrepairfix PRIVATE
   ${CRASHREPAIRFIX_LLVM_LIBS}
   ${CLANG_LIBS}
+  taocpp::pegtl
   nlohmann_json::nlohmann_json
   spdlog::spdlog
 )
@@ -35,6 +36,7 @@ target_include_directories(crashrepairfix
   PUBLIC
     ${CLANG_INCLUDE_DIRS}
     ${LLVM_INCLUDE_DIRS}
+    taocpp::pegtl
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     ../../include

@@ -13,3 +13,6 @@
 [submodule "source-repair/extern/spdlog"]
 	path = source-repair/extern/spdlog
 	url = https://github.com/gabime/spdlog
+[submodule "source-repair/extern/pegtl"]
+	path = source-repair/extern/pegtl
+	url = https://github.com/taocpp/PEGTL
