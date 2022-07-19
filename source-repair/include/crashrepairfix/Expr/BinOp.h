@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/fmt/fmt.h>
+
 #include "Expr.h"
 
 namespace crashrepairfix {
@@ -52,6 +54,70 @@ public:
       opcode,
       resultType
     ));
+  }
+
+  static std::string opcodeToString(Opcode const &opcode) {
+    switch (opcode) {
+      case Opcode::LT:
+        return "<";
+      case Opcode::LTE:
+        return "<=";
+      case Opcode::GT:
+        return ">";
+      case Opcode::GTE:
+        return ">=";
+      case Opcode::EQ:
+        return "==";
+      case Opcode::NEQ:
+        return "!=";
+      case Opcode::AND:
+        return "and";
+      case Opcode::OR:
+        return "or";
+      case Opcode::DIVIDE:
+        return "/";
+      case Opcode::SUBTRACT:
+        return "-";
+      case Opcode::ADD:
+        return "+";
+      case Opcode::MULTIPLY:
+        return "*";
+    }
+  }
+
+  std::string getOpcodeString() const {
+    return opcodeToString(opcode);
+  }
+
+  Expr * getLhs() {
+    return children[0].get();
+  }
+  Expr const * getLhs() const {
+    return children[0].get();
+  }
+  Expr * getRhs() {
+    return children[1].get();
+  }
+  Expr const * getRhs() const {
+    return children[1].get();
+  }
+
+  virtual std::string toSource() const override {
+    return fmt::format(
+      "({} {} {})",
+      getLhs()->toSource(),
+      getOpcodeString(),
+      getRhs()->toSource()
+    );
+  }
+
+  virtual std::string toString() const override {
+    return fmt::format(
+      "({} {} {})",
+      getLhs()->toString(),
+      getOpcodeString(),
+      getRhs()->toString()
+    );
   }
 
 protected:

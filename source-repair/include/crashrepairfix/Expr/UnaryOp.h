@@ -41,6 +41,40 @@ public:
     ));
   }
 
+  static std::string opcodeToString(Opcode const &opcode) {
+    switch (opcode) {
+      case Opcode::NOT:
+        return "!";
+    }
+  }
+
+  std::string getOpcodeString() const {
+    return opcodeToString(opcode);
+  }
+
+  Expr * getOperand() {
+    return children[0].get();
+  }
+  Expr const * getOperand() const {
+    return children[0].get();
+  }
+
+  virtual std::string toSource() const override {
+    return fmt::format(
+      "(! {})",
+      getOpcodeString(),
+      getOperand()->toSource()
+    );
+  }
+
+  virtual std::string toString() const override {
+    return fmt::format(
+      "(! {})",
+      getOpcodeString(),
+      getOperand()->toString()
+    );
+  }
+
 protected:
   UnaryOp(
     std::vector<std::unique_ptr<Expr>> children,

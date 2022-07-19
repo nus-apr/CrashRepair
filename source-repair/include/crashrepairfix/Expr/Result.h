@@ -1,6 +1,9 @@
 #pragma once
 
+#include <llvm/Support/raw_ostream.h>
+
 #include "Expr.h"
+
 
 namespace crashrepairfix {
 
@@ -20,6 +23,16 @@ public:
 
   static std::unique_ptr<Result> create(ResultType resultType) {
     return std::unique_ptr<Result>(new Result(resultType));
+  }
+
+  virtual std::string toSource() const override {
+    llvm::errs() << "FATAL ERROR: ResultExpr cannot (and should not) be converted to source\n";
+    abort();
+  }
+
+  /** Writes this expression to a parsable string */
+  virtual std::string toString() const override {
+    return "result()";
   }
 
 protected:

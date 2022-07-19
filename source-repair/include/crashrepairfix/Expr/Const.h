@@ -24,6 +24,10 @@ public:
     return std::unique_ptr<NullConst>(new NullConst());
   }
 
+  virtual std::string toString() const override {
+    return "nullptr";
+  }
+
 protected:
   NullConst() : Const() {}
 };
@@ -48,6 +52,10 @@ public:
 
   static std::unique_ptr<IntConst> create(long value) {
     return std::unique_ptr<IntConst>(new IntConst(value));
+  }
+
+  virtual std::string toString() const override {
+    return std::to_string(value);
   }
 
 protected:
@@ -77,6 +85,10 @@ public:
 
   static std::unique_ptr<FloatConst> create(double value) {
     return std::unique_ptr<FloatConst>(new FloatConst(value));
+  }
+
+  virtual std::string toString() const override {
+    return std::to_string(value);
   }
 
 protected:

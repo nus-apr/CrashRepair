@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/fmt/fmt.h>
+
 #include "Expr.h"
 
 namespace crashrepairfix {
@@ -24,6 +26,18 @@ public:
 
   static std::unique_ptr<Var> create(std::string const &name, ResultType resultType) {
     return std::unique_ptr<Var>(new Var(name, resultType));
+  }
+
+  virtual std::string toString() const override {
+    return fmt::format(
+      "var({}, {})",
+      getResultTypeString(),
+      name
+    );
+  }
+
+  virtual std::string toSource() const override {
+    return name;
   }
 
 protected:

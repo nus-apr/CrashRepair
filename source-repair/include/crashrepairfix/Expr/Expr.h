@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <queue>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -81,6 +82,31 @@ public:
 
   /** Returns the type of the result produced by this expression */
   virtual ResultType getResultType() const = 0;
+
+  /** Transforms this expression into C/C++ source code */
+  virtual std::string toSource() const {
+    return toString();
+  }
+
+  /** Writes this expression to a parsable string */
+  virtual std::string toString() const = 0;
+
+  /** Returns a string-based description of a given result type. */
+  static std::string resultTypeToString(ResultType const &type) {
+    switch (type) {
+      case ResultType::Int:
+        return "int";
+      case ResultType::Float:
+        return "float";
+      case ResultType::Pointer:
+        return "pointer";
+    }
+  }
+
+  /** Returns the name of the type produced by this expression. */
+  std::string getResultTypeString() const {
+    return resultTypeToString(getResultType());
+  }
 
 protected:
   Expr() : children() {}
