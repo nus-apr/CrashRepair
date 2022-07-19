@@ -88,6 +88,7 @@ int main(int argc, const char **argv) {
 
   auto expr = crashrepairfix::parse("x + y * 7");
   spdlog::info("CONSTRAINT: {}", expr->toString());
+  spdlog::info("CONSTRAINT AS SOURCE: {}", expr->toSource());
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
   ProgramMutator mutator(fixLocalization);

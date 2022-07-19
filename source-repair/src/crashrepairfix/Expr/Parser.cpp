@@ -95,18 +95,59 @@ using selector = parse_tree::selector<
 
 struct node : parse_tree::basic_node<node> {};
 
-void convert(tao::pegtl::parse_tree::node &root) {
-  spdlog::debug("is root? {}", root.is_root());
-  spdlog::debug("real root type: {}", root.children[0]->type);
+std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node);
 
-  // what type of node are we dealing with?
+std::unique_ptr<Expr> convertBinOpNode(BinOp::Opcode opcode, tao::pegtl::parse_tree::node *node) {
+  return BinOp::create(
+    convertParseNode(node->children[0].get()),
+    convertParseNode(node->children[1].get()),
+    opcode
+  );
+}
+
+std::unique_ptr<Expr> convertIntNode(tao::pegtl::parse_tree::node *node) {
+  auto value = std::stol(node->string());
+  return IntConst::create(value);
+}
+
+std::unique_ptr<Expr> convertVarNode(tao::pegtl::parse_tree::node *node) {
+  auto name = node->string();
+  spdlog::warn("FIXME: assuming integer variable {}", name);
+  auto resultType = ResultType::Int;
+  return Var::create(name, resultType);
+}
+
+std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
+  auto nodeType = node->type;
+  spdlog::debug("converting node with type: {}", nodeType);
+
+  if (nodeType == "crashrepairfix::plus") {
+    return convertBinOpNode(BinOp::Opcode::ADD, node);
+  } else if (nodeType == "crashrepairfix::minus") {
+    return convertBinOpNode(BinOp::Opcode::SUBTRACT, node);
+  } else if (nodeType == "crashrepairfix::multiply") {
+    return convertBinOpNode(BinOp::Opcode::MULTIPLY, node);
+  } else if (nodeType == "crashrepairfix::divide") {
+    return convertBinOpNode(BinOp::Opcode::DIVIDE, node);
+  } else if (nodeType == "crashrepairfix::variable") {
+    return convertVarNode(node);
+  } else if (nodeType == "crashrepairfix::integer") {
+    return convertIntNode(node);
+  } else {
+    spdlog::error("failed to convert parse node [{}]: {}", node->type, node->source);
+    abort();
+  }
+}
+
+std::unique_ptr<Expr> convertParseTree(tao::pegtl::parse_tree::node *root) {
+  assert (root != nullptr && root->is_root());
+  return convertParseNode(root->children[0].get());
 }
 
 std::unique_ptr<Expr> parse(std::string const &code) {
   memory_input input(code, "");
   if (const auto root = parse_tree::parse<grammar, selector>(input)) {
-    // convert(*root);
-    return IntConst::create(99);
+    return convertParseTree(root.get());
   }
 
   llvm::errs() << "FATAL ERROR: unable to parse constraint string: " << code << "\n";

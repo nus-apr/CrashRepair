@@ -10,6 +10,7 @@ namespace crashrepairfix {
 
 class Var;
 
+// FIXME add proper support for Boolean
 enum class ResultType {
   Int,
   Float,
@@ -18,6 +19,7 @@ enum class ResultType {
 
 class Expr {
 public:
+  // FIXME add proper support for True and False consts
   enum class Kind {
     BinOp,
     UnaryOp,

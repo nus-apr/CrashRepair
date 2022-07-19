@@ -23,6 +23,42 @@ public:
     MULTIPLY,
   };
 
+  static bool isArithmeticOpcode(Opcode const &opcode) {
+    switch (opcode) {
+      case Opcode::ADD:
+      case Opcode::SUBTRACT:
+      case Opcode::DIVIDE:
+      case Opcode::MULTIPLY:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  static bool isLogicalOpcode(Opcode const &opcode) {
+    switch (opcode) {
+      case Opcode::AND:
+      case Opcode::OR:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  static bool isRelationalOpcode(Opcode const &opcode) {
+    switch (opcode) {
+      case Opcode::LT:
+      case Opcode::LTE:
+      case Opcode::GT:
+      case Opcode::GTE:
+      case Opcode::EQ:
+      case Opcode::NEQ:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   Expr::Kind getExprKind() const override {
     return Expr::Kind::BinOp;
   }
@@ -37,6 +73,18 @@ public:
 
   virtual std::unique_ptr<Expr> copy() const override {
     return create(children[0]->copy(), children[1]->copy(), opcode, resultType);
+  }
+
+  static std::unique_ptr<BinOp> create(
+    std::unique_ptr<Expr> lhs,
+    std::unique_ptr<Expr> rhs,
+    Opcode opcode
+  ) {
+    auto resultType = ResultType::Int;
+    if (isArithmeticOpcode(opcode) && (lhs->getResultType() == ResultType::Float || rhs->getResultType() == ResultType::Float)) {
+      resultType = ResultType::Float;
+    }
+    return create(std::move(lhs), std::move(rhs), opcode, resultType);
   }
 
   static std::unique_ptr<BinOp> create(
