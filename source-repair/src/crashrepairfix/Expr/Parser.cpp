@@ -14,21 +14,27 @@ using namespace tao::pegtl;
 
 namespace crashrepairfix {
 
+struct open_bracket : seq<one<'('>, star<space>> {};
+struct close_bracket : seq<star<space>, one<')'>> {};
+
+struct type_int : string<'i', 'n', 't'> {};
+struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
+struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
+struct type_name : sor<type_int, type_float, type_pointer> {};
+
 struct integer : plus<digit> {};
 // TODO what's legal?
 struct variable : identifier {};
+struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
 struct plus : pad<one<'+'>, space> {};
 struct minus : pad<one<'-'>, space> {};
 struct multiply : pad<one<'*'>, space> {};
 struct divide : pad<one<'/'>, space> {};
 
-struct open_bracket : seq<one<'('>, star<space>> {};
-struct close_bracket : seq<star<space>, one<')'>> {};
-
 struct expression;
 struct bracketed : seq<open_bracket, expression, close_bracket> {};
-struct value : sor<integer, variable, bracketed>{};
+struct value : sor<integer, result, variable, bracketed>{};
 struct product : list<value, sor<multiply, divide>> {};
 struct expression : list<product, sor<plus, minus>> {};
 
@@ -79,9 +85,11 @@ using selector = parse_tree::selector<
   Rule,
   parse_tree::store_content::on<
     integer,
-    variable
+    variable,
+    type_name
   >,
   parse_tree::remove_content::on<
+    result,
     plus,
     minus,
     multiply,
@@ -96,6 +104,16 @@ using selector = parse_tree::selector<
 struct node : parse_tree::basic_node<node> {};
 
 std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node);
+
+ResultType convertTypeNode(tao::pegtl::parse_tree::node *node) {
+  auto typeName = node->string();
+  return Expr::resultTypeFromString(typeName);
+}
+
+std::unique_ptr<Expr> convertResultNode(tao::pegtl::parse_tree::node *node) {
+  auto resultType = convertTypeNode(node->children[0].get());
+  return Result::create(resultType);
+}
 
 std::unique_ptr<Expr> convertBinOpNode(BinOp::Opcode opcode, tao::pegtl::parse_tree::node *node) {
   return BinOp::create(
@@ -133,6 +151,8 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
     return convertVarNode(node);
   } else if (nodeType == "crashrepairfix::integer") {
     return convertIntNode(node);
+  } else if (nodeType == "crashrepairfix::result") {
+    return convertResultNode(node);
   } else {
     spdlog::error("failed to convert parse node [{}]: {}", node->type, node->source);
     abort();

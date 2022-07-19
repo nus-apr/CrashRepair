@@ -6,6 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <spdlog/spdlog.h>
+
 namespace crashrepairfix {
 
 class Var;
@@ -92,6 +94,19 @@ public:
 
   /** Writes this expression to a parsable string */
   virtual std::string toString() const = 0;
+
+  static ResultType resultTypeFromString(std::string const &string) {
+    if (string == "int") {
+      return ResultType::Int;
+    } else if (string == "float") {
+      return ResultType::Float;
+    } else if (string == "pointer") {
+      return ResultType::Pointer;
+    } else {
+      spdlog::error("unrecognized result type: {}", string);
+      abort();
+    }
+  }
 
   /** Returns a string-based description of a given result type. */
   static std::string resultTypeToString(ResultType const &type) {
