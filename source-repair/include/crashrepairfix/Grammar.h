@@ -6,6 +6,7 @@
 #include <crashrepairfix/Expr/Const.h>
 #include <crashrepairfix/Expr/Result.h>
 #include <crashrepairfix/Expr/BinOp.h>
+#include <crashrepairfix/Expr/UnaryOp.h>
 
 namespace crashrepairfix {
 
