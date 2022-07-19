@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include "FixLocation.h"
 #include "Utils.h"
 
@@ -46,11 +48,13 @@ public:
     return context;
   }
 
+  clang::SourceManager & getSourceManager() {
+    return context.getSourceManager();
+  }
+
   clang::FunctionDecl const * getParentFunction() const {
     return parentFunction;
   }
-
-  // TODO expose crash-free condition provided by underlying fix location
 
   std::string getStmtClassName() const {
     return stmt->getStmtClassName();
@@ -70,6 +74,20 @@ public:
 
   SourceLocation const & getLocation() const {
     return fixLocation.getLocation();
+  }
+
+  clang::Expr* getBranchConditionExpression() {
+    assert(isConditionalStmt());
+    if (auto *ifStmt = clang::dyn_cast<clang::IfStmt>(stmt)) {
+      return ifStmt->getCond();
+    } else if (auto *forStmt = clang::dyn_cast<clang::ForStmt>(stmt)) {
+      return forStmt->getCond();
+    } else if (auto *whileStmt = clang::dyn_cast<clang::WhileStmt>(stmt)) {
+      return whileStmt->getCond();
+    } else {
+      spdlog::error("failed to obtain condition expression for stmt: {}", getSource());
+      abort();
+    }
   }
 
   bool isConditionalStmt() const {
