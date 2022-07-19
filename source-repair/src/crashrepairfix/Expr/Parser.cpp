@@ -1,4 +1,4 @@
-#include <crashrepairfix/Grammar.h>
+#include <crashrepairfix/Expr/Parser.h>
 
 #include <spdlog/spdlog.h>
 
@@ -102,12 +102,15 @@ void convert(tao::pegtl::parse_tree::node &root) {
   // what type of node are we dealing with?
 }
 
-void parse(std::string const &code) {
+std::unique_ptr<Expr> parse(std::string const &code) {
   memory_input input(code, "");
   if (const auto root = parse_tree::parse<grammar, selector>(input)) {
-    convert(*root);
-    parse_tree::print_dot(std::cout, *root);
+    // convert(*root);
+    return IntConst::create(99);
   }
+
+  llvm::errs() << "FATAL ERROR: unable to parse constraint string: " << code << "\n";
+  abort();
 }
 
 }

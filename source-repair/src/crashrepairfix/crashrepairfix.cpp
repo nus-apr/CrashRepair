@@ -16,7 +16,7 @@
 #include <crashrepairfix/ProgramMutator.h>
 
 // DEBUGGING
-#include <crashrepairfix/Grammar.h>
+#include <crashrepairfix/Expr/Parser.h>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -86,7 +86,8 @@ int main(int argc, const char **argv) {
 
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
-  crashrepairfix::parse("x + y * 7");
+  auto expr = crashrepairfix::parse("x + y * 7");
+  spdlog::info("CONSTRAINT: {}", expr->toString());
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
   ProgramMutator mutator(fixLocalization);
