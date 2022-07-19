@@ -145,7 +145,7 @@ def analyze():
                 #     break
             tainted_byte_list = list(set(tainted_byte_list))
             input_byte_list = input_byte_list + tainted_byte_list
-            tainted_bytes = [str(i) for i in tainted_byte_list]
+            tainted_bytes = sorted([str(i) for i in tainted_byte_list])
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
 
         input_byte_list = list(set(input_byte_list))

@@ -178,7 +178,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     c_func_name, crash_func_ast = extract_func_ast(c_file, c_line)
     c_loc = ":".join([c_file, c_line, c_column])
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
-    var_name_list = [x[0] for x in var_list]
+    var_name_list = sorted([x[0] for x in var_list])
     c_details = ""
     if c_type == definitions.CRASH_TYPE_DIV_ZERO:
         c_details = "division by zero"
