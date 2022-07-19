@@ -1,4 +1,4 @@
-from app import definitions, values, emitter, extractor, utilities
+from app import definitions, values, emitter, extractor, logger
 from pysmt.shortcuts import is_sat, Not, And, is_unsat
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
@@ -242,7 +242,7 @@ def is_satisfiable(z3_code):
         result = is_sat(formula, solver_name="z3")
     except Exception as ex:
         emitter.warning("\t\t[warning] Z3 Exception")
-        print(z3_code)
+        logger.information(z3_code)
     return result
 
 
