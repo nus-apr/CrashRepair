@@ -58,6 +58,7 @@ RUN mkdir build && \
             ../source && \
     make
 ENV PATH=/klee/build/bin/:${PATH}
+RUN cd /klee/build/lib; ar rcs libkleeRuntest.a libkleeRuntest.so.1.0
 ENV LLVM_COMPILER=clang
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y  --no-install-recommends --force-yes \
     bear \
@@ -102,5 +103,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y  --no-install-recommends -
 ADD . /CrashRepair
 WORKDIR /CrashRepair
 RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
+ENV PATH=/CrashRepair/compiler:${PATH}
 ENV CREPAIR_CC=/CrashRepair/compiler/crepair-cc
 ENV CREPAIR_CXX=/CrashRepair/compiler/crepair-cxx
+
