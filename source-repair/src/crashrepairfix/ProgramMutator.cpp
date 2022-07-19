@@ -67,12 +67,21 @@ void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &locatio
   }
 }
 
+void ProgramMutator::addConditional(AstLinkedFixLocation &location, std::string const &bodySource) {
+  auto cfcSource = location.getConstraint()->toSource();
+  auto insert = fmt::format("if (!({})) {{ {{}} }} ", cfcSource, bodySource);
+  auto replacement = Replacement::prepend(insert, location);
+  create(location, {replacement});
+}
+
 void ProgramMutator::addConditionalBreak(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional break before statement: {}", location.getSource());
+  addConditional(location, "break;");
 }
 
 void ProgramMutator::addConditionalContinue(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional continue before statement: {}", location.getSource());
+  addConditional(location, "continue;");
 }
 
 void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
@@ -85,13 +94,7 @@ void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
 
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());
-
-  auto cfcSource = location.getConstraint()->toSource();
-  auto insert = fmt::format("if (!({})) {{ return; }} ", cfcSource);
-  spdlog::info("inserting code before statement: {}", insert);
-
-  auto replacement = Replacement::prepend(insert, location);
-  create(location, {replacement});
+  addConditional(location, "return;");
 }
 
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {

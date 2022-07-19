@@ -30,6 +30,7 @@ private:
   void mutateNonConditionalStmt(AstLinkedFixLocation &location);
   void prependConditionalControlFlow(AstLinkedFixLocation &location);
   void guardStatement(AstLinkedFixLocation &location);
+  void addConditional(AstLinkedFixLocation &location, std::string const &bodySource);
   void addConditionalBreak(AstLinkedFixLocation &location);
   void addConditionalContinue(AstLinkedFixLocation &location);
   void addConditionalReturn(AstLinkedFixLocation &location);
