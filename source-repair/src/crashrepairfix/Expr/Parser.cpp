@@ -14,6 +14,7 @@ using namespace tao::pegtl;
 
 namespace crashrepairfix {
 
+struct comma : seq<star<space>, one<','>, star<space>> {};
 struct open_bracket : seq<one<'('>, star<space>> {};
 struct close_bracket : seq<star<space>, one<')'>> {};
 
@@ -22,9 +23,11 @@ struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
 struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
 struct type_name : sor<type_int, type_float, type_pointer> {};
 
+struct var_name : identifier {};
+
 struct integer : plus<digit> {};
 // TODO what's legal?
-struct variable : identifier {};
+struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
 struct plus : pad<one<'+'>, space> {};
@@ -86,6 +89,7 @@ using selector = parse_tree::selector<
   parse_tree::store_content::on<
     integer,
     variable,
+    var_name,
     type_name
   >,
   parse_tree::remove_content::on<
@@ -128,10 +132,13 @@ std::unique_ptr<Expr> convertIntNode(tao::pegtl::parse_tree::node *node) {
   return IntConst::create(value);
 }
 
+std::string convertVarNameNode(tao::pegtl::parse_tree::node *node) {
+  return node->string();
+}
+
 std::unique_ptr<Expr> convertVarNode(tao::pegtl::parse_tree::node *node) {
-  auto name = node->string();
-  spdlog::warn("FIXME: assuming integer variable {}", name);
-  auto resultType = ResultType::Int;
+  auto resultType = convertTypeNode(node->children[0].get());
+  auto name = convertVarNameNode(node->children[1].get());
   return Var::create(name, resultType);
 }
 
