@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Expr.h"
+
 namespace crashrepairfix {
 
 class Const : public Expr {};
