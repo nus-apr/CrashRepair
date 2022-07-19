@@ -2,7 +2,9 @@
 
 #include <fstream>
 
-#include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/AST/LexicallyOrderedRecursiveASTVisitor.h>
+
+#include <spdlog/spdlog.h>
 
 #include <nlohmann/json.hpp>
 
@@ -11,7 +13,7 @@
 namespace crashrepairfix {
 
 class StmtFinder
-  : public clang::RecursiveASTVisitor<StmtFinder> {
+  : public clang::LexicallyOrderedRecursiveASTVisitor<StmtFinder> {
 public:
   static clang::Stmt* find(clang::ASTContext &context, SourceLocation const &sourceLocation) {
     StmtFinder finder(context, sourceLocation);
@@ -25,12 +27,12 @@ public:
   clang::Stmt *result;
 
   explicit StmtFinder(clang::ASTContext &context, SourceLocation const &sourceLocation)
-    : context(context),
+    : LexicallyOrderedRecursiveASTVisitor(context.getSourceManager()),
+      context(context),
       sourceManager(context.getSourceManager()),
       sourceLocation(sourceLocation),
       result(nullptr)
     {}
-
 
   bool VisitStmt(clang::Stmt *stmt) {
     auto stmtLoc = stmt->getBeginLoc();
@@ -47,6 +49,8 @@ public:
 
     auto stmtLine = sourceManager.getSpellingLineNumber(stmtLoc);
     auto stmtColumn = sourceManager.getSpellingColumnNumber(stmtLoc);
+
+    // spdlog::debug("stmt at: {}:{}:{}", stmtFilename, stmtLine, stmtColumn);
 
     // we have a match! store it and stop searching
     if (stmtColumn == sourceLocation.column && stmtLine == sourceLocation.line) {
