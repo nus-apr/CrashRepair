@@ -10,9 +10,9 @@ namespace crashrepairfix {
 
 class FixLocalization {
 private:
-  std::vector<FixLocation> locations;
+  std::vector<std::unique_ptr<FixLocation>> locations;
 
-  void add(FixLocation const &location) {
+  void add(std::unique_ptr<FixLocation> location) {
     locations.push_back(std::move(location));
   }
 
@@ -32,19 +32,19 @@ public:
     return localization;
   }
 
-  std::vector<FixLocation>::iterator begin() {
+  std::vector<std::unique_ptr<FixLocation>>::iterator begin() {
     return locations.begin();
   }
 
-  std::vector<FixLocation>::iterator end() {
+  std::vector<std::unique_ptr<FixLocation>>::iterator end() {
     return locations.end();
   }
 
-  std::vector<FixLocation>::const_iterator cbegin() const {
+  std::vector<std::unique_ptr<FixLocation>>::const_iterator cbegin() const {
     return locations.cbegin();
   }
 
-  std::vector<FixLocation>::const_iterator cend() const {
+  std::vector<std::unique_ptr<FixLocation>>::const_iterator cend() const {
     return locations.cend();
   }
 

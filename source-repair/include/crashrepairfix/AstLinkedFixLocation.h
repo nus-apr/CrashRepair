@@ -64,6 +64,10 @@ public:
     return fixLocation;
   }
 
+  Expr const * getConstraint() const {
+    return fixLocation.getConstraint();
+  }
+
   SourceLocation const & getLocation() const {
     return fixLocation.getLocation();
   }

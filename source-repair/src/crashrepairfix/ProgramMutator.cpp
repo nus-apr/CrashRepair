@@ -11,12 +11,12 @@ namespace crashrepairfix {
 
 void ProgramMutator::mutate(clang::ASTContext &context) {
   for (auto &location : fixLocalization) {
-    auto *stmt = StmtFinder::find(context, location.getLocation());
+    auto *stmt = StmtFinder::find(context, location->getLocation());
     if (stmt == nullptr) {
       continue;
     }
 
-    AstLinkedFixLocation linkedLocation = AstLinkedFixLocation::create(location, stmt, context);
+    AstLinkedFixLocation linkedLocation = AstLinkedFixLocation::create(*location, stmt, context);
     spdlog::info("found matching statement: {}", linkedLocation.getSource());
     mutate(linkedLocation);
   }
@@ -86,8 +86,7 @@ void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());
 
-  // NOTE this code is in here solely to test the Mutation class functionality
-  auto cfcSource = "5 < 10";  // TODO Expr.toSource();
+  auto cfcSource = location.getConstraint()->toSource();
   auto insert = fmt::format("if (!({})) {{ return; }} ", cfcSource);
   spdlog::info("inserting code before statement: {}", insert);
 

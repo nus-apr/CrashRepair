@@ -15,9 +15,6 @@
 #include <crashrepairfix/FixLocalization.h>
 #include <crashrepairfix/ProgramMutator.h>
 
-// DEBUGGING
-#include <crashrepairfix/Expr/Parser.h>
-
 using namespace clang;
 using namespace clang::ast_matchers;
 using namespace clang::tooling;
@@ -85,10 +82,6 @@ int main(int argc, const char **argv) {
   spdlog::set_level(spdlog::level::debug);
 
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
-
-  auto expr = crashrepairfix::parse("x + y * 7");
-  spdlog::info("CONSTRAINT: {}", expr->toString());
-  spdlog::info("CONSTRAINT AS SOURCE: {}", expr->toSource());
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
   ProgramMutator mutator(fixLocalization);
