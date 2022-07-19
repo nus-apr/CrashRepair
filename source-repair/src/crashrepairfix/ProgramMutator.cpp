@@ -11,8 +11,10 @@ namespace crashrepairfix {
 
 void ProgramMutator::mutate(clang::ASTContext &context) {
   for (auto &location : fixLocalization) {
-    auto *stmt = StmtFinder::find(context, location->getLocation());
+    auto stmtLocation = location->getLocation();
+    auto *stmt = StmtFinder::find(context, stmtLocation);
     if (stmt == nullptr) {
+      spdlog::warn("unable to find statement at location: {}", stmtLocation.toString());
       continue;
     }
 
@@ -44,6 +46,7 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
 
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
+  strengthenBranchCondition(location);
 }
 
 void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
@@ -55,6 +58,22 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
   guardStatement(location);
 
   // TODO is this an assignment?
+}
+
+void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
+  spdlog::info("strengthening branch condition in statement: {}", location.getSource());
+  auto *condition = location.getBranchConditionExpression();
+
+  auto originalSource = crashrepairfix::getSource(condition, location.getSourceManager());
+  auto sourceRange = condition->getSourceRange();
+
+  auto mutatedSource = fmt::format(
+    "({}) && {}",
+    originalSource,
+    location.getConstraint()->toSource()
+  );
+  auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
+  create(location, {replacement});
 }
 
 void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &location) {
@@ -91,6 +110,7 @@ void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
     addConditionalNonVoidReturn(location);
   }
 }
+
 
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());

@@ -81,6 +81,10 @@ private:
 int main(int argc, const char **argv) {
   spdlog::set_level(spdlog::level::debug);
 
+  // TODO automatically inject correct include path for clang-packaged stdlib headers
+  // https://stackoverflow.com/questions/51695806/clang-tool-include-path
+  // https://stackoverflow.com/questions/19642590/libtooling-cant-find-stddef-h-nor-other-headers
+  // https://clang.llvm.org/docs/LibTooling.html
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
@@ -89,7 +93,7 @@ int main(int argc, const char **argv) {
   // TODO obtain source paths from the fix localization?
 
   ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
-  tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
+  // tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
 
   spdlog::info("generating patches...");
   auto actionFactory = std::make_unique<GeneratePatchesActionFactory>(mutator);
