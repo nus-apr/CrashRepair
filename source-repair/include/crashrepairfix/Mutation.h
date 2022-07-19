@@ -34,6 +34,20 @@ public:
     return Replacement(filename, offset, 0, text);
   }
 
+  static Replacement replace(std::string const &text, std::string const &filename, size_t startOffset, size_t endOffset) {
+    size_t length = endOffset - startOffset;
+    return Replacement(filename, startOffset, length, text);
+  }
+  static Replacement replace(std::string const &text, clang::SourceRange const &range, clang::SourceManager const &sourceManager) {
+    auto startLoc = range.getBegin();
+    auto endLoc = range.getEnd();
+    auto filename = sourceManager.getFilename(startLoc).str();
+    return replace(text, filename, sourceManager.getFileOffset(startLoc), sourceManager.getFileOffset(endLoc));
+  }
+  static Replacement replace(std::string const &text, clang::SourceRange const &range, clang::ASTContext const &context) {
+    return replace(text, range, context.getSourceManager());
+  }
+
   std::string const & getFilename() const {
     return filename;
   }
