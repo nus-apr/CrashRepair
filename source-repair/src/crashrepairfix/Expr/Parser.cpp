@@ -12,6 +12,8 @@ using namespace tao::pegtl;
 // https://github.com/taocpp/PEGTL/blob/main/src/example/pegtl/parse_tree.cpp
 // https://github.com/taocpp/PEGTL/blob/main/include/tao/pegtl/contrib/parse_tree.hpp
 
+// https://en.cppreference.com/w/c/language/operator_precedence
+
 namespace crashrepairfix {
 
 struct comma : seq<star<space>, one<','>, star<space>> {};
@@ -23,10 +25,14 @@ struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
 struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
 struct type_name : sor<type_int, type_float, type_pointer> {};
 
+struct relational_op : pad<sor<one<'<'>, string<'<', '='>, one<'>'>, string<'>', '='>, string<'=', '='>, string<'!', '='>>, space> {};
+struct logical_op : pad<sor<string<'&', '&'>, string<'|', '|'>>, space> {};
+struct arithmetic_op : pad<sor<one<'*'>, one<'/'>, one<'+'>, one<'-'>>, space> {};
+
+// TODO what's legal?
 struct var_name : identifier {};
 
 struct integer : plus<digit> {};
-// TODO what's legal?
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
@@ -43,46 +49,6 @@ struct expression : list<product, sor<plus, minus>> {};
 
 struct grammar : seq<expression, eof> {};
 
-// after a node is stored successfully, you can add an optional transformer like this:
-struct rearrange
-  : parse_tree::apply<rearrange>  // allows bulk selection, see selector<...>
-{
-  // recursively rearrange nodes. the basic principle is:
-  //
-  // from:          PROD/EXPR
-  //                /   |   \          (LHS... may be one or more children, followed by OP,)
-  //             LHS... OP   RHS       (which is one operator, and RHS, which is a single child)
-  //
-  // to:               OP
-  //                  /  \             (OP now has two children, the original PROD/EXPR and RHS)
-  //         PROD/EXPR    RHS          (Note that PROD/EXPR has two fewer children now)
-  //             |
-  //            LHS...
-  //
-  // if only one child is left for LHS..., replace the PROD/EXPR with the child directly.
-  // otherwise, perform the above transformation, then apply it recursively until LHS...
-  // becomes a single child, which then replaces the parent node and the recursion ends.
-  template< typename Node, typename... States >
-  static void transform( std::unique_ptr< Node >& n, States&&... st )
-  {
-    if (n->children.size() == 1) {
-      n = std::move(n->children.back());
-    } else {
-      n->remove_content();
-      auto& c = n->children;
-      auto r = std::move(c.back());
-      c.pop_back();
-      auto o = std::move(c.back());
-      c.pop_back();
-      o->children.emplace_back(std::move(n));
-      o->children.emplace_back(std::move(r));
-      n = std::move(o);
-      transform(n->children.front(), st...);
-    }
-  }
-};
-
-// select which rules in the grammar will produce parse tree nodes:
 template<typename Rule>
 using selector = parse_tree::selector<
   Rule,
@@ -98,10 +64,6 @@ using selector = parse_tree::selector<
     minus,
     multiply,
     divide
-  >,
-  rearrange::on<
-    product,
-    expression
   >
 >;
 
