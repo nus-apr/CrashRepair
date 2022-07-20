@@ -181,7 +181,7 @@ def build_project(project_path, build_command=None):
             build_command = build_command.replace("make ", "bear make ")
         if CC == "wllvm":
             build_command = remove_fsanitize(build_command)
-        build_command = apply_flags(build_command)
+        #build_command = apply_flags(build_command)
     if not build_command:
         error_exit("[Not Found] Build Command")
 
