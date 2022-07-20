@@ -4,8 +4,12 @@ import sys
 import os
 from app import definitions, values, logger
 import textwrap
+import pty
 
-rows, columns = os.popen('stty size', 'r').read().split()
+rows, columns = 600,600
+res = os.popen('stty size', 'r').read().split()
+if res:
+    rows, columns = res
 
 GREY = '\t\x1b[1;30m'
 RED = '\t\x1b[1;31m'
