@@ -102,6 +102,14 @@ public:
       || clang::isa<clang::WhileStmt>(stmt);
   }
 
+  /** Determines whether this fix location is for an expression */ 
+  bool isExprStmt() const {
+    if (!clang::isa<clang::Expr>(stmt)) {
+      return false;
+    }
+    return getConstraint()->refersToResult();
+  }
+
   bool isInsideLoop() const {
     return crashrepairfix::isInsideLoop(stmt, context);
   }

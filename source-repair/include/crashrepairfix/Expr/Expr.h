@@ -78,6 +78,16 @@ public:
     return result;
   }
 
+  /** Determines whether this expression contains a result reference */
+  bool refersToResult() const {
+    for (auto descendant : descendants()) {
+      if (descendant->getExprKind() == Kind::Result) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Returns a deep copy of this expression. */
   virtual std::unique_ptr<Expr> copy() const = 0;
 
