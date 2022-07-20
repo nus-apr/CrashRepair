@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
 #include "Expr.h"
@@ -104,6 +105,37 @@ public:
     ));
   }
 
+  static Opcode opcodeFromString(std::string const &string) {
+    if (string == "<") {
+      return Opcode::LT;
+    } else if (string == "<=") {
+      return Opcode::LTE;
+    } else if (string == ">") {
+      return Opcode::GT;
+    } else if (string == ">=") {
+      return Opcode::GTE;
+    } else if (string == "==") {
+      return Opcode::EQ;
+    } else if (string == "!=") {
+      return Opcode::NEQ;
+    } else if (string == "&&") {
+      return Opcode::AND;
+    } else if (string == "||") {
+      return Opcode::OR;
+    } else if (string == "/") {
+      return Opcode::DIVIDE;
+    } else if (string == "-") {
+      return Opcode::SUBTRACT;
+    } else if (string == "+") {
+      return Opcode::ADD;
+    } else if (string == "*") {
+      return Opcode::MULTIPLY;
+    } else {
+      spdlog::error("unrecognized binary opcode: {}", string);
+      abort();
+    }
+  }
+
   static std::string opcodeToString(Opcode const &opcode) {
     switch (opcode) {
       case Opcode::LT:
@@ -119,9 +151,9 @@ public:
       case Opcode::NEQ:
         return "!=";
       case Opcode::AND:
-        return "and";
+        return "&&";
       case Opcode::OR:
-        return "or";
+        return "||";
       case Opcode::DIVIDE:
         return "/";
       case Opcode::SUBTRACT:
