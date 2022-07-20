@@ -34,15 +34,21 @@ public:
       result(nullptr)
     {}
 
+  std::string getStmtFilename(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
+    auto filename = sourceManager.getFilename(stmt->getBeginLoc()).str();
+    // FIXME implement caching
+    filename = makeAbsolutePath(filename, sourceManager);
+    return filename;
+  }
+
   bool VisitStmt(clang::Stmt *stmt) {
     auto stmtLoc = stmt->getBeginLoc();
     if (!stmtLoc.isValid()) {
       return true;
     }
 
-    // TODO ensure that stmt is in the correct file before getting here
-    // TODO normalize filename
-    std::string stmtFilename = sourceManager.getFilename(stmtLoc).str();
+    std::string stmtFilename = getStmtFilename(stmt, sourceManager);
+    spdlog::debug("stmt in file: {}", stmtFilename);
     if (stmtFilename != sourceLocation.file) {
       return true;
     }
@@ -50,7 +56,7 @@ public:
     auto stmtLine = sourceManager.getSpellingLineNumber(stmtLoc);
     auto stmtColumn = sourceManager.getSpellingColumnNumber(stmtLoc);
 
-    // spdlog::debug("stmt at: {}:{}:{}", stmtFilename, stmtLine, stmtColumn);
+    spdlog::debug("stmt at: {}:{}:{}", stmtFilename, stmtLine, stmtColumn);
 
     // we have a match! store it and stop searching
     if (stmtColumn == sourceLocation.column && stmtLine == sourceLocation.line) {

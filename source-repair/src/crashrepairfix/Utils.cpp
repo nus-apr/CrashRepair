@@ -5,6 +5,10 @@
 #include <string>
 #include <queue>
 
+#include <spdlog/spdlog.h>
+
+#include <clang/Basic/FileManager.h>
+
 namespace crashrepairfix {
 
 // adapted from https://stackoverflow.com/a/27511119
@@ -48,6 +52,44 @@ std::string yesOrNo(bool status) {
   } else {
     return "no";
   }
+}
+
+std::string cleanPath(llvm::StringRef path) {
+  llvm::SmallString<256> result = path;
+  llvm::sys::path::remove_dots(result, true);
+  return std::string(result.str());
+}
+
+std::string cleanPath(std::string const &path) {
+  return cleanPath(llvm::StringRef(path));
+}
+
+std::string makeAbsolutePath(std::string const &path, clang::SourceManager const &sourceManager) {
+  llvm::SmallString<128> absPath(path);
+  auto &fileManager = sourceManager.getFileManager();
+
+  if (auto error_code = fileManager.getVirtualFileSystem().makeAbsolute(absPath)) {
+    spdlog::error("failed to compute absolute path: {}", error_code.message());
+    abort();
+  }
+
+  // resolve symlinks
+  if (auto directory = fileManager.getDirectory(llvm::sys::path::parent_path(absPath.str()))) {
+    auto directoryName = fileManager.getCanonicalName(*directory);
+    // FIXME: getCanonicalName might fail to get real path on VFS.
+    if (llvm::sys::path::is_absolute(directoryName)) {
+      llvm::SmallString<128> absFilename;
+      llvm::sys::path::append(
+        absFilename,
+        directoryName,
+        llvm::sys::path::filename(absPath.str())
+      );
+      return cleanPath(absFilename.str());
+    }
+  }
+  // https://llvm.org/doxygen/Path_8cpp_source.html#l00715
+  // https://clang.llvm.org/extra/doxygen/namespaceclang_1_1tidy_1_1utils.html#affb1552884f0494c2f6ed0d9160ccb04
+  return cleanPath(absPath.str());
 }
 
 clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::ASTContext const &context) {
