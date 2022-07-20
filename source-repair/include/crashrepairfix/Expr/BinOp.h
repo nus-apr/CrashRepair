@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
@@ -105,7 +107,7 @@ public:
     ));
   }
 
-  static Opcode opcodeFromString(std::string const &string) {
+  static std::optional<Opcode> opcodeFromString(std::string const &string) {
     if (string == "<") {
       return Opcode::LT;
     } else if (string == "<=") {
@@ -131,8 +133,8 @@ public:
     } else if (string == "*") {
       return Opcode::MULTIPLY;
     } else {
-      spdlog::error("unrecognized binary opcode: {}", string);
-      abort();
+      spdlog::warn("unrecognized binary opcode: {}", string);
+      return {};
     }
   }
 

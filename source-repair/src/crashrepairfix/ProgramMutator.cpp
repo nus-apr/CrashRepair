@@ -1,6 +1,7 @@
 #include <crashrepairfix/ProgramMutator.h>
 #include <crashrepairfix/StmtFinder.h>
 #include <crashrepairfix/Utils.h>
+#include <crashrepairfix/Expr/ClangToExprConverter.h>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
@@ -47,6 +48,14 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
 
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
+
+  // FIXME debugging
+  // let's try to mutate the condition
+  auto *condition = location.getBranchConditionExpression();
+  auto converter = ClangToExprConverter(location.getContext());
+  auto conditionExpr = converter.convert(condition);
+  spdlog::info("converted condition to expression: {}", conditionExpr->toString());
+
   strengthenBranchCondition(location);
 }
 

@@ -30,7 +30,7 @@ public:
 
   virtual std::string toString() const override {
     return fmt::format(
-      "var({}, {})",
+      "@var({}, {})",
       getResultTypeString(),
       name
     );
