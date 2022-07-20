@@ -26,6 +26,7 @@ void ProgramMutator::mutate(clang::ASTContext &context) {
 
 void ProgramMutator::mutate(AstLinkedFixLocation &location) {
   spdlog::info("mutating statement [{}]: {}", location.getStmtClassName(), location.getSource());
+  spdlog::info("using fix constraint: {}", location.getConstraint()->toSource());
 
   auto *stmt = location.getStmt();
 
