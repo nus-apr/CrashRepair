@@ -16,3 +16,6 @@
 [submodule "source-repair/extern/pegtl"]
 	path = source-repair/extern/pegtl
 	url = https://github.com/taocpp/PEGTL
+[submodule "source-repair/example/libtiff-cve-2016-5321/src"]
+	path = source-repair/example/libtiff-cve-2016-5321/source
+	url = https://github.com/vadz/libtiff
