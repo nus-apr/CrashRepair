@@ -25,20 +25,23 @@ public:
   [[maybe_unused]] clang::SourceManager &sourceManager;
   [[maybe_unused]] crashrepairfix::SourceLocation const &sourceLocation;
   clang::Stmt *result;
+  std::unordered_map<std::string, std::string> relativeToAbsoluteFilenames;
 
   explicit StmtFinder(clang::ASTContext &context, SourceLocation const &sourceLocation)
     : LexicallyOrderedRecursiveASTVisitor(context.getSourceManager()),
       context(context),
       sourceManager(context.getSourceManager()),
       sourceLocation(sourceLocation),
-      result(nullptr)
+      result(nullptr),
+      relativeToAbsoluteFilenames()
     {}
 
-  std::string getStmtFilename(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
+  std::string getStmtFilename(clang::Stmt const *stmt) {
     auto filename = sourceManager.getFilename(stmt->getBeginLoc()).str();
-    // FIXME implement caching
-    filename = makeAbsolutePath(filename, sourceManager);
-    return filename;
+    if (relativeToAbsoluteFilenames.find(filename) == relativeToAbsoluteFilenames.end()) {
+      relativeToAbsoluteFilenames[filename] = makeAbsolutePath(filename, sourceManager);
+    }
+    return relativeToAbsoluteFilenames[filename];
   }
 
   bool VisitStmt(clang::Stmt *stmt) {
@@ -47,8 +50,7 @@ public:
       return true;
     }
 
-    std::string stmtFilename = getStmtFilename(stmt, sourceManager);
-    spdlog::debug("stmt in file: {}", stmtFilename);
+    std::string stmtFilename = getStmtFilename(stmt);
     if (stmtFilename != sourceLocation.file) {
       return true;
     }
