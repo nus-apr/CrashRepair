@@ -29,12 +29,7 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
   spdlog::info("mutating statement [{}]: {}", location.getStmtClassName(), location.getSource());
   spdlog::info("using fix constraint: {}", location.getConstraint()->toSource());
 
-  auto *stmt = location.getStmt();
-
-  if (   clang::isa<clang::SwitchCase>(stmt)
-      || clang::isa<clang::SwitchStmt>(stmt)
-      || clang::isa<clang::CompoundStmt>(stmt)
-  ) {
+  if (!location.isMutable()) {
     spdlog::warn("ignoring unsupported statement [kind: {}]: {}", location.getStmtClassName(), location.getSource());
     return;
   }
@@ -48,6 +43,8 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
 
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
+
+  // TODO ensure that @result does not appear in the constraint!
 
   // FIXME debugging
   // let's try to mutate the condition

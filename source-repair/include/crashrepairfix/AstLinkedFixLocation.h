@@ -90,6 +90,12 @@ public:
     }
   }
 
+  bool isMutable() const {
+    return clang::isa<clang::SwitchCase>(stmt)
+      || clang::isa<clang::SwitchStmt>(stmt)
+      || clang::isa<clang::CompoundStmt>(stmt);
+  }
+
   bool isConditionalStmt() const {
     return clang::isa<clang::IfStmt>(stmt)
       || clang::isa<clang::ForStmt>(stmt)
