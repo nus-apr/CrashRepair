@@ -167,6 +167,8 @@ def analyze():
         taint_loc_list = []
         taint_map = dict()
         for taint_loc_info in taint_map_concrete:
+            if taint_loc_info not in taint_map_symbolic or taint_loc_info not in taint_map_concrete:
+                continue
             src_file, line, col, inst_add = taint_loc_info.split(":")
             taint_loc = ":".join([src_file, line])
             if taint_loc not in taint_loc_list:
