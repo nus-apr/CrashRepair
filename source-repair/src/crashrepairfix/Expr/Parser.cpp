@@ -50,21 +50,15 @@ struct expression;
 struct bracketed : seq<open_bracket, expression, close_bracket> {};
 struct value : sor<integer, result, variable, bracketed> {};
 
-// struct product : list<value, sor<multiply, divide>> {}; // 3
-// struct expression: list<product, sor<plus, minus>> {};
-
 struct product : list<value, sor<multiply, divide>> {}; // 3
 struct sum : list<product, sor<plus, minus>> {}; // 4
-struct compare : list<sum, sor<lesser_or_equal, less_than, greater_than, greater_or_equal>> {}; // 6
+struct compare : list<sum, sor<lesser_or_equal, less_than, greater_or_equal, greater_than>> {}; // 6
 struct equality : list<compare, sor<equals, not_equals>> {}; // 7
 struct expression : list<equality, sor<logical_and, logical_or>> {}; // 11/12
 
 struct grammar : seq<expression, eof> {};
 
-// after a node is stored successfully, you can add an optional transformer like this:
-struct rearrange
-  : parse_tree::apply<rearrange>  // allows bulk selection, see selector<...>
-{
+struct rearrange : parse_tree::apply<rearrange> {
   // recursively rearrange nodes. the basic principle is:
   //
   // from:          PROD/EXPR
