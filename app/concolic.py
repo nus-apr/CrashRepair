@@ -10,7 +10,7 @@ import pysmt.environment
 
 import app.generator
 from app import emitter, values, reader, utilities, definitions, generator, oracle, parallel, \
-    extractor, smt2, distance, configuration
+    extractor, distance, configuration
 import numpy
 
 

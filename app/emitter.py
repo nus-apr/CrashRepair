@@ -4,7 +4,6 @@ import sys
 import os
 from app import definitions, values, logger
 import textwrap
-from app.synthesis import program_to_code
 
 rows, columns = os.popen('stty size', 'r').read().split()
 
@@ -93,19 +92,6 @@ def highlight(message, jump_line=True):
     message = message.replace("\t", "")
     write(message, WHITE, jump_line, indent_level=indent_length, prefix=prefix)
     logger.note(message)
-
-
-def emit_patch(patch_tree, jump_line=True, message=""):
-    output = message
-    for (lid, prog) in patch_tree.items():
-        code = lid + ": " + (program_to_code(prog))
-    for comp_var, prog_var in values.MAP_PROG_VAR.items():
-        code = code.replace(comp_var, prog_var)
-    indent_length = 0
-    prefix = "\t" * indent_length
-    output = output + code
-    write(output, WHITE, jump_line, indent_level=indent_length, prefix=prefix)
-    logger.data(message, code, True)
 
 
 def information(message, jump_line=True):

@@ -6,8 +6,8 @@ import multiprocessing as mp
 
 import app.configuration
 import app.utilities
-from app import emitter, logger, definitions, values, builder, repair, \
-    configuration, analyzer, parallel, localizer,  oracle
+from app import emitter, logger, definitions, values,  \
+    configuration, analyzer, parallel, localizer
 
 start_time = 0
 time_info = {

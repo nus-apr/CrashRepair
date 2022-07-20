@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import app.generator
-from app import emitter, oracle, definitions, extractor, refine, values, generator, utilities, smt2
-from app.synthesis import ComponentSymbol
+from app import emitter, oracle, definitions, extractor, values, generator, utilities
 from pysmt.shortcuts import is_sat, Not, And, TRUE
 from multiprocessing import TimeoutError
 from functools import partial
@@ -39,18 +38,6 @@ def collect_result_one(result):
     if result[0] is True:
         found_one = True
         pool.terminate()
-
-
-def collect_patch(patch):
-    global result_list
-    result, program = patch
-    if result:
-        for (lid, x) in program.items():
-            tree, constant = x
-            if constant:
-                result_list.append({lid: (tree, constant)})
-            else:
-                result_list.append({lid: (tree, {ComponentSymbol.parse(f).name: v for (f, v) in result.constants.items()})})
 
 
 def abortable_worker(func, *args, **kwargs):

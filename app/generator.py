@@ -1,5 +1,3 @@
-from app.synthesis import load_specification, synthesize_parallel, Program, synthesize_lazy, program_to_formula, \
-    collect_symbols, ComponentSymbol, RuntimeSymbol, program_to_code
 from pathlib import Path
 from typing import List, Dict
 from six.moves import cStringIO
@@ -8,7 +6,7 @@ import os
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.typing import BV32, BV8, ArrayType
 from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, is_sat
-from app import emitter, values, reader, definitions, extractor, oracle, utilities, parser, configuration
+from app import emitter, values, reader, definitions, extractor, oracle, utilities
 import re
 import struct
 import random
@@ -16,160 +14,6 @@ import copy
 
 File_Log_Path = "/tmp/log_sym_path"
 File_Ktest_Path = "/tmp/concolic.ktest"
-
-
-def generate_patch(project_path, model_list=None) -> List[Dict[str, Program]]:
-
-    definitions.FILE_PATCH_SET = definitions.DIRECTORY_OUTPUT + "/patch-set"
-
-    # emitter.sub_sub_title("Generating Patch")
-    test_output_list = values.LIST_TEST_OUTPUT
-    components = values.LIST_COMPONENTS
-    depth = values.DEFAULT_DEPTH
-    if values.CONF_DEPTH_VALUE.isnumeric():
-        depth = int(values.CONF_DEPTH_VALUE)
-
-    spec_files = []
-    output_dir_path = definitions.DIRECTORY_OUTPUT
-    for output_spec in test_output_list:
-        output_spec_path = Path(project_path + "/" + output_spec)
-        test_index = str((int(test_output_list.index(output_spec))))
-        klee_spec_path = Path(output_dir_path + "/klee-out-test-" + test_index)
-        spec_files.append((output_spec_path, klee_spec_path))
-    if model_list:
-        for output_spec_path, klee_spec_path in model_list:
-            spec_files.append((Path(output_spec_path), Path(klee_spec_path)))
-    specification = load_specification(spec_files)
-    values.TEST_SPECIFICATION = specification
-    concrete_enumeration = False
-    if values.DEFAULT_PATCH_TYPE == values.OPTIONS_PATCH_TYPE[0]:
-        concrete_enumeration = True
-    lower_bound = values.DEFAULT_PATCH_LOWER_BOUND
-    upper_bound = values.DEFAULT_PATCH_UPPER_BOUND + 1
-
-    result = synthesize_lazy(components, depth, specification, concrete_enumeration, lower_bound, upper_bound)
-
-    # list_of_patches = [_ for _ in result]
-    # generated_patch = None
-    # if list_of_patches:
-    #     generated_patch = list_of_patches[0]
-    # writer.write_as_pickle(list_of_patches, definitions.FILE_PATCH_SET)
-    # emitter.normal("\tnumber of patches in pool: " + str(len(list_of_patches)))
-    # filtered_list_of_patches = list(set(list_of_patches))
-    # emitter.normal("\tnumber of patches in pool: " + str(len(list_of_patches)))
-    # emitter.warning("\t[warning] found " + str(len(list_of_patches) - len(filtered_list_of_patches)) + "duplicate patch(es)")
-    return result
-
-
-def generate_patch_index_map(patch_list):
-    index_map = dict()
-    rank = 0
-    for patch in patch_list:
-        rank = rank + 1
-        patch_formula = generate_formula_from_patch(patch)
-        patch_formula_str = patch_formula.serialize()
-        patch_index = utilities.get_hash(patch_formula_str)
-        for (lid, prog) in patch.items():
-            code = lid + ": " + (program_to_code(prog))
-        for comp_var, prog_var in values.MAP_PROG_VAR.items():
-            code = code.replace(comp_var, prog_var)
-        index_map[str(patch_index)] = str(code)
-        values.LIST_PATCH_RANKING[str(patch_index)] = {0: rank}
-    return index_map
-
-
-def generate_patch_set(project_path, model_list=None) -> List[Dict[str, Program]]:
-
-    definitions.FILE_PATCH_SET = definitions.DIRECTORY_OUTPUT + "/patch-set"
-    definitions.FILE_PATCH_RANK_INDEX = definitions.DIRECTORY_OUTPUT + "/patch-index"
-    definitions.FILE_PATCH_RANK_MATRIX = definitions.DIRECTORY_OUTPUT + "/patch-rank-matrix"
-
-    if values.CONF_SKIP_GEN:
-        emitter.sub_title("Loading Patch Pool")
-        list_of_patches = reader.read_pickle(definitions.FILE_PATCH_SET)
-        emitter.normal("\tnumber of patches in pool: " + str(len(list_of_patches)))
-        return list_of_patches
-
-    emitter.sub_title("Generating Patch Pool")
-    test_output_list = values.LIST_TEST_OUTPUT
-    test_input_list = values.LIST_TEST_INPUT
-    test_file_list = values.LIST_TEST_FILES
-    seed_file_list = values.LIST_SEED_FILES
-    components = values.LIST_COMPONENTS
-    depth = values.DEFAULT_DEPTH
-    if values.CONF_DEPTH_VALUE.isnumeric():
-        depth = int(values.CONF_DEPTH_VALUE)
-
-    spec_files = []
-    emitter.sub_sub_title("Loading Test-Results")
-    test_index = -1
-    count_seeds = len(values.LIST_SEED_INPUT)
-    count_inputs = len(test_input_list)
-    for arg_list_str in test_input_list[:count_inputs - count_seeds]:
-        arg_list = configuration.extract_input_arg_list(arg_list_str)
-        seed_file = None
-        test_index = test_index + 1
-        expected_output_file = None
-        output_spec_path = None
-        for arg in arg_list:
-            if arg in list(test_file_list.values()):
-                seed_file = arg
-                break
-        if values.CONF_TEST_OUTPUT_DIR:
-            if seed_file:
-                arg_list = [x.replace(seed_file, "$POC") for x in arg_list]
-                seed_name = seed_file.split("/")[-1].split(".")[0]
-                expected_output_file = values.CONF_TEST_OUTPUT_DIR + "/" + seed_name + ".smt2"
-                if os.path.isfile(expected_output_file):
-                    output_spec_path = Path(os.path.abspath(expected_output_file))
-        else:
-            expected_output_file = project_path + "/" + test_output_list[test_index]
-            if os.path.isfile(expected_output_file):
-                output_spec_path = Path(os.path.abspath(expected_output_file))
-        klee_spec_path = None
-        output_dir_path = definitions.DIRECTORY_OUTPUT
-        if output_spec_path:
-            klee_spec_path = Path(output_dir_path + "/klee-out-test-" + str(test_index))
-            spec_files.append((output_spec_path, klee_spec_path))
-        emitter.normal("\tTest #" + str(test_index + 1))
-        if values.LIST_TEST_BINARY:
-            program_path = values.LIST_TEST_BINARY[test_index]
-            values.CONF_PATH_PROGRAM = program_path
-        else:
-            program_path = values.CONF_PATH_PROGRAM
-        emitter.highlight("\tUsing Binary: " + str(program_path))
-        emitter.highlight("\tInput Arg: " + str(arg_list))
-        if seed_file:
-            emitter.highlight("\tInput file: " + str(seed_file))
-        emitter.highlight("\tOutput file: " + str(expected_output_file))
-        emitter.highlight("\tKlee Run: " + str(klee_spec_path))
-
-    if model_list:
-        for output_spec_path, klee_spec_path in model_list:
-            spec_files.append((Path(output_spec_path), Path(klee_spec_path)))
-
-    specification = load_specification(spec_files)
-    values.TEST_SPECIFICATION = specification
-    concrete_enumeration = False
-    if values.DEFAULT_PATCH_TYPE == values.OPTIONS_PATCH_TYPE[0]:
-        concrete_enumeration = True
-    lower_bound = values.DEFAULT_PATCH_LOWER_BOUND
-    upper_bound = values.DEFAULT_PATCH_UPPER_BOUND + 1
-    emitter.sub_sub_title("Synthesising Patches")
-    emitter.normal("\tenumerating patch space")
-    if values.DEFAULT_PATCH_TYPE == values.OPTIONS_PATCH_TYPE[0]:
-        result = synthesize_lazy(components, depth, specification, concrete_enumeration, lower_bound, upper_bound)
-    else:
-        result = synthesize_parallel(components, depth, specification, concrete_enumeration, lower_bound, upper_bound)
-    emitter.highlight("\tnumber of abstract patches explored: " + str(values.COUNT_TEMPLATES_EXPLORED))
-    emitter.highlight("\tnumber of concrete patches explored: " + str(values.COUNT_PATCHES_EXPLORED))
-    list_of_patches = [_ for _ in result]
-    filtered_patch_list = []
-    # writer.write_as_pickle(list_of_patches, definitions.FILE_PATCH_SET)
-    # values.COUNT_TEMPLATE_GEN = len(list_of_patches)
-    # values.COUNT_PATCH_GEN = utilities.count_concrete_patches(list_of_patches)
-    emitter.highlight("\tnumber of patches in pool: " + str(len(list_of_patches)))
-    return list_of_patches
 
 
 def generate_flipped_path(ppc):
@@ -543,27 +387,6 @@ def generate_new_input(sym_path, argument_list=None, poc_path=None, gen_path=Non
     return input_arg_list, input_var_list
 
 
-def generate_model_cli(formula):
-    """
-           This function will invoke the Z3 Cli interface to solve the provided formula and return the model byte list
-           Arguments:
-               formula: smtlib formatted formula
-    """
-    emitter.normal("\textracting z3 model")
-    path_script = "/tmp/z3_script_model_cli"
-    path_result = "/tmp/z3_output_model_cli"
-    write_smtlib(formula, path_script)
-    with open(path_script, "a") as script_file:
-        script_file.writelines(["(get-model)\n", "(exit)\n"])
-    z3_command = "z3 " + path_script + " > " + path_result
-    utilities.execute_command(z3_command)
-    with open(path_result, "r") as result_file:
-        z3_output = result_file.readlines()
-
-    model_byte_list = parser.parse_z3_output(z3_output)
-    return model_byte_list
-
-
 def generate_binary_file(byte_array, seed_file_path, gen_file_path=None):
     byte_list = []
     modified_index_list = []
@@ -732,21 +555,6 @@ def generate_false_path(path_condition):
     if is_unsat(false_path):
         false_path = None
     return false_path
-
-
-def generate_patch_space(patch):
-    partition_list = []
-    partition = dict()
-    patch_formula = generate_formula_from_patch(patch)
-    var_list = list(patch_formula.get_free_variables())
-    for var in var_list:
-        if "const_" in str(var):
-            constraint_info = dict()
-            constraint_info['lower-bound'] = values.DEFAULT_PATCH_LOWER_BOUND
-            constraint_info['upper-bound'] = values.DEFAULT_PATCH_UPPER_BOUND
-            partition[str(var)] = constraint_info
-    partition_list.append(partition)
-    return partition_list
 
 
 def generate_input_space(path_condition):
@@ -1138,25 +946,6 @@ def generate_ppc_from_formula(path_condition):
     return ppc_list
 
 
-def generate_formula_from_patch(patch):
-    lid = list(patch.keys())[0]
-    eid = 0
-    patch_component = patch[lid]
-    patch_constraint = program_to_formula(patch_component)
-    program_substitution = {}
-    for program_symbol in collect_symbols(patch_constraint, lambda x: True):
-        kind = ComponentSymbol.check(program_symbol)
-        data = ComponentSymbol.parse(program_symbol)._replace(lid=lid)._replace(eid=eid)
-        if kind == ComponentSymbol.RRETURN:
-            program_substitution[program_symbol] = RuntimeSymbol.angelic(data)
-        elif kind == ComponentSymbol.RVALUE:
-            program_substitution[program_symbol] = RuntimeSymbol.rvalue(data)
-        elif kind == ComponentSymbol.LVALUE:
-            program_substitution[program_symbol] = RuntimeSymbol.lvalue(data)
-        else:
-            pass  # FIXME: do I need to handle it somehow?
-    substituted_patch = patch_constraint.substitute(program_substitution)
-    return substituted_patch
 
 
 

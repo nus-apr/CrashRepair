@@ -5,7 +5,7 @@
 import os
 import sys
 from app.utilities import execute_command, error_exit
-from app import definitions, values, logger, emitter, reader
+from app import definitions, values, emitter, reader
 
 CC = "$CREPAIR_CC"
 CXX = "$CREPAIR_CXX"
@@ -219,7 +219,7 @@ def build_normal():
 
 
 def remove_fsanitize(build_command):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+    
     sanitize_group = ['integer', 'address', 'undefined']
     for group in sanitize_group:
         build_command = str(build_command).replace("-fsanitize=" + str(group), "")
@@ -227,7 +227,7 @@ def remove_fsanitize(build_command):
 
 
 # def build_instrumented_code(source_directory):
-#     logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+#     
 #     emitter.normal("\t\t\tbuilding instrumented code")
 #     execute_command("export LLVM_COMPILER=clang")
 #     global CXX_FLAGS, C_FLAGS, CC, CXX

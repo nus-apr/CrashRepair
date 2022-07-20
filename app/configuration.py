@@ -3,7 +3,7 @@ import sys
 import re
 import shutil
 from pathlib import Path
-from app import emitter, logger, definitions, values, reader, synthesis, extractor
+from app import emitter, logger, definitions, values, reader, extractor
 from app.utilities import error_exit
 
 
@@ -334,42 +334,6 @@ def read_conf_file():
     if values.CONF_PATH_PROGRAM:
         if "/" != values.CONF_PATH_PROGRAM[0]:
             values.CONF_PATH_PROGRAM = values.CONF_DIR_SRC + "/" + values.CONF_PATH_PROGRAM
-
-
-def load_component_list():
-    emitter.normal("loading custom/general components")
-    # base_list = ["equal.smt2", "not-equal.smt2", "less-than.smt2", "less-or-equal.smt2"]
-    base_list = []
-    if definitions.DIRECTORY_TESTS in values.CONF_DIR_EXPERIMENT:
-        base_list = []
-    gen_comp_files = []
-    os.chdir(definitions.DIRECTORY_COMPONENTS)
-    if values.CONF_GENERAL_COMP_LIST and not values.CONF_ALL_COMPS:
-        comp_list = list(set(values.CONF_GENERAL_COMP_LIST + base_list))
-        for component_name in comp_list:
-            gen_comp_files.append(Path(component_name))
-            emitter.note("\tloading component: " + str(component_name))
-    else:
-        component_file_list = os.listdir(definitions.DIRECTORY_COMPONENTS)
-        for comp_file in component_file_list:
-            if ".smt2" in comp_file:
-                if any(x in comp_file for x in ["logical-not", "post-decrement", "post-increment", "minus", "constant", "assignment", "sequence", "greater", "remainder"]):
-                    continue
-                gen_comp_files.append(Path(comp_file))
-                emitter.note("\tloading component: " + str(comp_file))
-    gen_comp_files = list(set(gen_comp_files))
-    general_components = synthesis.load_components(gen_comp_files)
-
-    proj_comp_files = []
-    os.chdir(values.CONF_DIR_EXPERIMENT)
-    for component_name in values.CONF_CUSTOM_COMP_LIST:
-        proj_comp_files.append(Path(component_name))
-        emitter.note("\tloading component: " + str(component_name))
-    project_components = synthesis.load_components(proj_comp_files)
-    values.LIST_COMPONENTS = project_components + general_components
-    values.COUNT_COMPONENTS = len(values.LIST_COMPONENTS)
-    values.COUNT_COMPONENTS_CUS = len(project_components)
-    values.COUNT_COMPONENTS_GEN = len(general_components)
 
 
 def print_configuration():

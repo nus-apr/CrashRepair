@@ -8,28 +8,7 @@ from app import logger, emitter, values, definitions
 import base64
 import hashlib
 import time
-from app.synthesis import program_to_formula, collect_symbols, ComponentSymbol, RuntimeSymbol
 
-
-def generate_formula_from_patch(patch):
-    lid = list(patch.keys())[0]
-    eid = 0
-    patch_component = patch[lid]
-    patch_constraint = program_to_formula(patch_component)
-    program_substitution = {}
-    for program_symbol in collect_symbols(patch_constraint, lambda x: True):
-        kind = ComponentSymbol.check(program_symbol)
-        data = ComponentSymbol.parse(program_symbol)._replace(lid=lid)._replace(eid=eid)
-        if kind == ComponentSymbol.RRETURN:
-            program_substitution[program_symbol] = RuntimeSymbol.angelic(data)
-        elif kind == ComponentSymbol.RVALUE:
-            program_substitution[program_symbol] = RuntimeSymbol.rvalue(data)
-        elif kind == ComponentSymbol.LVALUE:
-            program_substitution[program_symbol] = RuntimeSymbol.lvalue(data)
-        else:
-            pass  # FIXME: do I need to handle it somehow?
-    substituted_patch = patch_constraint.substitute(program_substitution)
-    return substituted_patch
 
 
 def execute_command(command, show_output=True):
@@ -55,7 +34,7 @@ def error_exit(*arg_list):
 
 def clean_files():
     # Remove other residual files stored in ./output/
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+    
     emitter.information("Removing other residual files...")
     if os.path.isdir("output"):
         clean_command = "rm -rf " + definitions.DIRECTORY_OUTPUT
@@ -63,19 +42,19 @@ def clean_files():
 
 
 def backup_file(file_path, backup_path):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+    
     backup_command = "cp " + file_path + " " + backup_path
     execute_command(backup_command)
 
 
 def restore_file(file_path, backup_path):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+    
     restore_command = "cp " + backup_path + " " + file_path
     execute_command(restore_command)
 
 
 def reset_git(source_directory):
-    logger.trace(__name__ + ":" + sys._getframe().f_code.co_name, locals())
+    
     reset_command = "cd " + source_directory + ";git reset --hard HEAD"
     execute_command(reset_command)
 

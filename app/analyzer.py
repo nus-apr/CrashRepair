@@ -2,8 +2,8 @@ import collections
 import os
 import app.configuration
 import app.utilities
-from app import emitter, utilities, definitions, values, builder, repair, \
-    configuration, reader, parallel, extractor,  generator, instrumentor, localizer
+from app import emitter, utilities, definitions, values, builder, \
+    reader, extractor,  generator, instrumentor
 from app.concolic import run_concrete_execution, run_concolic_execution
 
 
