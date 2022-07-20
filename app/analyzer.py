@@ -3,10 +3,7 @@ import os
 import app.configuration
 import app.utilities
 from app import emitter, utilities, definitions, values, builder, \
-    reader, extractor,  generator, instrumentor
-from app.concolic import run_concrete_execution, run_concolic_execution
-
-
+    reader, extractor,  generator, instrumentor, klee
 
 def analyze():
     emitter.title("Analyzing Program")
@@ -53,7 +50,7 @@ def analyze():
         extractor.extract_byte_code(program_path)
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
-        exit_code = run_concrete_execution(program_path + ".bc", argument_list, True, klee_concrete_out_dir)
+        exit_code = klee.run_concrete_execution(program_path + ".bc", argument_list, True, klee_concrete_out_dir)
         assert exit_code == 0
         # set location of bug/crash
         values.IS_CRASH = False
@@ -108,7 +105,7 @@ def analyze():
 
         values.ARGUMENT_LIST = generalized_arg_list
         _, second_var_list = generator.generate_angelic_val(klee_concrete_out_dir, generalized_arg_list, poc_path)
-        exit_code = run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
+        exit_code = klee.run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
                                            klee_concolic_out_dir)
         # assert exit_code == 0
         expr_trace_log = klee_concolic_out_dir + "/expr.log"
@@ -158,7 +155,7 @@ def analyze():
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
         values.ARGUMENT_LIST = generalized_arg_list
         klee_taint_out_dir = output_dir_path + "/klee-out-taint-" + str(test_case_id - 1)
-        exit_code = run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
+        exit_code = klee.run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
                                            klee_taint_out_dir)
 
         taint_log_path = klee_taint_out_dir + "/taint.log"
