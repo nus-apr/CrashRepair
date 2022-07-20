@@ -21,6 +21,10 @@ std::string getSource(clang::Stmt const *stmt, clang::ASTContext const &context)
 
 std::vector<std::string> getLines(std::string const &s);
 
+clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::SourceManager const &sourceManager);
+clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::ASTContext const &context);
+clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager);
+
 std::string yesOrNo(bool status);
 
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context);

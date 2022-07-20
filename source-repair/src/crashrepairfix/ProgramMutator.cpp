@@ -64,10 +64,8 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
 void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
   spdlog::info("strengthening branch condition in statement: {}", location.getSource());
   auto *condition = location.getBranchConditionExpression();
-
   auto originalSource = crashrepairfix::getSource(condition, location.getSourceManager());
-  auto sourceRange = condition->getSourceRange();
-
+  auto sourceRange = crashrepairfix::getRangeWithTokenEnd(condition, location.getContext());
   auto mutatedSource = fmt::format(
     "({}) && {}",
     originalSource,

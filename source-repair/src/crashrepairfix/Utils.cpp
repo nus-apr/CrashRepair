@@ -50,6 +50,20 @@ std::string yesOrNo(bool status) {
   }
 }
 
+clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::ASTContext const &context) {
+  return getRangeWithTokenEnd(stmt, context.getSourceManager());
+}
+
+clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
+  return getRangeWithTokenEnd(stmt->getSourceRange(), sourceManager);
+}
+
+clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::SourceManager const &sourceManager) {
+  static const clang::LangOptions languageOptions;
+  auto expandedEnd = clang::Lexer::getLocForEndOfToken(range.getEnd(), 0, sourceManager, languageOptions);
+  return clang::SourceRange(range.getBegin(), expandedEnd);
+}
+
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context) {
   for (auto const parent : context.getParents(node)) {
     std::string nodeKind = parent.getNodeKind().asStringRef().str();
