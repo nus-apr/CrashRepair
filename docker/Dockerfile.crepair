@@ -103,6 +103,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y  --no-install-recommends -
 ADD . /CrashRepair
 WORKDIR /CrashRepair
 RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
+RUN cd /CrashRepair/lib && KLEE_INCLUDE_PATH=/klee/source/include make
 ENV PATH=/CrashRepair/compiler:${PATH}
 ENV CREPAIR_CC=/CrashRepair/compiler/crepair-cc
 ENV CREPAIR_CXX=/CrashRepair/compiler/crepair-cxx

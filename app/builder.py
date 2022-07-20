@@ -11,7 +11,7 @@ CC = "$CREPAIR_CC"
 CXX = "$CREPAIR_CXX"
 C_FLAGS = "-g -O0  -static -e"
 CXX_FLAGS = "-g -O0 -static -e"
-LD_FLAGS = "-L/CrashRepair/lib -ltrident_runtime  -lkleeRuntest"
+LD_FLAGS = "-L/CrashRepair/lib -lcrepair_runtime  -lkleeRuntest"
 
 
 def config_project(project_path, is_llvm, custom_config_command=None):
