@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include <spdlog/spdlog.h>
+
 #include <nlohmann/json.hpp>
 
 #include "FixLocation.h"
@@ -27,6 +29,12 @@ public:
   static FixLocalization fromJSON(nlohmann::json j) {
     FixLocalization localization;
     for (auto &entry : j) {
+      // skip entries that are marked as "ignore"
+      if (entry.contains("ignore") and entry["ignore"]) {
+        spdlog::info("skipping fix location marked as \"ignore\"");
+        continue;
+      }
+
       localization.add(FixLocation::fromJSON(entry));
     }
     return localization;
