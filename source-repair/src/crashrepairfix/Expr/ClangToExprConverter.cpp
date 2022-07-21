@@ -18,6 +18,8 @@ std::unique_ptr<Expr> ClangToExprConverter::convert(clang::Expr const *clangExpr
 
   if (auto integerLiteral = clang::dyn_cast<clang::IntegerLiteral>(clangExpr)) {
     return convert(integerLiteral);
+  } else if (auto parenExpr = clang::dyn_cast<clang::ParenExpr>(clangExpr)) {
+    return convert(parenExpr);
   } else if (auto floatLiteral = clang::dyn_cast<clang::FloatingLiteral>(clangExpr)) {
     return convert(floatLiteral);
   } else if (auto binOp = clang::dyn_cast<clang::BinaryOperator>(clangExpr)) {
@@ -31,6 +33,10 @@ std::unique_ptr<Expr> ClangToExprConverter::convert(clang::Expr const *clangExpr
     getSource(clangExpr)
   );
   return nullptr;
+}
+
+std::unique_ptr<Expr> ClangToExprConverter::convert(clang::ParenExpr const *parenExpr) const {
+  return convert(parenExpr->getSubExpr());
 }
 
 std::unique_ptr<Expr> ClangToExprConverter::convert(clang::DeclRefExpr const *declRefExpr) const {

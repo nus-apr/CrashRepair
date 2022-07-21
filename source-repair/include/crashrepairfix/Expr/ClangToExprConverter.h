@@ -24,6 +24,7 @@ private:
 
   std::string getSource(clang::Stmt const *stmt) const;
 
+  std::unique_ptr<Expr> convert(clang::ParenExpr const *parenExpr) const;
   std::unique_ptr<Expr> convert(clang::IntegerLiteral const *literal) const;
   std::unique_ptr<Expr> convert(clang::FloatingLiteral const *literal) const;
   std::unique_ptr<Expr> convert(clang::BinaryOperator const *binOp) const;
