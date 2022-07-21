@@ -51,22 +51,32 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
 
 void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating expr statement [{}]: {}", location.getStmtClassName(), location.getSource());
+  auto &context = location.getContext();
 
   auto *stmt = location.getStmt();
-  auto convertedExpr = ClangToExprConverter(location.getContext()).convert(stmt);
+  auto originalSource = crashrepairfix::getSource(stmt, location.getSourceManager());
+  auto sourceRange = crashrepairfix::getRangeWithTokenEnd(stmt, context);
+
+  auto convertedExpr = ClangToExprConverter(context).convert(stmt);
   if (convertedExpr == nullptr) {
     spdlog::warn("ignoring expr statement [unable to lift to expression language]: {}", location.getSource());
     return;
   }
   spdlog::info("lifted statement to expr: {}", convertedExpr->toString());
 
-  // TODO generate candidate expressions
   auto mutations = ExprMutations::generate(convertedExpr.get(), 1);
+  // FIXME filter based on constraint satisfaction
   auto filter = [] (Expr const *expr) {
     return true;
   };
   auto filtered = mutations.filter(filter, 100);
   spdlog::info("generated {} mutants", filtered.size());
+
+  for (auto &replacementExpr : filtered) {
+    auto replacementSource = replacementExpr->toSource();
+    auto replacement = Replacement::replace(replacementSource, sourceRange, context);
+    create(location, {replacement});
+  }
 }
 
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
