@@ -58,6 +58,8 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
     return;
   }
 
+  // generate candidate expressions
+
   spdlog::info("do some cool mutations!");
 }
 
