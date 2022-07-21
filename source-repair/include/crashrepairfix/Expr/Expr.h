@@ -52,7 +52,7 @@ public:
 
   /** Returns the size of this expression subtree. */
   size_t size() const {
-    size_t size = 0;
+    size_t size = 1;
     for (auto const &child : children) {
       size += child->size();
     }

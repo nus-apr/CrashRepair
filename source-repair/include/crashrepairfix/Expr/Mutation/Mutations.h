@@ -16,7 +16,11 @@ public:
     Expr *original,
     size_t maxEdits = 1
   ) {
+      spdlog::debug("mutating expression [size: {}]: {}", original->size(), original->toString());
+
     auto mutations = ExprMutations(original, maxEdits);
+    mutations.add(std::make_unique<ExprIdentityMutator>());
+    mutations.add(std::make_unique<SwapBinOpcodeMutator>());
     return mutations;
   }
 
@@ -66,8 +70,10 @@ public:
     nodes.insert(nodes.begin(), original);
     size_t id = 0;
     for (auto *node : nodes) {
-      spdlog::debug("mutating expr node [{}]", id);
-      mutator->generate(node, nodeEdits[id]);
+      spdlog::debug("mutating expr node [{}]: {}", id, node->toString());
+      auto &editsAtNode = nodeEdits[id];
+
+      mutator->generate(node, editsAtNode);
       id++;
     }
 

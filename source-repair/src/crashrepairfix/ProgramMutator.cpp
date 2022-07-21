@@ -2,6 +2,7 @@
 #include <crashrepairfix/StmtFinder.h>
 #include <crashrepairfix/Utils.h>
 #include <crashrepairfix/Expr/ClangToExprConverter.h>
+#include <crashrepairfix/Expr/Mutation/Mutations.h>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
@@ -58,7 +59,9 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
     return;
   }
 
-  // generate candidate expressions
+  // TODO generate candidate expressions
+  auto mutations = ExprMutations::generate(convertedExpr.get(), 1);
+
 
   spdlog::info("do some cool mutations!");
 }
