@@ -27,11 +27,18 @@ void ProgramMutator::mutate(clang::ASTContext &context) {
 
 void ProgramMutator::mutate(AstLinkedFixLocation &location) {
   spdlog::info("mutating statement [{}]: {}", location.getStmtClassName(), location.getSource());
-  spdlog::info("using fix constraint: {}", location.getConstraint()->toSource());
+  spdlog::info("using fix constraint: {}", location.getConstraint()->toString());
 
-  if (!location.isMutable()) {
-    spdlog::warn("ignoring unsupported statement [kind: {}]: {}", location.getStmtClassName(), location.getSource());
-    return;
+  // FIXME top-level statements should be mutable!
+  // if (!location.isMutable()) {
+  //   spdlog::warn("ignoring unsupported statement [kind: {}]: {}", location.getStmtClassName(), location.getSource());
+  //   return;
+  // }
+
+  if (location.isExprStmt()) {
+    mutateExprStmt(location);
+  } else {
+    assert (!location.getConstraint()->refersToResult());
   }
 
   if (location.isConditionalStmt()) {
@@ -41,18 +48,21 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
   }
 }
 
+void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
+  spdlog::info("mutating expr statement [{}]: {}", location.getStmtClassName(), location.getSource());
+
+  auto *stmt = location.getStmt();
+  auto convertedExpr = ClangToExprConverter(location.getContext()).convert(stmt);
+  if (convertedExpr == nullptr) {
+    spdlog::info("ignoring expr statement [unable to lift to expression language]: {}", location.getSource());
+    return;
+  }
+
+  spdlog::info("do some cool mutations!");
+}
+
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
-
-  // TODO ensure that @result does not appear in the constraint!
-
-  // FIXME debugging
-  // let's try to mutate the condition
-  auto *condition = location.getBranchConditionExpression();
-  auto converter = ClangToExprConverter(location.getContext());
-  auto conditionExpr = converter.convert(condition);
-  spdlog::info("converted condition to expression: {}", conditionExpr->toString());
-
   strengthenBranchCondition(location);
 }
 
@@ -60,11 +70,8 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating non-conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
 
   // TODO ensure that this is a top-level stmt
-
   prependConditionalControlFlow(location);
   guardStatement(location);
-
-  // TODO is this an assignment?
 }
 
 void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {

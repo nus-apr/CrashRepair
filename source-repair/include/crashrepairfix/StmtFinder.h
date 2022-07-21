@@ -22,8 +22,8 @@ public:
   }
 
   [[maybe_unused]] clang::ASTContext &context;
-  [[maybe_unused]] clang::SourceManager &sourceManager;
-  [[maybe_unused]] crashrepairfix::SourceLocation const &sourceLocation;
+  clang::SourceManager &sourceManager;
+  crashrepairfix::SourceLocation const &sourceLocation;
   clang::Stmt *result;
   std::unordered_map<std::string, std::string> relativeToAbsoluteFilenames;
 
@@ -58,7 +58,8 @@ public:
     auto stmtLine = sourceManager.getSpellingLineNumber(stmtLoc);
     auto stmtColumn = sourceManager.getSpellingColumnNumber(stmtLoc);
 
-    spdlog::debug("stmt at: {}:{}:{}", stmtFilename, stmtLine, stmtColumn);
+    if (stmtLine == sourceLocation.line)
+      spdlog::debug("stmt at: {}:{}:{}", stmtFilename, stmtLine, stmtColumn);
 
     // we have a match! store it and stop searching
     if (stmtColumn == sourceLocation.column && stmtLine == sourceLocation.line) {
