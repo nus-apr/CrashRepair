@@ -62,9 +62,11 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
 
   // TODO generate candidate expressions
   auto mutations = ExprMutations::generate(convertedExpr.get(), 1);
-
-
-  spdlog::info("do some cool mutations!");
+  auto filter = [] (Expr const *expr) {
+    return true;
+  };
+  auto filtered = mutations.filter(filter, 100);
+  spdlog::info("generated {} mutants", filtered.size());
 }
 
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {

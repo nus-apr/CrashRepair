@@ -59,8 +59,12 @@ public:
     return size;
   }
 
-  std::vector<Expr const *> descendants() const {
+  std::vector<Expr const *> descendants(bool includeRoot = false) const {
     std::vector<Expr const *> result;
+    if (includeRoot) {
+      result.push_back(this);
+    }
+
     std::queue<Expr const *> queue;
     for (auto const &child : children) {
       queue.push(child.get());
@@ -71,6 +75,29 @@ public:
       result.push_back(node);
       queue.pop();
       for (auto const &child : node->children) {
+        queue.push(child.get());
+      }
+    }
+
+    return result;
+  }
+
+  std::vector<Expr*> descendants(bool includeRoot = false) {
+    std::vector<Expr*> result;
+    if (includeRoot) {
+      result.push_back(this);
+    }
+
+    std::queue<Expr*> queue;
+    for (auto &child : children) {
+      queue.push(child.get());
+    }
+
+    while (!queue.empty()) {
+      auto node = queue.front();
+      result.push_back(node);
+      queue.pop();
+      for (auto &child : node->children) {
         queue.push(child.get());
       }
     }

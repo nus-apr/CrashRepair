@@ -25,7 +25,7 @@ public:
   }
 
   std::vector<std::unique_ptr<Expr>> filter(
-    std::function<bool(Expr*)> predicate,
+    std::function<bool(Expr const *)> predicate,
     size_t limit
   ) {
     std::vector<size_t> editMask(numNodes, 0);
@@ -102,7 +102,7 @@ private:
   }
 
   void filter(
-    std::function<bool(Expr*)> predicate,
+    std::function<bool(Expr const *)> predicate,
     size_t limit,
     size_t nodeIndex,
     size_t editsUsed,
@@ -135,10 +135,19 @@ private:
   // transforms an edit mask into a mutated expression
   std::unique_ptr<Expr> generateExpr(std::vector<size_t> const &editMask) {
     assert (editMask.size() == numNodes);
+    assert (nodeEdits.size() == numNodes);
     auto expr = original->copy();
 
-    // TODO visit expression in correct order
     // destructively apply specified edit at each location
+    std::vector<Expr*> nodes = expr->descendants(true);
+    for (int i = numNodes - 1; i >= 0; i--) {
+      auto node = nodes[i];
+      auto editIndex = editMask[i];
+      auto &editsAtNode = nodeEdits[i];
+      // spdlog::debug("applying edit {} of {} at node {}", editIndex, i, editsAtNode.size());
+      auto *edit = editsAtNode[editIndex].get();
+      edit->apply(node);
+    }
 
     return expr;
   }
