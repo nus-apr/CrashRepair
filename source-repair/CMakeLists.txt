@@ -34,6 +34,21 @@ set(CLANG_LIBS
   clangFormat
 )
 
+find_library(Z3_LIBRARY NAMES z3 DOC "Z3 libraries")
+if (Z3_LIBRARIES)
+    message(STATUS "Found Z3 libraries: ${Z3_LIBRARY}")
+    link_libraries(${Z3_LIBRARY})
+else ()
+    message(FATAL "Could not find Z3 libraries")
+endif ()
+
+find_path(Z3_INCLUDE_DIRS NAMES z3++.h PATH_SUFFIXES z3 DOC "Z3 C header")
+if (Z3_INCLUDE_DIRS)
+    message(STATUS "Found Z3 include path: \"${Z3_INCLUDE_DIRS}\"")
+else ()
+    message(STATUS "Could not find Z3 include path")
+endif ()
+
 add_subdirectory(extern)
 add_subdirectory(src)
 
