@@ -68,8 +68,9 @@ std::string ClangToExprConverter::getSource(clang::Stmt const *stmt) const {
 }
 
 std::unique_ptr<Expr> ClangToExprConverter::convert(clang::IntegerLiteral const *literal) const {
-  double value = literal->getValue().bitsToDouble();
-  return IntConst::create(long(value));
+  // TODO add upper value
+  long value = literal->getValue().getLimitedValue();
+  return IntConst::create(value);
 }
 
 std::unique_ptr<Expr> ClangToExprConverter::convert(clang::FloatingLiteral const *literal) const {

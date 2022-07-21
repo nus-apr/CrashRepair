@@ -55,9 +55,10 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
   auto *stmt = location.getStmt();
   auto convertedExpr = ClangToExprConverter(location.getContext()).convert(stmt);
   if (convertedExpr == nullptr) {
-    spdlog::info("ignoring expr statement [unable to lift to expression language]: {}", location.getSource());
+    spdlog::warn("ignoring expr statement [unable to lift to expression language]: {}", location.getSource());
     return;
   }
+  spdlog::info("lifted statement to expr: {}", convertedExpr->toString());
 
   // TODO generate candidate expressions
   auto mutations = ExprMutations::generate(convertedExpr.get(), 1);
