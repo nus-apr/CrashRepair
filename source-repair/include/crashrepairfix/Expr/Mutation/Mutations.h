@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -17,6 +18,16 @@ public:
   ) {
     auto mutations = ExprMutations(original, maxEdits);
     return mutations;
+  }
+
+  std::vector<std::unique_ptr<Expr>> filter(
+    std::function<bool(Expr*)> predicate,
+    size_t limit
+  ) {
+    std::vector<size_t> editMask(numNodes, 0);
+    std::vector<std::unique_ptr<Expr>> results;
+    filter(predicate, limit, 0, 0, editMask, results);
+    return results;
   }
 
   ExprMutations(ExprMutations &&other) noexcept :
@@ -82,6 +93,48 @@ private:
   {
     assert (original != nullptr);
     assert (maxEdits >= 1);
+  }
+
+  void filter(
+    std::function<bool(Expr*)> predicate,
+    size_t limit,
+    size_t nodeIndex,
+    size_t editsUsed,
+    std::vector<size_t> &editMask,
+    std::vector<std::unique_ptr<Expr>> &results
+  ) {
+    if (results.size() == limit) {
+      return;
+    }
+
+    // test this expression
+    if (nodeIndex >= numNodes || editsUsed == maxEdits) {
+      auto expr = generateExpr(editMask);
+      if (predicate(expr.get())) {
+        results.push_back(std::move(expr));
+      }
+      return;
+    }
+
+    // no edit at this node
+    filter(predicate, limit, nodeIndex + 1, editsUsed, editMask, results);
+
+    // perform an edit at this node
+    for (size_t editIndex = 1; editIndex < nodeEdits[nodeIndex].size(); editIndex++) {
+      editMask[nodeIndex] = editIndex;
+      filter(predicate, limit, nodeIndex + 1, editsUsed + 1, editMask, results);
+    }
+  }
+
+  // transforms an edit mask into a mutated expression
+  std::unique_ptr<Expr> generateExpr(std::vector<size_t> const &editMask) {
+    assert (editMask.size() == numNodes);
+    auto expr = original->copy();
+
+    // TODO visit expression in correct order
+    // destructively apply specified edit at each location
+
+    return expr;
   }
 };
 
