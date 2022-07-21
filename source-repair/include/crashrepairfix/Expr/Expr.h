@@ -42,7 +42,7 @@ public:
   /** Returns the set of vars that are used within this expression. */
   std::unordered_set<Var const *> vars() const {
     std::unordered_set<Var const *> result;
-    for (auto const node : descendants()) {
+    for (auto const node : descendants(true)) {
       if (node->getExprKind() == Kind::Var) {
         result.insert((Var const *) node);
       }
@@ -154,6 +154,25 @@ public:
         return "float";
       case ResultType::Pointer:
         return "pointer";
+    }
+  }
+
+  static std::string exprKindToString(Kind const &kind) {
+    switch (kind) {
+      case Kind::BinOp:
+        return "BinOp";
+      case Kind::UnaryOp:
+        return "UnaryOp";
+      case Kind::FloatConst:
+        return "FloatConst";
+      case Kind::IntConst:
+        return "IntConst";
+      case Kind::NullConst:
+        return "NullConst";
+      case Kind::Var:
+        return "Var";
+      case Kind::Result:
+        return "Result";
     }
   }
 
