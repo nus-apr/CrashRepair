@@ -19,3 +19,6 @@
 [submodule "source-repair/example/libtiff-cve-2016-5321/src"]
 	path = source-repair/example/libtiff-cve-2016-5321/source
 	url = https://github.com/vadz/libtiff
+[submodule "source-repair/extern/z3"]
+	path = source-repair/extern/z3
+	url = https://github.com/Z3Prover/z3
