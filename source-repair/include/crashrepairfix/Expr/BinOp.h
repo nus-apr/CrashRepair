@@ -66,6 +66,10 @@ public:
     return Expr::Kind::BinOp;
   }
 
+  void changeOpcode(Opcode newOpcode) {
+    opcode = newOpcode;
+  }
+
   Opcode getOpcode() const {
     return opcode;
   }

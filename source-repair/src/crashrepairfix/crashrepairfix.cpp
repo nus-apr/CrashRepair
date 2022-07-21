@@ -15,6 +15,8 @@
 #include <crashrepairfix/FixLocalization.h>
 #include <crashrepairfix/ProgramMutator.h>
 
+#include <crashrepairfix/Expr/Mutation/Mutators.h>
+
 using namespace clang;
 using namespace clang::ast_matchers;
 using namespace clang::tooling;
