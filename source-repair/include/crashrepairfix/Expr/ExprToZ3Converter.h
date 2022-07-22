@@ -14,7 +14,7 @@ public:
   z3::expr convert(Expr const *expr);
 
 private:
-  [[maybe_unused]] z3::context &z3c;
+  z3::context &z3c;
 
   z3::expr convert(BinOp const *expr);
   z3::expr convert(UnaryOp const *expr);

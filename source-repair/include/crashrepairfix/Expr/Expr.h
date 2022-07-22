@@ -154,6 +154,8 @@ public:
         return "float";
       case ResultType::Pointer:
         return "pointer";
+      default:
+        abort();
     }
   }
 
@@ -173,6 +175,9 @@ public:
         return "Var";
       case Kind::Result:
         return "Result";
+      default:
+        spdlog::error("cannot convert Expr::Kind to string: unrecognized kind");
+        abort();
     }
   }
 

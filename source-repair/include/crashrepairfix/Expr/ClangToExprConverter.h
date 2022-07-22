@@ -19,8 +19,8 @@ public:
   std::unique_ptr<Expr> convert(clang::Expr const *clangExpr) const;
 
 private:
-  [[maybe_unused]] clang::ASTContext const &context;
-  [[maybe_unused]] clang::SourceManager const &sourceManager;
+  clang::ASTContext const &context;
+  clang::SourceManager const &sourceManager;
 
   std::string getSource(clang::Stmt const *stmt) const;
 

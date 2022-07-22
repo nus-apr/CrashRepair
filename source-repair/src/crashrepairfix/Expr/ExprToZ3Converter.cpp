@@ -27,6 +27,7 @@ z3::expr ExprToZ3Converter::convert(Expr const *expr) {
         Expr::exprKindToString(kind),
         expr->toString()
       );
+      abort();
   }
 }
 
@@ -39,11 +40,11 @@ z3::expr ExprToZ3Converter::convert(UnaryOp const *expr) {
 }
 
 z3::expr ExprToZ3Converter::convert(IntConst const *expr) {
-  abort();
+  return z3c.int_val(static_cast<__int64_t>(expr->getValue()));
 }
 
 z3::expr ExprToZ3Converter::convert(FloatConst const *expr) {
-  abort();
+  return z3c.fpa_val(expr->getValue());
 }
 
 z3::expr ExprToZ3Converter::convert(NullConst const *expr) {

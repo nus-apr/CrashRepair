@@ -168,6 +168,8 @@ public:
         return "+";
       case Opcode::MULTIPLY:
         return "*";
+      default:
+        abort();
     }
   }
 

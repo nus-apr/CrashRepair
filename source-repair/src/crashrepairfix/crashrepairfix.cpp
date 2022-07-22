@@ -43,7 +43,7 @@ public:
   }
 
 private:
-  [[maybe_unused]] ProgramMutator &mutator;
+  ProgramMutator &mutator;
 };
 
 class GeneratePatchesAction : public clang::ASTFrontendAction {

@@ -27,7 +27,7 @@ target_link_libraries(crashrepairfix PRIVATE
   spdlog::spdlog
 )
 target_compile_options(crashrepairfix PRIVATE
-  -Wall -Werror -fno-rtti
+  -Wall -Werror -Wno-error=comment -fno-rtti
 )
 target_link_options(crashrepairfix PRIVATE
   -static-libgcc -static-libstdc++ -static
@@ -39,6 +39,7 @@ target_include_directories(crashrepairfix
   PUBLIC
     ${CLANG_INCLUDE_DIRS}
     ${LLVM_INCLUDE_DIRS}
+    ${Z3_INCLUDE_DIRS}
     taocpp::pegtl
     nlohmann_json::nlohmann_json
     spdlog::spdlog

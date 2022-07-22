@@ -21,7 +21,7 @@ public:
     return finder.result;
   }
 
-  [[maybe_unused]] clang::ASTContext &context;
+  clang::ASTContext &context;
   clang::SourceManager &sourceManager;
   crashrepairfix::SourceLocation const &sourceLocation;
   clang::Stmt *result;
