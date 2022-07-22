@@ -32,11 +32,47 @@ z3::expr ExprToZ3Converter::convert(Expr const *expr) {
 }
 
 z3::expr ExprToZ3Converter::convert(BinOp const *expr) {
-  abort();
+  auto lhsZ3 = convert(expr->getLhs());
+  auto rhsZ3 = convert(expr->getRhs());
+  switch (expr->getOpcode()) {
+    case BinOp::Opcode::ADD:
+      return lhsZ3 + rhsZ3;
+    case BinOp::Opcode::SUBTRACT:
+      return lhsZ3 - rhsZ3;
+    case BinOp::Opcode::DIVIDE:
+      return lhsZ3 / rhsZ3;
+    case BinOp::Opcode::MULTIPLY:
+      return lhsZ3 * rhsZ3;
+
+    // FIXME without first-class treatment of booleans, this will fail
+    case BinOp::Opcode::AND:
+      return lhsZ3 && rhsZ3;
+    case BinOp::Opcode::OR:
+      return lhsZ3 || rhsZ3;
+
+    case BinOp::Opcode::LT:
+      return lhsZ3 < rhsZ3;
+    case BinOp::Opcode::LTE:
+      return lhsZ3 <= rhsZ3;
+    case BinOp::Opcode::GT:
+      return lhsZ3 > rhsZ3;
+    case BinOp::Opcode::GTE:
+      return lhsZ3 >= rhsZ3;
+    case BinOp::Opcode::EQ:
+      return lhsZ3 == rhsZ3;
+    case BinOp::Opcode::NEQ:
+      return lhsZ3 != rhsZ3;
+  }
+  assert (false);
 }
 
 z3::expr ExprToZ3Converter::convert(UnaryOp const *expr) {
-  abort();
+  auto operandZ3 = convert(expr->getOperand());
+  switch (expr->getOpcode()) {
+    case UnaryOp::Opcode::NOT:
+      return !operandZ3;
+  }
+  assert (false);
 }
 
 z3::expr ExprToZ3Converter::convert(IntConst const *expr) {
