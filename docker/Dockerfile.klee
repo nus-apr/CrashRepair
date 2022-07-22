@@ -9,7 +9,7 @@ WORKDIR /klee-uclibc
 RUN git clone https://github.com/klee/klee-uclibc.git . && \
     git checkout ${KLEE_UCLIBC_VERSION} && \
     CC=/opt/llvm-6/bin/clang ./configure --make-llvm-lib && \
-    make -j2
+    make -j32
 ENV KLEE_VERSION=2.0
 WORKDIR /klee
 ARG KLEE_REVISION=54c7487
