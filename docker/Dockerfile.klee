@@ -1,0 +1,36 @@
+FROM crepair:builder
+COPY --from=crepair:z3 /opt/z3/ /opt/z3/
+COPY --from=crepair:llvm-6 /opt/llvm6/ /opt/llvm-6/
+ENV LLVM_BIN_PATH "/opt/llvm-6/bin"
+ENV LD_LIBRARY_PATH "/opt/z3/lib:${LD_LIBRARY_PATH}"
+ENV PATH "/opt/z3/bin:${LLVM_BIN_PATH}:${PATH}"
+ENV KLEE_UCLIBC_VERSION=klee_0_9_29
+WORKDIR /klee-uclibc
+RUN git clone https://github.com/klee/klee-uclibc.git . && \
+    git checkout ${KLEE_UCLIBC_VERSION} && \
+    CC=/opt/llvm-6/bin/clang ./configure --make-llvm-lib && \
+    make -j2
+ENV KLEE_VERSION=2.0
+WORKDIR /klee
+ARG KLEE_REVISION=54c7487
+RUN git clone https://github.com/rshariffdeen/klee.git source \
+ && cd source \
+ && git checkout "${KLEE_REVISION}"
+RUN mkdir build && \
+    cd build && \
+    cmake \
+        -DCMAKE_C_COMPILER=/opt/llvm-6/bin/clang \
+        -DCMAKE_CXX_COMPILER=/opt/llvm-6/bin/clang++ \
+        -DCMAKE_LINKER=/opt/llvm-6/bin/lld \
+        -DZ3_INCLUDE_DIRS=/opt/z3/include \
+        -DZ3_LIBRARIES=/opt/z3/lib/libz3.so \
+        -DENABLE_SOLVER_Z3=ON \
+        -DENABLE_POSIX_RUNTIME=ON \
+        -DENABLE_KLEE_UCLIBC=ON \
+        -DKLEE_UCLIBC_PATH=/klee-uclibc \
+        -DENABLE_UNIT_TESTS=OFF \
+        -DENABLE_SYSTEM_TESTS=OFF \
+            ../source && \
+    make
+RUN cd /klee/build/lib; ar rcs libkleeRuntest.a libkleeRuntest.so.1.0
+ENV PATH=/klee/build/bin/:${PATH}
