@@ -1,6 +1,6 @@
 FROM crepair:builder
 COPY --from=crepair:z3 /opt/z3/ /opt/z3/
-COPY --from=crepair:llvm-6 /opt/llvm6/ /opt/llvm-6/
+COPY --from=crepair:llvm-6 /opt/llvm-6/ /opt/llvm-6/
 ENV LLVM_BIN_PATH "/opt/llvm-6/bin"
 ENV LD_LIBRARY_PATH "/opt/z3/lib:${LD_LIBRARY_PATH}"
 ENV PATH "/opt/z3/bin:${LLVM_BIN_PATH}:${PATH}"
