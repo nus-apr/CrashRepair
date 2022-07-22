@@ -14,6 +14,8 @@ time_info = {
     definitions.KEY_DURATION_INITIALIZATION: '0',
     definitions.KEY_DURATION_BUILD: '0',
     definitions.KEY_DURATION_BOOTSTRAP: '0',
+    definitions.KEY_DURATION_LOCALIZATION: '0',
+    definitions.KEY_DURATION_ANALYSIS: '0',
     definitions.KEY_DURATION_REPAIR: '0',
     definitions.KEY_DURATION_TOTAL: '0'
     }

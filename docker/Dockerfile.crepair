@@ -39,13 +39,15 @@ RUN pypy3 -m easy_install six
 RUN pypy3 -m easy_install numpy==1.19.1
 RUN pypy3 -m easy_install wllvm
 RUN python3 -m easy_install wllvm
-ENV PATH "/opt/llvm-6/bin:${PATH}"
+ENV PATH "/opt/llvm-6/bin:/klee/build/bin:${PATH}"
 ENV LLVM_COMPILER=clang
 ADD . /CrashRepair
 WORKDIR /CrashRepair
 RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
 RUN cd /CrashRepair/lib && KLEE_INCLUDE_PATH=/klee/source/include make
-ENV PATH=/CrashRepair/compiler:${PATH}
-ENV CREPAIR_CC=/CrashRepair/compiler/crepair-cc
-ENV CREPAIR_CXX=/CrashRepair/compiler/crepair-cxx
+ENV PATH=/CrashRepair/compiler:/klee/build/bin:${PATH}
+ENV CC=crepair-cc
+ENV CXX=crepair-cxx
+RUN crepair --help && exit 0
+
 
