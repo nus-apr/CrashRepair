@@ -40,7 +40,7 @@ z3::expr ExprToZ3Converter::convert(UnaryOp const *expr) {
 }
 
 z3::expr ExprToZ3Converter::convert(IntConst const *expr) {
-  return z3c.int_val(static_cast<__int64_t>(expr->getValue()));
+  return z3c.int_val(expr->getValue());
 }
 
 z3::expr ExprToZ3Converter::convert(FloatConst const *expr) {
@@ -48,15 +48,31 @@ z3::expr ExprToZ3Converter::convert(FloatConst const *expr) {
 }
 
 z3::expr ExprToZ3Converter::convert(NullConst const *expr) {
-  abort();
+  return z3c.int_val(0);
 }
 
 z3::expr ExprToZ3Converter::convert(Result const *expr) {
-  abort();
+  static std::string const name = "RESULT";
+  switch (expr->getResultType()) {
+    case ResultType::Float:
+      return z3c.real_const(name.c_str());
+    case ResultType::Int:
+    case ResultType::Pointer:
+      return z3c.int_const(name.c_str());
+  }
+  assert (false);
 }
 
 z3::expr ExprToZ3Converter::convert(Var const *expr) {
-  abort();
+  static std::string const &name = expr->getName();
+  switch (expr->getResultType()) {
+    case ResultType::Float:
+      return z3c.real_const(name.c_str());
+    case ResultType::Int:
+    case ResultType::Pointer:
+      return z3c.int_const(name.c_str());
+  }
+  assert (false);
 }
 
 }

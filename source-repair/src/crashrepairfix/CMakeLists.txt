@@ -20,6 +20,7 @@ set_target_properties(crashrepairfix
     LINK_SEARCH_END_STATIC ON
 )
 target_link_libraries(crashrepairfix PRIVATE
+  ${Z3_LIBRARY}
   ${CRASHREPAIRFIX_LLVM_LIBS}
   ${CLANG_LIBS}
   taocpp::pegtl
@@ -30,7 +31,7 @@ target_compile_options(crashrepairfix PRIVATE
   -Wall -Werror -Wno-error=comment -fno-rtti
 )
 target_link_options(crashrepairfix PRIVATE
-  -static-libgcc -static-libstdc++ -static
+  -static-libgcc -static-libstdc++ -static -Wl,--copy-dt-needed-entries
 )
 target_compile_definitions(crashrepairfix
   PUBLIC ${CLANG_DEFINITIONS} ${LLVM_DEFINITIONS}
