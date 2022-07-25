@@ -1,6 +1,7 @@
 add_executable(crashrepairfix
   crashrepairfix.cpp
   Expr/ClangToExprConverter.cpp
+  Expr/ExprGenerator.cpp
   Expr/ExprToZ3Converter.cpp
   Expr/Parser.cpp
   DiffGenerator.cpp
