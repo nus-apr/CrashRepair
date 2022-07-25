@@ -5,6 +5,8 @@
 #include <variant>
 #include <vector>
 
+#include <z3++.h>
+
 #include <nlohmann/json.hpp>
 
 #include "SourceLocation.h"
@@ -40,7 +42,7 @@ public:
     );
 
 
-    // z3::expr toZ3(z3::context &z3c) const;
+    z3::expr toZ3(z3::context &z3c) const;
 
   private:
     std::unordered_map<
@@ -53,7 +55,9 @@ public:
 
   static ProgramStates fromJSON(nlohmann::json const &j);
 
-  // TODO add iterator over values
+  std::vector<Values> const & getValues() const {
+    return values;
+  }
 
 private:
   std::vector<Variable> variables;
