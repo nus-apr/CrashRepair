@@ -76,6 +76,10 @@ public:
     return fixLocation.getLocation();
   }
 
+  ProgramStates const & getStates() const {
+    return fixLocation.getStates();
+  }
+
   clang::Expr* getBranchConditionExpression() {
     assert(isConditionalStmt());
     if (auto *ifStmt = clang::dyn_cast<clang::IfStmt>(stmt)) {

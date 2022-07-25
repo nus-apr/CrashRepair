@@ -2,6 +2,7 @@
 #include <crashrepairfix/StmtFinder.h>
 #include <crashrepairfix/Utils.h>
 #include <crashrepairfix/Expr/ClangToExprConverter.h>
+#include <crashrepairfix/Expr/ExprGenerator.h>
 #include <crashrepairfix/Expr/Mutation/Mutations.h>
 
 #include <spdlog/spdlog.h>
@@ -64,15 +65,15 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
   }
   spdlog::info("lifted statement to expr: {}", convertedExpr->toString());
 
-  auto mutations = ExprMutations::generate(convertedExpr.get(), 1);
-  // FIXME filter based on constraint satisfaction
-  auto filter = [] (Expr const *expr) {
-    return true;
-  };
-  auto filtered = mutations.filter(filter, 100);
-  spdlog::info("generated {} mutants", filtered.size());
+  auto generator = ExprGenerator(
+    convertedExpr.get(),
+    location.getConstraint(),
+    location.getStates()
+  );
+  std::vector<std::unique_ptr<Expr>> mutations = generator.generate();
+  spdlog::info("generated {} mutants", mutations.size());
 
-  for (auto &replacementExpr : filtered) {
+  for (auto &replacementExpr : mutations) {
     auto replacementSource = replacementExpr->toSource();
     auto replacement = Replacement::replace(replacementSource, sourceRange, context);
     create(location, {replacement});
