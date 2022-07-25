@@ -48,7 +48,7 @@ RUN cd /CrashRepair/lib && KLEE_INCLUDE_PATH=/klee/source/include make
 ENV PATH=/CrashRepair/compiler:/klee/build/bin:${PATH}
 ENV CC=crepair-cc
 ENV CXX=crepair-cxx
-ENV LD_LIBRARY_PATH"/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH "/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
 RUN crepair --help && exit 0
 
 
