@@ -5,6 +5,7 @@ add_executable(crashrepairfix
   Expr/Parser.cpp
   DiffGenerator.cpp
   ProgramMutator.cpp
+  ProgramStates.cpp
   Utils.cpp
 )
 
