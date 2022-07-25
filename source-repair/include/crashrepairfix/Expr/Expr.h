@@ -105,14 +105,24 @@ public:
     return result;
   }
 
-  /** Determines whether this expression contains a result reference */
-  bool refersToResult() const {
-    for (auto descendant : descendants()) {
+  /** Obtains a pointer to the result variable, if any, referenced by this expression. */
+  Expr const * getResultReference() const {
+    Expr const *result = nullptr;
+    for (auto descendant : descendants(true)) {
       if (descendant->getExprKind() == Kind::Result) {
-        return true;
+        if (result != nullptr && descendant->getResultType() != result->getResultType()) {
+          spdlog::error("constraint is ambiguous: result variable has more than one type");
+          abort();
+        }
+        result = descendant;
       }
     }
-    return false;
+    return result;
+  }
+
+  /** Determines whether this expression contains a result reference */
+  bool refersToResult() const {
+    return getResultReference() != nullptr;
   }
 
   /** Returns a deep copy of this expression. */
