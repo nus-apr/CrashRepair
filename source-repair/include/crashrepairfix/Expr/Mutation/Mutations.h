@@ -13,7 +13,7 @@ namespace crashrepairfix {
 class ExprMutations {
 public:
   static ExprMutations generate(
-    Expr *original,
+    Expr const *original,
     size_t maxEdits = 1
   ) {
       spdlog::debug("mutating expression [size: {}]: {}", original->size(), original->toString());
@@ -82,14 +82,14 @@ public:
   }
 
 private:
-  Expr *original;
+  Expr const *original;
   size_t maxEdits;
   size_t numNodes;
   std::vector<std::vector<std::unique_ptr<ExprEdit>>> nodeEdits;
   std::vector<std::unique_ptr<ExprMutator>> mutators;
 
   ExprMutations(
-    Expr *original,
+    Expr const *original,
     size_t maxEdits
   ) : original(original),
       maxEdits(maxEdits),
