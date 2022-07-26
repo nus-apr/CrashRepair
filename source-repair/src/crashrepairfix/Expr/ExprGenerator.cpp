@@ -5,19 +5,23 @@ namespace crashrepairfix {
 std::vector<std::unique_ptr<Expr>> ExprGenerator::generate(size_t limit) const {
   auto mutations = ExprMutations::generate(expr, maxEdits);
 
+  auto resultReference = constraint->getResultReference();
+  assert (resultReference != nullptr);
+
   // NOTE store this as a field?
   z3::context z3c;
   auto z3Converter = ExprToZ3Converter(z3c);
   auto z3Constraint = z3Converter.convert(constraint);
-  auto z3ResultVar = z3Converter.convert(expr->getResultReference());
+  auto z3ResultVar = z3Converter.convert(resultReference);
 
   std::function<bool(Expr const *)> satisfies = [&](Expr const *expr) -> bool {
     // TODO check each observation individually (rather than creating a single query)
     // TODO store solver as a field
-    for (auto &values : states.getValues()) {
+    spdlog::debug("checking expression: {}", expr->toSource());
+    for (auto const &values : states.getValues()) {
       z3::solver solver(z3c);
       solver.add(z3Constraint);
-      solver.add(values.toZ3(z3c));
+      solver.add(values->toZ3(z3c));
       solver.add(z3ResultVar == z3Converter.convert(expr));
       switch (solver.check()) {
         case z3::sat:

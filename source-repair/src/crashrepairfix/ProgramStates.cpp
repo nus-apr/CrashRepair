@@ -1,48 +1,55 @@
 #include <crashrepairfix/ProgramStates.h>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 
 namespace crashrepairfix {
 
-ProgramStates::Variable ProgramStates::Variable::fromJSON(nlohmann::json const &j) {
+std::string ProgramStates::Variable::toString() const {
+  return fmt::format("Variable({}, {}, {})", name, Expr::resultTypeToString(type), declaredAt.toString());
+}
+
+std::unique_ptr<ProgramStates::Variable> ProgramStates::Variable::fromJSON(nlohmann::json const &j) {
   std::string name = j["name"];
   auto type = Expr::resultTypeFromString(j["type"]);
   auto declaredAt = SourceLocation::fromString(j["declared-at"]);
-  return Variable(name, type, declaredAt);
+  auto variable = std::make_unique<Variable>(name, type, declaredAt);
+  spdlog::debug("loaded variable: {}", variable->toString());
+  return variable;
 }
 
-ProgramStates::Values ProgramStates::Values::fromJSON(
-  std::vector<Variable> const &variables,
+std::unique_ptr<ProgramStates::Values> ProgramStates::Values::fromJSON(
+  std::vector<std::unique_ptr<Variable>> const &variables,
   nlohmann::json const &j
 ) {
   std::unordered_map<Variable const *, std::variant<double, long>> values;
 
-  for (Variable const &variable : variables) {
+  for (auto const &variable : variables) {
     std::variant<double, long> value;
-    switch (variable.type) {
+    switch (variable->type) {
       case ResultType::Int:
       case ResultType::Pointer:
-        value = j[variable.name].get<long>();
+        value = j[variable->name].get<long>();
         break;
       case ResultType::Float:
-        value = j[variable.name].get<double>();
+        value = j[variable->name].get<double>();
         break;
       default:
         assert (false);
     }
-    values[&variable] = value;
+    values[variable.get()] = value;
   }
 
-  return Values(std::move(values));
+  return std::make_unique<Values>(std::move(values));
 }
 
 ProgramStates ProgramStates::fromJSON(nlohmann::json const &j) {
-  std::vector<Variable> variables;
+  std::vector<std::unique_ptr<Variable>> variables;
   for (auto jVariable : j["variables"]) {
     variables.push_back(Variable::fromJSON(jVariable));
   }
 
-  std::vector<Values> values;
+  std::vector<std::unique_ptr<Values>> values;
   for (auto jValues : j["values"]) {
     values.push_back(Values::fromJSON(variables, jValues));
   }

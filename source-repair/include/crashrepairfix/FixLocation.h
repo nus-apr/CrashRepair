@@ -19,7 +19,7 @@ public:
   FixLocation(
     SourceLocation &sourceLocation,
     std::unique_ptr<Expr> constraint,
-    ProgramStates const &states
+    ProgramStates &states
   ) : sourceLocation(sourceLocation),
       constraint(std::move(constraint)),
       states(std::move(states))
@@ -29,7 +29,7 @@ public:
     SourceLocation location = SourceLocation::fromString(j["location"]);
     auto expr = parse(j["constraint"]);
     auto states = ProgramStates::fromJSON(j["states"]);
-    return std::make_unique<FixLocation>(location, std::move(expr), std::move(states));
+    return std::make_unique<FixLocation>(location, std::move(expr), states);
   }
 
   SourceLocation const & getLocation() const {

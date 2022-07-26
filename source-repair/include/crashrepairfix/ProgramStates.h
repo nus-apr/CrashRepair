@@ -21,26 +21,29 @@ public:
 
   class Variable {
   public:
-    static Variable fromJSON(nlohmann::json const &j);
+    static std::unique_ptr<Variable> fromJSON(nlohmann::json const &j);
+
+    Variable(std::string const &name, ResultType type, SourceLocation declaredAt)
+    : name(name), type(type), declaredAt(declaredAt) {}
+
+    std::string toString() const;
 
   private:
     std::string const name;
     ResultType const type;
     SourceLocation const declaredAt;
 
-    Variable(std::string const &name, ResultType type, SourceLocation declaredAt)
-    : name(name), type(type), declaredAt(declaredAt) {}
-
     friend class Values;
   };
 
   class Values {
   public:
-    static Values fromJSON(
-      std::vector<Variable> const &variables,
+    static std::unique_ptr<Values> fromJSON(
+      std::vector<std::unique_ptr<Variable>> const &variables,
       nlohmann::json const &j
     );
 
+    Values(std::unordered_map<Variable const *, std::variant<double, long>> values) : values(values) {}
 
     z3::expr toZ3(z3::context &z3c) const;
 
@@ -49,23 +52,26 @@ public:
       Variable const *,
       std::variant<double, long>
     > values;
-
-    Values(std::unordered_map<Variable const *, std::variant<double, long>> values) : values(values) {}
   };
 
   static ProgramStates fromJSON(nlohmann::json const &j);
 
-  std::vector<Values> const & getValues() const {
+  std::vector<std::unique_ptr<Values>> const & getValues() const {
     return values;
   }
 
+  ProgramStates(ProgramStates const &other) = delete;
+  ProgramStates(ProgramStates&& other) noexcept :
+    variables(std::move(other.variables)), values(std::move(other.values))
+  {}
+
 private:
-  std::vector<Variable> variables;
-  std::vector<Values> values;
+  std::vector<std::unique_ptr<Variable>> variables;
+  std::vector<std::unique_ptr<Values>> values;
 
   ProgramStates(
-    std::vector<Variable> &variables,
-    std::vector<Values> &values
+    std::vector<std::unique_ptr<Variable>> &variables,
+    std::vector<std::unique_ptr<Values>> &values
   ) : variables(std::move(variables)), values(std::move(values)) {}
 };
 
