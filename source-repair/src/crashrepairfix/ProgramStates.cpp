@@ -39,12 +39,12 @@ ProgramStates::Values ProgramStates::Values::fromJSON(
 ProgramStates ProgramStates::fromJSON(nlohmann::json const &j) {
   std::vector<Variable> variables;
   for (auto jVariable : j["variables"]) {
-    variables.push_back(std::move(Variable::fromJSON(jVariable)));
+    variables.push_back(Variable::fromJSON(jVariable));
   }
 
   std::vector<Values> values;
   for (auto jValues : j["values"]) {
-    values.push_back(std::move(Values::fromJSON(variables, jValues)));
+    values.push_back(Values::fromJSON(variables, jValues));
   }
 
   return ProgramStates(variables, values);
