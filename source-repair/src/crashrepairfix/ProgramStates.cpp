@@ -6,8 +6,8 @@ namespace crashrepairfix {
 
 ProgramStates::Variable ProgramStates::Variable::fromJSON(nlohmann::json const &j) {
   std::string name = j["name"];
-  auto type = Expr::resultTypeFromString(j["kind"]);
-  auto declaredAt = SourceLocation::fromString(j["declaredAt"]);
+  auto type = Expr::resultTypeFromString(j["type"]);
+  auto declaredAt = SourceLocation::fromString(j["declared-at"]);
   return Variable(name, type, declaredAt);
 }
 
