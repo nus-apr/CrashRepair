@@ -18,8 +18,8 @@ set_target_properties(crashrepairfix
   PROPERTIES
     CXX_STANDARD 17
     CMAKE_CXX_STANDARD_REQUIRED ON
-    LINK_SEARCH_START_STATIC ON
-    LINK_SEARCH_END_STATIC ON
+#    LINK_SEARCH_START_STATIC ON
+#    LINK_SEARCH_END_STATIC ON
 )
 target_link_libraries(crashrepairfix PRIVATE
   ${Z3_LIBRARY}
@@ -32,9 +32,9 @@ target_link_libraries(crashrepairfix PRIVATE
 target_compile_options(crashrepairfix PRIVATE
   -Wall -Werror -Wno-error=comment -fno-rtti
 )
-target_link_options(crashrepairfix PRIVATE
-  -static-libgcc -static-libstdc++ -static -Wl,--copy-dt-needed-entries
-)
+# target_link_options(crashrepairfix PRIVATE
+#   -static-libgcc -static-libstdc++ -static -Wl,--copy-dt-needed-entries
+# )
 target_compile_definitions(crashrepairfix
   PUBLIC ${CLANG_DEFINITIONS} ${LLVM_DEFINITIONS}
 )
