@@ -1,0 +1,54 @@
+[
+  {
+    "diff": "@@ -7,7 +7,7 @@\n   arr[1] = 2;\n   arr[0] = 3;\n   printf(\"%d %d %d\", arr[0], arr[1], arr[2]);\n-  int val = arr[x];\n+  if (!(((x >= 0) && (x < n)))) { {} } int val = arr[x];\n }\n \n int main() {\n",
+    "id": 0,
+    "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:3",
+    "replacements": [
+      {
+        "filename": "test.c",
+        "length": 0,
+        "offset": 151,
+        "text": "if (!(((x >= 0) && (x < n)))) { {} } "
+      }
+    ]
+  },
+  {
+    "diff": "@@ -7,7 +7,7 @@\n   arr[1] = 2;\n   arr[0] = 3;\n   printf(\"%d %d %d\", arr[0], arr[1], arr[2]);\n-  int val = arr[x];\n+  int val = arr[arr[0]];\n }\n \n int main() {\n",
+    "id": 1,
+    "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:17",
+    "replacements": [
+      {
+        "filename": "test.c",
+        "length": 1,
+        "offset": 165,
+        "text": "arr[0]"
+      }
+    ]
+  },
+  {
+    "diff": "@@ -7,7 +7,7 @@\n   arr[1] = 2;\n   arr[0] = 3;\n   printf(\"%d %d %d\", arr[0], arr[1], arr[2]);\n-  int val = arr[x];\n+  int val = arr[arr[1]];\n }\n \n int main() {\n",
+    "id": 2,
+    "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:17",
+    "replacements": [
+      {
+        "filename": "test.c",
+        "length": 1,
+        "offset": 165,
+        "text": "arr[1]"
+      }
+    ]
+  },
+  {
+    "diff": "@@ -7,7 +7,7 @@\n   arr[1] = 2;\n   arr[0] = 3;\n   printf(\"%d %d %d\", arr[0], arr[1], arr[2]);\n-  int val = arr[x];\n+  int val = arr[arr[2]];\n }\n \n int main() {\n",
+    "id": 3,
+    "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:17",
+    "replacements": [
+      {
+        "filename": "test.c",
+        "length": 1,
+        "offset": 165,
+        "text": "arr[2]"
+      }
+    ]
+  }
+]
