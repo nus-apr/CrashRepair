@@ -94,6 +94,10 @@ public:
     }
   }
 
+  bool isTopLevelStmt() const {
+    return crashrepairfix::isTopLevelStmt(stmt, context);
+  }
+
   bool isMutable() const {
     return clang::isa<clang::SwitchCase>(stmt)
       || clang::isa<clang::SwitchStmt>(stmt)

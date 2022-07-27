@@ -15,8 +15,8 @@ std::vector<std::unique_ptr<Expr>> ExprGenerator::generate(size_t limit) const {
   auto z3ResultVar = z3Converter.convert(resultReference);
 
   std::function<bool(Expr const *)> satisfies = [&](Expr const *expr) -> bool {
-    // TODO check each observation individually (rather than creating a single query)
-    // TODO store solver as a field
+    // NOTE we check each observation individually (rather than creating a single query)
+    // NOTE store solver as a field?
     spdlog::debug("checking expression: {}", expr->toSource());
     for (auto const &values : states.getValues()) {
       z3::solver solver(z3c);

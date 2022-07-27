@@ -88,9 +88,10 @@ void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
 void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating non-conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
 
-  // TODO ensure that this is a top-level stmt
-  prependConditionalControlFlow(location);
-  guardStatement(location);
+  if (location.isTopLevelStmt()) {
+    prependConditionalControlFlow(location);
+    guardStatement(location);
+  }
 }
 
 void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {

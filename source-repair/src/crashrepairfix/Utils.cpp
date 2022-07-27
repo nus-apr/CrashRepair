@@ -106,6 +106,24 @@ clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::
   return clang::SourceRange(range.getBegin(), expandedEnd);
 }
 
+bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context) {
+  for (auto const parent : context.getParents(node)) {
+    std::string nodeKind = parent.getNodeKind().asStringRef().str();
+    if (  nodeKind == "WhileStmt"
+       || nodeKind == "ForStmt"
+       || nodeKind == "CompoundStmt"
+    ) { 
+      return true;
+    }
+  }
+  return false;
+}
+
+bool isTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context) {
+  auto node = clang::DynTypedNode::create(*stmt);
+  return isTopLevelStmt(node, context);
+}
+
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context) {
   for (auto const parent : context.getParents(node)) {
     std::string nodeKind = parent.getNodeKind().asStringRef().str();
