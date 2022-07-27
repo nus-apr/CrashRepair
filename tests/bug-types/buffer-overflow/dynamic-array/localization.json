@@ -1,33 +1,65 @@
 [
   {
+    "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:3",
+    "constraint": "@var(int, x) >= 0 && @var(int, x) < @var(int, n)",
+    "states": {
+      "variables": [
+        {
+          "name": "x",
+          "type": "int"
+        },
+        {
+          "name": "n",
+          "type": "int"
+        },
+        {
+          "name": "arr[0]",
+          "type": "int"
+        },
+        {
+          "name": "arr[1]",
+          "type": "int"
+        },
+        {
+          "name": "arr[2]",
+          "type": "int"
+        }
+      ],
+      "values": [
+        {
+          "x": 56,
+          "n": 10,
+          "arr[0]": 3,
+          "arr[1]": 2,
+          "arr[2]": 0
+        }
+      ]
+    }
+  },
+  {
     "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:17",
     "constraint": "@result(int) >= 0 && @result(int) < @var(int, n)",
     "states": {
       "variables": [
         {
           "name": "x",
-          "type": "int",
-          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+          "type": "int"
         },
         {
           "name": "n",
-          "type": "int",
-          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+          "type": "int"
         },
         {
           "name": "arr[0]",
-          "type": "int",
-          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+          "type": "int"
         },
         {
           "name": "arr[1]",
-          "type": "int",
-          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+          "type": "int"
         },
         {
           "name": "arr[2]",
-          "type": "int",
-          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+          "type": "int"
         }
       ],
       "values": [
