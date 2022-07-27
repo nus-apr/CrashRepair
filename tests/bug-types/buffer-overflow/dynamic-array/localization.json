@@ -1,0 +1,44 @@
+[
+  {
+    "location": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:10:17",
+    "constraint": "@result(int) >= 0 && @result(int) < @var(int, n)",
+    "states": {
+      "variables": [
+        {
+          "name": "x",
+          "type": "int",
+          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+        },
+        {
+          "name": "n",
+          "type": "int",
+          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+        },
+        {
+          "name": "arr[0]",
+          "type": "int",
+          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+        },
+        {
+          "name": "arr[1]",
+          "type": "int",
+          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+        },
+        {
+          "name": "arr[2]",
+          "type": "int",
+          "declared-at": "/usr0/home/chris/tools/CrashRepair/tests/bug-types/buffer-overflow/dynamic-array/src/test.c:0:0"
+        }
+      ],
+      "values": [
+        {
+          "x": 56,
+          "n": 10,
+          "arr[0]": 3,
+          "arr[1]": 2,
+          "arr[2]": 0
+        }
+      ]
+    }
+  }
+]
