@@ -19,11 +19,17 @@ std::vector<std::unique_ptr<Expr>> ExprGenerator::generate(size_t limit) const {
     // NOTE we check each observation individually (rather than creating a single query)
     // NOTE store solver as a field?
     spdlog::debug("checking expression: {}", expr->toSource());
+    auto z3Candidate = z3ResultVar == z3Converter.convert(expr);
     for (auto const &values : states.getValues()) {
+      z3::expr_vector operands(z3c);
+      operands.push_back(z3Constraint);
+      operands.push_back(values->toZ3(z3c));
+      operands.push_back(z3Candidate);
+      auto query = z3::mk_and(operands);
+      spdlog::debug("checking satisfiability: {}", query.to_string());
+
       z3::solver solver(z3c);
-      solver.add(z3Constraint);
-      solver.add(values->toZ3(z3c));
-      solver.add(z3ResultVar == z3Converter.convert(expr));
+      solver.add(query);
       switch (solver.check()) {
         case z3::sat:
           break;

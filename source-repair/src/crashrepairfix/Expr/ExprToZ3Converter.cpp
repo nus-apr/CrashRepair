@@ -100,7 +100,7 @@ z3::expr ExprToZ3Converter::convert(Result const *expr) {
 }
 
 z3::expr ExprToZ3Converter::convert(Var const *expr) {
-  static std::string const &name = expr->getName();
+  std::string const &name = expr->getName();
   switch (expr->getResultType()) {
     case ResultType::Float:
       return z3c.real_const(name.c_str());
