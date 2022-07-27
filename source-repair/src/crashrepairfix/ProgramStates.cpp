@@ -6,14 +6,13 @@
 namespace crashrepairfix {
 
 std::string ProgramStates::Variable::toString() const {
-  return fmt::format("Variable({}, {}, {})", name, Expr::resultTypeToString(type), declaredAt.toString());
+  return fmt::format("Variable({}, {})", name, Expr::resultTypeToString(type));
 }
 
 std::unique_ptr<ProgramStates::Variable> ProgramStates::Variable::fromJSON(nlohmann::json const &j) {
   std::string name = j["name"];
   auto type = Expr::resultTypeFromString(j["type"]);
-  auto declaredAt = SourceLocation::fromString(j["declared-at"]);
-  auto variable = std::make_unique<Variable>(name, type, declaredAt);
+  auto variable = std::make_unique<Variable>(name, type);
   spdlog::debug("loaded variable: {}", variable->toString());
   return variable;
 }

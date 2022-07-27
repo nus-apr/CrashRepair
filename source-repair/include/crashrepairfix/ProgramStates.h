@@ -23,15 +23,14 @@ public:
   public:
     static std::unique_ptr<Variable> fromJSON(nlohmann::json const &j);
 
-    Variable(std::string const &name, ResultType type, SourceLocation declaredAt)
-    : name(name), type(type), declaredAt(declaredAt) {}
+    Variable(std::string const &name, ResultType type)
+    : name(name), type(type) {}
 
     std::string toString() const;
 
   private:
     std::string const name;
     ResultType const type;
-    SourceLocation const declaredAt;
 
     friend class Values;
   };
