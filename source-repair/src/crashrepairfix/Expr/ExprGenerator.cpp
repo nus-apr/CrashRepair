@@ -4,6 +4,7 @@ namespace crashrepairfix {
 
 std::vector<std::unique_ptr<Expr>> ExprGenerator::generate(size_t limit) const {
   auto mutations = ExprMutations::generate(expr, maxEdits);
+  mutations.add(std::make_unique<ReplaceVarRefMutator>(states));
 
   auto resultReference = constraint->getResultReference();
   assert (resultReference != nullptr);

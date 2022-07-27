@@ -40,6 +40,10 @@ public:
     return name;
   }
 
+  void setName(std::string const &name) {
+    this->name = name;
+  }
+
 protected:
   Var(std::string const &name, ResultType resultType)
   : Expr(), name(name), resultType(resultType)

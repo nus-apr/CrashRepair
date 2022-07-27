@@ -9,6 +9,14 @@ std::string ProgramStates::Variable::toString() const {
   return fmt::format("Variable({}, {})", name, Expr::resultTypeToString(type));
 }
 
+ResultType ProgramStates::Variable::getResultType() const {
+  return type;
+}
+
+std::string const & ProgramStates::Variable::getName() const {
+  return name;
+}
+
 std::unique_ptr<ProgramStates::Variable> ProgramStates::Variable::fromJSON(nlohmann::json const &j) {
   std::string name = j["name"];
   auto type = Expr::resultTypeFromString(j["type"]);

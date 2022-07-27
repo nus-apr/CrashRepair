@@ -14,7 +14,9 @@ public:
     Expr const *constraint,
     ProgramStates const &states,
     size_t maxEdits = 3
-  ) : expr(expr), constraint(constraint), states(states), maxEdits(maxEdits) {}
+  ) : expr(expr), constraint(constraint), states(states), maxEdits(maxEdits) {
+
+  }
   ~ExprGenerator(){}
 
   std::vector<std::unique_ptr<Expr>> generate(size_t limit = 15) const;

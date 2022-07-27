@@ -27,6 +27,8 @@ public:
     : name(name), type(type) {}
 
     std::string toString() const;
+    std::string const & getName() const;
+    ResultType getResultType() const;
 
   private:
     std::string const name;
@@ -57,6 +59,9 @@ public:
 
   std::vector<std::unique_ptr<Values>> const & getValues() const {
     return values;
+  }
+  std::vector<std::unique_ptr<Variable>> const & getVariables() const {
+    return variables;
   }
 
   ProgramStates(ProgramStates const &other) = delete;
