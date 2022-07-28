@@ -67,9 +67,10 @@ def generate_fix_locations(marked_byte_list, taint_map):
         function_list = tainted_function_list[source_path]
         for func_name in function_list:
             func_loc_list = function_list[func_name]
+            observed_tainted_bytes = set()
             for loc in sorted(func_loc_list):
                 source_loc = source_path + ":" + ":".join(loc)
-                observed_tainted_bytes = loc_to_byte_map[source_loc]
+                observed_tainted_bytes.update(loc_to_byte_map[source_loc])
                 if not observed_tainted_bytes:
                     continue
                 if set(marked_byte_list) <= set(observed_tainted_bytes):
@@ -122,7 +123,6 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
                         "expr_list":filtered_taint_list,
                         "data_type": data_type
                     }
-
     candidate_mapping = collections.OrderedDict()
     for crash_var_name in cfc_var_info_list:
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
@@ -234,16 +234,13 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
                 selected_col = 0
                 for mapping in c_t_map:
                     m_expr, m_line, m_col, _ = mapping
-                    if m_line > candidate_line or (m_line == candidate_line
-                                                   and m_col > candidate_col):
+                    if m_line > candidate_line:
                         continue
-                    if selected_line > m_line or (selected_line == m_line
-                                                   and selected_col > m_col):
+                    if selected_line > m_line:
                         continue
                     selected_expr = m_expr
                     selected_col = m_col
                     selected_line = m_line
-
                 if selected_expr:
                     if c_t_lookup in localized_tokens:
                         current_mapping = localized_tokens[c_t_lookup]
