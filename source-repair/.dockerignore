@@ -1,0 +1,5 @@
+**
+!**/CMakeLists.txt
+!src/
+!include/
+!extern/

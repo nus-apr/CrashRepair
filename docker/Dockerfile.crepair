@@ -51,4 +51,4 @@ ENV CXX=crepair-cxx
 ENV LD_LIBRARY_PATH "/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
 RUN crepair --help && exit 0
 
-
+COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair

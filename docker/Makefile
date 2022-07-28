@@ -3,6 +3,9 @@ all: install
 builder:
 	docker build -f Dockerfile.builder -t crepair:builder .
 
+sourcerepair:
+	docker build -t crepair:sourcerepair ../source-repair
+
 z3: builder
 	docker build -f Dockerfile.z3 -t crepair:z3 .
 
@@ -18,7 +21,7 @@ klee: builder llvm-6 z3
 fuzzer: builder
 	docker build -f Dockerfile.fuzzer -t crepair:fuzzer ..
 
-crepair: builder klee llvm-11
+crepair: builder klee llvm-11 sourcerepair
 	docker build -f Dockerfile.crepair -t crepair:tool ..
 
 install: crepair
