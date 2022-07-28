@@ -120,7 +120,7 @@ void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &locatio
 
 void ProgramMutator::addConditional(AstLinkedFixLocation &location, std::string const &bodySource) {
   auto cfcSource = location.getConstraint()->toSource();
-  auto insert = fmt::format("if (!({})) {{ {{}} }} ", cfcSource, bodySource);
+  auto insert = fmt::format("if (!({})) {{ {} }} ", cfcSource, bodySource);
   auto replacement = Replacement::prepend(insert, location);
   create(location, {replacement});
 }
