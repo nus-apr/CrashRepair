@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+crashrepair = {editable = true, path = "."}
+pyinstaller = "*"
+
+[dev-packages]
+tox = "*"
+mypy = "*"
+flake8 = "*"
+flake8-import-order = "*"
+flake8-bugbear = "*"
+flake8-coding = "*"
+flake8-builtins = "*"
+flake8-commas = "*"
+flake8-comprehensions = "*"
+flake8-mutable = "*"
+pep8-naming = "*"
+
+[requires]
+python_version = "3.9"

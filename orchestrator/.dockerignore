@@ -1,0 +1,7 @@
+**
+!setup.cfg
+!setup.py
+!shim.py
+!src/crashrepair
+!Pipfile
+!Pipfile.lock
