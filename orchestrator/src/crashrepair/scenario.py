@@ -59,6 +59,10 @@ class Scenario:
         return os.path.join(self.directory, "analysis")
 
     @property
+    def fuzzer_directory(self) -> str:
+        return os.path.join(self.directory, "fuzzer")
+
+    @property
     def patches_directory(self) -> str:
         return os.path.join(self.directory, "patches")
 
@@ -73,6 +77,10 @@ class Scenario:
     def analysis_results_exist(self) -> bool:
         """Determines whether the results of the analysis exist."""
         return os.path.exists(self.analysis_directory)
+
+    def fuzzer_outputs_exist(self) -> bool:
+        """Determines whether the outputs of the fuzzer exist."""
+        return os.path.exists(self.fuzzer_directory)
 
     @classmethod
     def build(
@@ -184,6 +192,26 @@ class Scenario:
 
         return result
 
+    def rebuild(
+        self,
+        *,
+        env: t.Optional[t.Dict[str, str]] = None,
+    ) -> None:
+        """Performs a clean rebuild of the program under test."""
+        if not env:
+            env = {}
+
+        # if CC/CXX aren't specified, use LLVM/Clang 11
+        default_env = {
+            "CC": "/opt/llvm11/bin/clang",
+            "CXX": "/opt/llvm11/bin/clang++",
+        }
+        env = {**default_env, **env}
+
+        self.shell(self.clean_command, cwd=self.source_directory)
+        self.shell(self.prebuild_command, env=env, cwd=self.source_directory)
+        self.shell(f"bear {self.build_command}", env=env, cwd=self.source_directory)
+
     def analyze(self) -> None:
         """Analyzes the underlying cause of the bug and generates repair hints."""
         if self.analysis_results_exist():
@@ -194,11 +222,18 @@ class Scenario:
 
     def fuzz(self) -> None:
         """Generates additional test cases via concentrated fuzzing."""
-        # TODO check if concentrated inputs already exist
+        if self.fuzzer_outputs_exist():
+            logger.info(f"skipping fuzzing: outputs already exist [{self.fuzzer_directory}]")
+            return
 
         # TODO generate config file based on bug.json contents
         # - store_all_inputs=False
         # - combination_num={max_fuzzing_combinations}
+        #
+        # TODO build the program for fuzzing
+        self.rebuild()
+
+        # TODO run the fuzzer (and block until completion for now)
 
         # TODO construct reproducible test cases from concentrated inputs
         # ./fuzzer/concentrated_inputs/...
@@ -208,15 +243,8 @@ class Scenario:
         """Generates candidate patches using the analysis results."""
         assert self.analysis_results_exist()
 
-        env = {
-            "CC": "/opt/llvm11/bin/clang",
-            "CXX": "/opt/llvm11/bin/clang++",
-        }
-
         # generate a compile_commands.json file
-        self.shell(self.clean_command, cwd=self.source_directory)
-        self.shell(self.prebuild_command, env=env, cwd=self.source_directory)
-        self.shell(f"bear {self.build_command}", env=env, cwd=self.source_directory)
+        self.rebuild()
         assert os.path.exists(self.compile_commands_path)
 
         command = " ".join((
