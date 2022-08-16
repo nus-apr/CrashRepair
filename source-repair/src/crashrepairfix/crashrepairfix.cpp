@@ -26,6 +26,13 @@ using namespace crashrepairfix;
 static llvm::cl::OptionCategory CrashRepairFixOptions("crashrepairfix options");
 static llvm::cl::extrahelp CommonHelp(clang::tooling::CommonOptionsParser::HelpMessage);
 
+static llvm::cl::opt<std::string> outputFilename(
+  "output-to",
+  llvm::cl::desc("The name of file to which the candidate patches should be written."),
+  llvm::cl::value_desc("filename"),
+  llvm::cl::init("candidates.json")
+);
+
 static llvm::cl::opt<std::string> localizationFilename(
   "localization-filename",
   llvm::cl::desc("The name of file from which the fix localization should be read."),
@@ -90,7 +97,7 @@ int main(int argc, const char **argv) {
   CommonOptionsParser optionsParser(argc, argv, CrashRepairFixOptions);
 
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
-  ProgramMutator mutator(fixLocalization);
+  ProgramMutator mutator(fixLocalization, outputFilename);
 
   // TODO obtain source paths from the fix localization?
 

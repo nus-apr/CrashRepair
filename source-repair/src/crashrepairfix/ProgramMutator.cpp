@@ -164,8 +164,7 @@ void ProgramMutator::create(AstLinkedFixLocation &location, std::vector<Replacem
 }
 
 void ProgramMutator::save() {
-  // FIXME allow this to be customized
-  std::string filename = "mutations.json";
+  auto filename = saveToFilename;
 
   spdlog::info("writing {} mutations to disk: {}", mutations.size(), filename);
   json j = json::array();

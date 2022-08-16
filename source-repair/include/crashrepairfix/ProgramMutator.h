@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <clang/AST/ASTContext.h>
 
 #include "AstLinkedFixLocation.h"
@@ -11,8 +13,8 @@ namespace crashrepairfix {
   
 class ProgramMutator {
 public:
-  ProgramMutator(FixLocalization &fixLocalization)
-  : diffGenerator(), fixLocalization(fixLocalization), mutations() {}
+  ProgramMutator(FixLocalization &fixLocalization, std::string const &saveToFilename)
+  : diffGenerator(), fixLocalization(fixLocalization), saveToFilename(saveToFilename), mutations() {}
 
   void mutate(clang::ASTContext &context);
   void mutate(AstLinkedFixLocation &location);
@@ -22,6 +24,7 @@ public:
 private:
   DiffGenerator diffGenerator;
   FixLocalization &fixLocalization;
+  std::string saveToFilename;
   std::vector<Mutation> mutations;
 
   void create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements);
