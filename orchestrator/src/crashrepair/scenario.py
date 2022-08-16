@@ -304,6 +304,5 @@ class Scenario:
         # NOTE these two steps could be performed in parallel
         self.fuzz()
         self.analyze()
-
         self.generate()
-        raise NotImplementedError
+        self.validate()
