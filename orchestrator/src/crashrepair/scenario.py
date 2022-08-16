@@ -192,6 +192,18 @@ class Scenario:
 
         raise NotImplementedError
 
+    def fuzz(self) -> None:
+        """Generates additional test cases via concentrated fuzzing."""
+        # TODO check if concentrated inputs already exist
+
+        # TODO generate config file based on bug.json contents
+        # - store_all_inputs=False
+        # - combination_num={max_fuzzing_combinations}
+
+        # TODO construct reproducible test cases from concentrated inputs
+        # ./fuzzer/concentrated_inputs/...
+        raise NotImplementedError
+
     def generate(self) -> None:
         """Generates candidate patches using the analysis results."""
         assert self.analysis_results_exist()
@@ -213,7 +225,7 @@ class Scenario:
             "--output-to",
             self.patch_candidates_path,
             # FIXME replace with --analysis-directory
-            "--localization-path",
+            "--localization-filename",
             self.localization_path,
             "-p",
             self.compile_commands_path,
@@ -224,6 +236,9 @@ class Scenario:
 
     def repair(self) -> None:
         """Performs end-to-end repair of this bug scenario."""
+        # NOTE these two steps could be performed in parallel
+        self.fuzz()
         self.analyze()
+
         self.generate()
         raise NotImplementedError
