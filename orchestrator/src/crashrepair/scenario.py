@@ -82,6 +82,10 @@ class Scenario:
         """Determines whether the outputs of the fuzzer exist."""
         return os.path.exists(self.fuzzer_directory)
 
+    def candidate_repairs_exist(self) -> bool:
+        """Determines whether a set of candidate repairs exists."""
+        return os.path.exists(self.patch_candidates_path)
+
     @classmethod
     def build(
         cls,
@@ -227,8 +231,32 @@ class Scenario:
             return
 
         # TODO generate config file based on bug.json contents
+        # - rand_seed={fuzzer_seed}
         # - store_all_inputs=False
         # - combination_num={max_fuzzing_combinations}
+
+        # Questions:
+        # - What is the global timeout vs. local timeout?
+        # - What is mutate_range?
+        # - What is crash_tag and how is it used?
+        # - What other formats are used by poc_fmt?
+        # - Is there a facility to replaying individual fuzzer-generated inputs?
+
+        # Example:
+        #
+        #   [bugzilla_2611]
+        #   trace_cmd=/benchmarks/libtiff/bugzilla_2611/source/tools/tiffmedian;***;foo2
+        #   crash_cmd=/benchmarks/libtiff/bugzilla_2611/source/tools/tiffmedian;***;foo1
+        #   bin_path=/benchmarks/libtiff/bugzilla_2611/source/tools/tiffmedian
+        #   poc=/benchmarks/libtiff/bugzilla_2611/exploit
+        #   poc_fmt=bfile
+        #   mutate_range=default
+        #   folder=/benchmarks/libtiff/bugzilla_2611
+        #   crash_tag=runtime;tif_ojpeg.c:816
+        #   global_timeout=300
+        #   local_timeout=300
+        #   rand_seed=3
+        #   store_all_inputs=True
         #
         # TODO build the program for fuzzing
         self.rebuild()
@@ -249,7 +277,6 @@ class Scenario:
 
         command = " ".join((
             CRASHREPAIRFIX_PATH,
-            # TODO accept output filename
             "--output-to",
             self.patch_candidates_path,
             # FIXME replace with --analysis-directory
@@ -261,6 +288,16 @@ class Scenario:
         ))
         self.shell(command, cwd=self.source_directory)
         assert os.path.exists(self.patch_candidates_path)
+
+    def validate(self) -> None:
+        """Validates candidate patches."""
+        assert self.candidate_repairs_exist()
+
+        # TODO run both the proof of exploit and the fuzzer-generated tests
+
+        # TODO load candidates from file
+
+        raise NotImplementedError
 
     def repair(self) -> None:
         """Performs end-to-end repair of this bug scenario."""
