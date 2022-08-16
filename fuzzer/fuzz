@@ -1,0 +1,7 @@
+#!/bin/bash
+set -eu
+
+export PYTHONPATH="/opt/fuzzer/pypackages/lib/python2.7/site-packages:/opt/fuzzer/pypackages"
+export PATH="/opt/fuzzer/deps/cmake/bin:/opt/fuzzer/deps/dynamorio/build/bin64:/opt/fuzzer/deps/valgrind/coregrind:${PATH}"
+
+python /opt/fuzzer/code/fuzz.py $@

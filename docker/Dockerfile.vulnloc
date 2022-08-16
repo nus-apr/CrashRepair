@@ -1,6 +1,7 @@
 FROM crepair:tool
 MAINTAINER Ridwan Shariffdeen <rshariffdeen@gmail.com>
 
+# FIXME blind upgrades lead to non-deterministic builds
 RUN apt-get update && apt-get upgrade -y && apt-get autoremove -y
 
 # install experiment dependencies

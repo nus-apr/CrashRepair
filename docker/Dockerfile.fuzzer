@@ -1,68 +1,66 @@
 FROM crepair:builder
 
 # Dependencies
+# FIXME --fix-missing leads to non-deterministic builds!
 RUN apt update --fix-missing
 RUN apt install -y build-essential
 RUN apt install -y git vim unzip python-dev python-pip ipython wget libssl-dev g++-multilib doxygen transfig imagemagick ghostscript zlib1g-dev
 
-# Setting up directory
-WORKDIR /opt
-RUN mkdir fuzzer
-WORKDIR /opt/fuzzer
-RUN mkdir deps
-WORKDIR /opt/fuzzer/deps
+RUN mkdir -p /opt/fuzzer/deps
 
 # Setting up pythonpath
 RUN mkdir -p /opt/fuzzer/pypackages/lib/python2.7/site-packages
 ENV PYTHONPATH="/opt/fuzzer/pypackages/lib/python2.7/site-packages:/opt/fuzzer/pypackages:${PYTHONPATH}"
 
 # Install numpy
-RUN wget https://github.com/numpy/numpy/releases/download/v1.16.6/numpy-1.16.6.zip
-RUN unzip numpy-1.16.6.zip
-RUN rm numpy-1.16.6.zip
-RUN mv numpy-1.16.6 numpy
-WORKDIR /opt/fuzzer/deps/numpy
-RUN python setup.py install --prefix=/opt/fuzzer/pypackages
-WORKDIR /opt/fuzzer/deps
+RUN cd /opt/fuzzer/deps \
+ && wget -nv https://github.com/numpy/numpy/releases/download/v1.16.6/numpy-1.16.6.zip \
+ && unzip numpy-1.16.6.zip \
+ && rm numpy-1.16.6.zip \
+ && mv numpy-1.16.6 numpy \
+ && cd numpy \
+ && python setup.py install --prefix=/opt/fuzzer/pypackages
 
 # Install pyelftools
-RUN pip install --target=/opt/fuzzer/pypackages pyelftools
+RUN pip install --target=/opt/fuzzer/pypackages pyelftools==0.29
 
 # Install CMake
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2.tar.gz
-RUN tar -xvzf cmake-3.16.2.tar.gz
-RUN rm cmake-3.16.2.tar.gz
-RUN mv cmake-3.16.2 cmake
-WORKDIR /opt/fuzzer/deps/cmake
-RUN ./bootstrap
-RUN make -j32
-RUN make install
-WORKDIR /opt/fuzzer/deps
+RUN wget -nv https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2.tar.gz \
+ && tar -xvzf cmake-3.16.2.tar.gz \
+ && rm cmake-3.16.2.tar.gz \
+ && mv cmake-3.16.2 /opt/fuzzer/deps/cmake \
+ && cd /opt/fuzzer/deps/cmake \
+ && ./bootstrap \
+ && make -j32 \
+ && make install
 
 # Install dynamorio
-RUN git clone https://github.com/DynamoRIO/dynamorio.git
-WORKDIR /opt/fuzzer/deps/dynamorio
-RUN mkdir build
-WORKDIR /opt/fuzzer/deps/dynamorio/build
-RUN cmake ../
-RUN make -j32
-WORKDIR /opt/fuzzer/deps
+# FIXME missing a version
+ARG DYNAMORIO_VERSION=cronbuild-9.0.19216
+RUN git clone https://github.com/DynamoRIO/dynamorio.git /opt/fuzzer/deps/dynamorio \
+ && cd /opt/fuzzer/deps/dynamorio \
+ && git checkout "${DYNAMORIO_VERSION}" \
+ && mkdir build \
+ && cd build \
+ && cmake .. \
+ && make -j32
 
 # Set up the tracer
-COPY fuzzer/iftracer.zip .
-RUN unzip iftracer.zip
-RUN rm iftracer.zip
-WORKDIR /opt/fuzzer/deps/iftracer/iftracer
-RUN cmake CMakeLists.txt
-RUN make -j32
-WORKDIR /opt/fuzzer/deps/iftracer/ifLineTracer
-RUN cmake CMakeLists.txt
-RUN make
+COPY fuzzer/iftracer.zip /opt/fuzzer/deps/iftracer.zip
+RUN cd /opt/fuzzer/deps/ \
+ && unzip iftracer.zip \
+ && rm iftracer.zip \
+ && cd iftracer/iftracer \
+ && cmake CMakeLists.txt \
+ && make -j32 \
+ && cd ../ifLineTracer \
+ && cmake CMakeLists.txt \
+ && make -j32
 
 # Set up an exploit detector --- valgrind
 WORKDIR /opt/fuzzer/deps
 RUN apt install -y libc6-dbg
-RUN wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2
+RUN wget -nv https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2
 RUN tar xjf valgrind-3.15.0.tar.bz2
 RUN mv valgrind-3.15.0 valgrind
 WORKDIR /opt/fuzzer/deps/valgrind
@@ -71,8 +69,8 @@ RUN make -j32
 RUN make install
 
 # Prepare fuzzer code
-WORKDIR /opt/fuzzer
-RUN mkdir code
+# TODO prefer "COPY . ./" and using .dockerignore
+RUN mkdir -p /opt/fuzzer/code
 WORKDIR /opt/fuzzer/code
 COPY fuzzer/fuzz ./
 COPY fuzzer/fuzz.py ./
