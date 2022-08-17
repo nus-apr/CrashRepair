@@ -6,6 +6,7 @@ import os
 import subprocess
 import tempfile
 import typing as t
+from datetime import datetime
 from subprocess import DEVNULL
 
 import attrs
@@ -39,10 +40,15 @@ class PatchCandidate:
         """The name of the source file to which this patch is applied."""
         return self.location.filename
 
-    def write(self, filename: str) -> str:
+    def write(self, filename: str) -> None:
         """Writes the patch encoded to a unified diff text file."""
-        # TODO inject file information at the top of the diff
-        raise NotImplementedError
+        modification_time_string = datetime.now().isoformat()
+        header_from_line = f"--- {self.filename} {modification_time_string}"
+        header_to_line = f"+++ {self.filename} {modification_time_string}"
+
+        with open(filename, "w") as fh:
+            fh.writelines((header_from_line, header_to_line))
+            fh.write(self.diff)
 
     def apply(self) -> None:
         """Applies this patch to the program."""
