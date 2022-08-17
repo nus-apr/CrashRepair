@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import tempfile
 import typing as t
+from subprocess import DEVNULL
 
 import attrs
 
@@ -41,7 +45,17 @@ class PatchCandidate:
 
     def apply(self) -> None:
         """Applies this patch to the program."""
-        raise NotImplementedError
+        _, patch_filename = tempfile.mkstemp(suffix=".diff")
+        command = f"patch -u {self.filename} {patch_filename}"
+        try:
+            subprocess.check_call(
+                command,
+                stdin=DEVNULL,
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+            )
+        finally:
+            os.remove(patch_filename)
 
     def revert(self) -> None:
         """Reverts the changes introduced by this patch."""
