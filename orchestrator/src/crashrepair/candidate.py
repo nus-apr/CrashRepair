@@ -60,4 +60,14 @@ class PatchCandidate:
 
     def revert(self) -> None:
         """Reverts the changes introduced by this patch."""
-        raise NotImplementedError
+        _, patch_filename = tempfile.mkstemp(suffix=".diff")
+        command = f"patch -R -u {self.filename} {patch_filename}"
+        try:
+            subprocess.check_call(
+                command,
+                stdin=DEVNULL,
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+            )
+        finally:
+            os.remove(patch_filename)
