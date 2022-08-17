@@ -10,12 +10,13 @@ from subprocess import DEVNULL
 
 import attrs
 
+from .location import Location
+
 
 @attrs.define(auto_attribs=True, slots=True)
 class PatchCandidate:
     id_: int
-    # FIXME use sourcelocation package!
-    location: str
+    location: Location
     diff: str
 
     @classmethod
@@ -29,14 +30,14 @@ class PatchCandidate:
     def from_dict(cls, dict_: t.Dict[str, t.Any]) -> PatchCandidate:
         return PatchCandidate(
             id_=dict_["id"],
-            location=dict_["location"],
+            location=Location.from_string(dict_["location"]),
             diff=dict_["diff"],
         )
 
     @property
     def filename(self) -> str:
         """The name of the source file to which this patch is applied."""
-        raise NotImplementedError
+        return self.location.filename
 
     def write(self, filename: str) -> str:
         """Writes the patch encoded to a unified diff text file."""
