@@ -18,6 +18,26 @@ make fuzzer
 
 to only build the fuzzer docker image. To run the fuzzer inside the [SecBugs](https://github.com/squaresLab/security-repair-benchmarks) environment, you also need to run `install`, which however requires the other images as well. Therefore, if you only want to test the fuzzer on our benchmark, please modify the `install` file accordingly.
 
+## Configuraton File: config.ini
+*adapted from: https://github.com/VulnLoc/VulnLoc*
+
+#### Required options:
+* **cve_tag:** The unique ID of each CVE (e.g., cve_2016_5314). A configuration file can include the information for multiple CVE. For extracting the right configuration, users are required to assign a unique ID for each CVE.
+* **trace_cmd:** The command used for executing the vulnerable program with the given PoC. Each argument is separate by ';'. The location of the target argument for fuzzing is replaced with '***'.
+* **crash_cmd:** The command used for checking whether the vulnerable program gets exploited or not. crash_cmd follows the same format as trace_cmd.
+* **bin_path:** The path to the vulnerable binary.
+* **poc:** The path to the PoC
+* **poc_fmt:** The type of PoC.
+* **mutate_range:** The valid range for mutation.
+* **folder:** The output folder for saving the test-suite.
+* **crash_tag:** The information which can be utilized to detect whether the program gets exploited or not. The vulnerablity checker is defined in the function check_exploit under ./code/fuzz.py.
+
+#### Additional, originally undocumented but relevant, options:
+* **combination_num:** Determines the maximum number of combinations during the mutation process. Default=2.
+
+#### New/added options:
+* **store_all_inputs:** Set to `True` to generate all inputs.
+
 
 ## Instructions for example `cve_2016_5314`
 
