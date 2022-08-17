@@ -10,7 +10,11 @@ import attrs
 
 from loguru import logger
 
+from .candidate import PatchCandidate
+
+# TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
+FUZZER_PATH = "/opt/fuzzer/code/fuzz"
 
 
 @attrs.define(slots=True, auto_attribs=True)
@@ -19,6 +23,10 @@ class Scenario:
 
     Attributes
     ----------
+    subject: str
+        The name of the subject program
+    name: str
+        The name of the bug scenario
     directory: str
         The absolute path of the bug scenario directory
     source_directory: str
@@ -42,12 +50,15 @@ class Scenario:
     build_command: str
         The command that should be used to build the program.
     """
+    subject: str
+    name: str
     directory: str
     source_directory: str
     binary_path: str
     clean_command: str
     prebuild_command: str
     build_command: str
+    test_command: str = attrs.field(default="./test")
     should_terminate_early: bool = attrs.field(default=True)
 
     @property
@@ -65,6 +76,11 @@ class Scenario:
     @property
     def patches_directory(self) -> str:
         return os.path.join(self.directory, "patches")
+
+    # TODO rename config.ini to fuzzer.ini to make its purpose clear
+    @property
+    def fuzzer_config_path(self) -> str:
+        return os.path.join(self.directory, "config.ini")
 
     @property
     def localization_path(self) -> str:
@@ -90,6 +106,8 @@ class Scenario:
     def build(
         cls,
         filename: str,
+        subject: str,
+        name: str,
         source_directory: str,
         binary_path: str,
         clean_command: str,
@@ -106,6 +124,8 @@ class Scenario:
             binary_path = os.path.join(directory, binary_path)
 
         scenario = Scenario(
+            subject=subject,
+            name=name,
             directory=directory,
             source_directory=source_directory,
             binary_path=binary_path,
@@ -125,6 +145,9 @@ class Scenario:
             bug_dict = json.load(fh)
 
         try:
+            project_dict = bug_dict["project"]
+            subject = project_dict["name"]
+            name = bug_dict["name"]
             binary_path = bug_dict["binary"]
             source_directory = bug_dict["source-directory"]
             build_dict = bug_dict["build"]
@@ -137,6 +160,8 @@ class Scenario:
 
         return Scenario.build(
             filename=filename,
+            subject=subject,
+            name=name,
             binary_path=binary_path,
             source_directory=source_directory,
             clean_command=clean_command,
@@ -235,6 +260,9 @@ class Scenario:
         # - store_all_inputs=False
         # - combination_num={max_fuzzing_combinations}
 
+        # NOTE for now, use the provided config file
+        assert os.path.exists(self.fuzzer_config_path)
+
         # Questions:
         # - What is the global timeout vs. local timeout?
         # - What is mutate_range?
@@ -259,9 +287,19 @@ class Scenario:
         #   store_all_inputs=True
         #
         # TODO build the program for fuzzing
+        # NOTE for now, we can use build-for-fuzzer, but going forward, we can
+        # generate the appropriate build call here (and save the need to write another script for each scenario!)
         self.rebuild()
 
-        # TODO run the fuzzer (and block until completion for now)
+        # run the fuzzer and block until completion
+        command = " ".join((
+            FUZZER_PATH,
+            "--config_file",
+            self.fuzzer_config_path,
+            "--tag",
+            self.name,
+        ))
+        self.shell(command, cwd=self.directory)
 
         # TODO construct reproducible test cases from concentrated inputs
         # ./fuzzer/concentrated_inputs/...
@@ -293,11 +331,42 @@ class Scenario:
         """Validates candidate patches."""
         assert self.candidate_repairs_exist()
 
-        # TODO run both the proof of exploit and the fuzzer-generated tests
+        candidates = PatchCandidate.load_all(self.patch_candidates_path)
 
-        # TODO load candidates from file
+        # TODO apply ranking of candidate patches prior to evaluation
+
+        # TODO evaluate candidates in parallel via worker queue
+        # note that doing so will require us to create copies of the scenario directory
+        for candidate in candidates:
+            self.evaluate(candidate)
 
         raise NotImplementedError
+
+    def evaluate(self, candidate: PatchCandidate) -> bool:
+        """Evaluates a candidate repair and returns :code:`True` if it passes all tests."""
+        logger.info(f"evaluating candidate patch #{candidate.id_}:\n{candidate.diff}")
+        try:
+            candidate.apply()
+            # TODO enable the appropriate sanitizers
+            try:
+                self.rebuild()
+            except subprocess.CalledProcessError:
+                logger.info(f"candidate patch #{candidate.id_} failed to compile")
+                return False
+
+            # TODO run both the proof of exploit and the fuzzer-generated tests
+            logger.debug(f"testing candidate patch #{candidate.id_} against proof of exploit...")
+            raw_test_outcome = self.shell(self.test_command, cwd=self.directory)
+            if raw_test_outcome.returncode != 0:
+                logger.info(f"candidate patch #{candidate.id_} fails PoE test")
+                return False
+            else:
+                logger.info(f"candidate patch #{candidate.id_} passes PoE test")
+
+        finally:
+            candidate.revert()
+
+        return True
 
     def repair(self) -> None:
         """Performs end-to-end repair of this bug scenario."""
