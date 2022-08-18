@@ -151,6 +151,35 @@ void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
 
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional non-void return before statement: {}", location.getSource());
+
+  std::set<std::string> returnValues;
+
+  auto parentFunction = location.getParentFunction();
+  auto returnType = parentFunction->getReturnType();
+  auto returnTypeInfo = returnType.getTypePtr();
+
+  if (returnTypeInfo->isIntegerType()) {
+    returnValues.insert("-1");
+    returnValues.insert("0");
+    returnValues.insert("1");
+  }
+  if (returnTypeInfo->isRealType()) {
+    returnValues.insert("-1.0");
+    returnValues.insert("0.0");
+    returnValues.insert("1.0");
+  }
+  if (returnTypeInfo->isPointerType()) {
+    returnValues.insert("NULL");
+  }
+
+  // TODO look for constants of the same type in the same file
+
+  // TODO: find reaching in-scope local variables with the same type
+
+  for (auto &returnValue : returnValues) {
+    auto snippet = fmt::format("return {};", returnValue);
+    addConditional(location, snippet);
+  }
 }
 
 void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
