@@ -11,6 +11,7 @@ import attrs
 from loguru import logger
 
 from .candidate import PatchCandidate
+from .fuzzer import FuzzerConfig
 
 # TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
@@ -301,9 +302,13 @@ class Scenario:
         ))
         self.shell(command, cwd=self.directory)
 
-        # TODO construct reproducible test cases from concentrated inputs
-        # ./fuzzer/concentrated_inputs/...
-        raise NotImplementedError
+        # construct reproducible test cases from concentrated inputs
+        fuzzer_config = FuzzerConfig.load(self.fuzzer_config_path)
+        fuzzer_tests_directory = os.path.join(self.fuzzer_directory, "concentrated_inputs")
+        for fuzzer_test_filename in os.listdir(fuzzer_tests_directory):
+            fuzzer_test_command = fuzzer_config.command_for_input(fuzzer_test_filename)
+            # TODO build a Test instance for each fuzzer test
+            print(fuzzer_test_command)
 
     def generate(self) -> None:
         """Generates candidate patches using the analysis results."""
