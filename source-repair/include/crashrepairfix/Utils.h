@@ -11,6 +11,9 @@
 #include <clang/AST/ASTTypeTraits.h>
 #include <clang/AST/ParentMapContext.h>
 
+#include <llvm/ADT/APInt.h>
+
+
 namespace crashrepairfix {
 
 std::vector<std::string> split(const std::string &s, char delim);
@@ -28,6 +31,9 @@ clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::ASTConte
 clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager);
 
 std::string yesOrNo(bool status);
+
+std::string convertAPIntToString(llvm::APInt const &integer);
+std::string convertAPFloatToString(llvm::APFloat const &floating);
 
 bool isTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context);
 bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context);

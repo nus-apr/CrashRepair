@@ -192,4 +192,18 @@ clang::FunctionDecl const * getParentFunctionDecl(clang::DynTypedNode node, clan
   return nullptr;
 }
 
+std::string convertAPIntToString(llvm::APInt const &integer) {
+  std::string output;
+  llvm::raw_string_ostream stream(output);
+  integer.print(stream, true);
+  return output;
+}
+
+std::string convertAPFloatToString(llvm::APFloat const &floating) {
+  std::string output;
+  llvm::raw_string_ostream stream(output);
+  floating.print(stream);
+  return output;
+}
+
 }
