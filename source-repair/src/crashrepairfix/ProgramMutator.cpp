@@ -1,4 +1,6 @@
 #include <crashrepairfix/ProgramMutator.h>
+
+#include <crashrepairfix/ConstantFinder.h>
 #include <crashrepairfix/StmtFinder.h>
 #include <crashrepairfix/Utils.h>
 #include <crashrepairfix/Expr/ClangToExprConverter.h>
@@ -152,9 +154,13 @@ void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional non-void return before statement: {}", location.getSource());
 
+  auto &context = location.getContext();
+
   std::set<std::string> returnValues;
 
+  auto restrictConstantsToFile = location.getFilename();
   auto parentFunction = location.getParentFunction();
+  auto translationUnit = location.getParentTranslationUnit();
   auto returnType = parentFunction->getReturnType();
   auto returnTypeInfo = returnType.getTypePtr();
 
@@ -162,17 +168,29 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
     returnValues.insert("-1");
     returnValues.insert("0");
     returnValues.insert("1");
+
+    auto constants = ConstantFinder::findIntegers(context, translationUnit, restrictConstantsToFile);
+    for (auto &integer : constants) {
+      // TODO ensure that constant fits within return type!
+      returnValues.insert(convertAPIntToString(integer));
+    }
   }
+
   if (returnTypeInfo->isRealType()) {
     returnValues.insert("-1.0");
     returnValues.insert("0.0");
     returnValues.insert("1.0");
+
+    auto constants = ConstantFinder::findReals(context, translationUnit, restrictConstantsToFile);
+    for (auto &real : constants) {
+      // TODO ensure that constant fits within return type!
+      returnValues.insert(convertAPFloatToString(real));
+    }
   }
+
   if (returnTypeInfo->isPointerType()) {
     returnValues.insert("NULL");
   }
-
-  // TODO look for constants of the same type in the same file
 
   // TODO: find reaching in-scope local variables with the same type
 

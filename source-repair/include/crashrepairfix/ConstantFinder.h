@@ -18,7 +18,7 @@ class ConstantFinder
   : public clang::LexicallyOrderedRecursiveASTVisitor<ConstantFinder> {
 public:
   static std::vector<std::variant<llvm::APInt, llvm::APFloat>> find(
-    clang::ASTContext &context,
+    clang::ASTContext const &context,
     clang::TranslationUnitDecl const *translationUnit,
     std::string const &restrictToFile
   ) {
@@ -28,7 +28,7 @@ public:
   }
 
   static std::vector<llvm::APInt> findIntegers(
-    clang::ASTContext &context,
+    clang::ASTContext const &context,
     clang::TranslationUnitDecl const *translationUnit,
     std::string const &restrictToFile
   ) {
@@ -43,7 +43,7 @@ public:
   }
 
   static std::vector<llvm::APFloat> findReals(
-    clang::ASTContext &context,
+    clang::ASTContext const &context,
     clang::TranslationUnitDecl const *translationUnit,
     std::string const &restrictToFile
   ) {
@@ -57,17 +57,17 @@ public:
     return results;
   }
 
-  clang::ASTContext &context;
+  clang::ASTContext const &context;
   std::string restrictToFile;
   clang::SourceManager &sourceManager;
   std::unordered_map<std::string, std::string> relativeToAbsoluteFilenames;
   std::vector<std::variant<llvm::APInt, llvm::APFloat>> result;
 
-  explicit ConstantFinder(clang::ASTContext &context, std::string const &restrictToFile)
+  explicit ConstantFinder(clang::ASTContext const &context, std::string const &restrictToFile)
     : LexicallyOrderedRecursiveASTVisitor(context.getSourceManager()),
       restrictToFile(restrictToFile),
       context(context),
-      sourceManager(context.getSourceManager()),
+      sourceManager(const_cast<clang::SourceManager&>(context.getSourceManager())),
       relativeToAbsoluteFilenames(),
       result()
     {}
@@ -81,6 +81,21 @@ public:
   }
 
   bool VisitIntegerLiteral(clang::IntegerLiteral *literal) {
+    auto literalLoc = literal->getBeginLoc();
+    if (!literalLoc.isValid()) {
+      return true;
+    }
+
+    std::string inFile = getStmtFilename(literal);
+    if (inFile != restrictToFile) {
+      return true;
+    }
+
+    result.push_back(literal->getValue());
+    return true;
+  }
+
+  bool VisitFloatingLiteral(clang::FloatingLiteral *literal) {
     auto literalLoc = literal->getBeginLoc();
     if (!literalLoc.isValid()) {
       return true;
