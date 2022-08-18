@@ -12,6 +12,7 @@ from loguru import logger
 
 from .candidate import PatchCandidate
 from .fuzzer import FuzzerConfig
+from .test import Test
 
 # TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
