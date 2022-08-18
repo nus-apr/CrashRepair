@@ -35,6 +35,9 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context);
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context);
 
+clang::TranslationUnitDecl const * getParentTranslationUnitDecl(clang::Decl const *decl, clang::ASTContext &context);
+clang::TranslationUnitDecl const * getParentTranslationUnitDecl(clang::DynTypedNode node, clang::ASTContext &context);
+
 clang::FunctionDecl const * getParentFunctionDecl(clang::Stmt const *stmt, clang::ASTContext &context);
 clang::FunctionDecl const * getParentFunctionDecl(clang::DynTypedNode node, clang::ASTContext &context);
 

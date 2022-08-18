@@ -142,6 +142,31 @@ bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context) {
   return isInsideLoop(node, context);
 }
 
+clang::TranslationUnitDecl const * getParentTranslationUnitDecl(clang::Decl const *decl, clang::ASTContext &context) {
+  auto node = clang::DynTypedNode::create(*decl);
+  return getParentTranslationUnitDecl(node, context);
+}
+
+clang::TranslationUnitDecl const * getParentTranslationUnitDecl(clang::DynTypedNode node, clang::ASTContext &context) {
+  std::queue<clang::DynTypedNode> q;
+  for (auto parent : context.getParents(node)) {
+    q.push(parent);
+  }
+
+  while (!q.empty()) {
+    node = q.front();
+    if (auto translationUnitDecl = node.get<clang::TranslationUnitDecl>()) {
+      return translationUnitDecl;
+    }
+    for (auto parent : context.getParents(node)) {
+      q.push(parent);
+    }
+    q.pop();
+  }
+
+  return nullptr;
+}
+
 clang::FunctionDecl const * getParentFunctionDecl(clang::Stmt const *stmt, clang::ASTContext &context) {
   auto node = clang::DynTypedNode::create(*stmt);
   return getParentFunctionDecl(node, context);
