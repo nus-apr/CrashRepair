@@ -12,6 +12,7 @@ from loguru import logger
 
 from .candidate import PatchCandidate
 from .fuzzer import FuzzerConfig
+from .shell import Shell
 from .test import Test
 
 # TODO allow these to be customized via environment variables
@@ -60,8 +61,10 @@ class Scenario:
     clean_command: str
     prebuild_command: str
     build_command: str
-    test_command: str = attrs.field(default="./test")
+    shell: Shell
+    crash_test: Test
     should_terminate_early: bool = attrs.field(default=True)
+    fuzzer_tests: t.List[Test] = attrs.field(factory=list)
 
     @property
     def compile_commands_path(self) -> str:
@@ -125,6 +128,16 @@ class Scenario:
         if not os.path.isabs(binary_path):
             binary_path = os.path.join(directory, binary_path)
 
+        shell = Shell(cwd=directory)
+
+        # TODO allow test command to be customized in bug.json
+        crash_test = Test(
+            name="crash",
+            command="./test",
+            cwd=directory,
+            shell=shell,
+        )
+
         scenario = Scenario(
             subject=subject,
             name=name,
@@ -134,6 +147,8 @@ class Scenario:
             clean_command=clean_command,
             prebuild_command=prebuild_command,
             build_command=build_command,
+            shell=shell,
+            crash_test=crash_test,
         )
         logger.info(f"loaded bug scenario: {scenario}")
         return scenario
@@ -186,43 +201,6 @@ class Scenario:
         else:
             return cls.for_file(directory_or_filename)
 
-    def shell(
-        self,
-        command: str,
-        env: t.Optional[t.Mapping[str, str]] = None,
-        cwd: t.Optional[str] = None,
-        check_returncode: bool = True,
-        capture_output: bool = False,
-    ) -> subprocess.CompletedProcess:
-        if not env:
-            env = {}
-
-        if not cwd:
-            cwd = self.directory
-
-        additional_args: t.Dict[str, t.Any] = {}
-        if capture_output:
-            additional_args["stdout"] = subprocess.PIPE
-            additional_args["universal_newlines"] = "\n"
-
-        logger.debug(f"executing: {command}")
-        result = subprocess.run(
-            command,
-            shell=True,
-            cwd=cwd,
-            env={
-                **os.environ,
-                **env,
-                "REPAIR_TOOL": "crashrepair",
-            },
-            **additional_args,
-        )
-
-        if check_returncode:
-            result.check_returncode()
-
-        return result
-
     def rebuild(
         self,
         *,
@@ -265,29 +243,6 @@ class Scenario:
         # NOTE for now, use the provided config file
         assert os.path.exists(self.fuzzer_config_path)
 
-        # Questions:
-        # - What is the global timeout vs. local timeout?
-        # - What is mutate_range?
-        # - What is crash_tag and how is it used?
-        # - What other formats are used by poc_fmt?
-        # - Is there a facility to replaying individual fuzzer-generated inputs?
-
-        # Example:
-        #
-        #   [bugzilla_2611]
-        #   trace_cmd=/benchmarks/libtiff/bugzilla_2611/source/tools/tiffmedian;***;foo2
-        #   crash_cmd=/benchmarks/libtiff/bugzilla_2611/source/tools/tiffmedian;***;foo1
-        #   bin_path=/benchmarks/libtiff/bugzilla_2611/source/tools/tiffmedian
-        #   poc=/benchmarks/libtiff/bugzilla_2611/exploit
-        #   poc_fmt=bfile
-        #   mutate_range=default
-        #   folder=/benchmarks/libtiff/bugzilla_2611
-        #   crash_tag=runtime;tif_ojpeg.c:816
-        #   global_timeout=300
-        #   local_timeout=300
-        #   rand_seed=3
-        #   store_all_inputs=True
-        #
         # TODO build the program for fuzzing
         # NOTE for now, we can use build-for-fuzzer, but going forward, we can
         # generate the appropriate build call here (and save the need to write another script for each scenario!)
@@ -306,10 +261,17 @@ class Scenario:
         # construct reproducible test cases from concentrated inputs
         fuzzer_config = FuzzerConfig.load(self.fuzzer_config_path)
         fuzzer_tests_directory = os.path.join(self.fuzzer_directory, "concentrated_inputs")
+        self.fuzzer_tests = []
         for fuzzer_test_filename in os.listdir(fuzzer_tests_directory):
             fuzzer_test_command = fuzzer_config.command_for_input(fuzzer_test_filename)
-            # TODO build a Test instance for each fuzzer test
-            print(fuzzer_test_command)
+            fuzzer_test_name = f"fuzzer-{os.path.basename(fuzzer_test_filename)}"
+            fuzzer_test = Test(
+                name=fuzzer_test_name,
+                command=fuzzer_test_command,
+                cwd=self.directory,
+                shell=self.shell,
+            )
+            self.fuzzer_tests.append(fuzzer_test)
 
     def generate(self) -> None:
         """Generates candidate patches using the analysis results."""
@@ -360,14 +322,17 @@ class Scenario:
                 logger.info(f"candidate patch #{candidate.id_} failed to compile")
                 return False
 
-            # TODO run both the proof of exploit and the fuzzer-generated tests
-            logger.debug(f"testing candidate patch #{candidate.id_} against proof of exploit...")
-            raw_test_outcome = self.shell(self.test_command, cwd=self.directory)
-            if raw_test_outcome.returncode != 0:
-                logger.info(f"candidate patch #{candidate.id_} fails PoE test")
-                return False
-            else:
-                logger.info(f"candidate patch #{candidate.id_} passes PoE test")
+            # run both the proof of exploit and the fuzzer-generated tests
+            all_tests: t.Sequence[Test] = [self.crash_test] + self.fuzzer_tests
+            for test in all_tests:
+                logger.debug(f"testing candidate #{candidate.id_} against test #{test.name}...")
+                if test.run():
+                    logger.info(f"candidate #{candidate.id_} passes test #{test.name}")
+                    return False
+                else:
+                    logger.info(f"candidate #{candidate.id_} fails test #{test.name}")
+
+            logger.info(f"repair found! candidate #{candidate.id_} passes all tests")
 
         finally:
             candidate.revert()

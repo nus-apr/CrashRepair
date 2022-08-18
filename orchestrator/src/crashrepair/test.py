@@ -3,12 +3,17 @@ from __future__ import annotations
 
 import attrs
 
+from .shell import Shell
+
 
 @attrs.define(auto_attribs=True, slots=True)
 class Test:
+    name: str
     command: str
     cwd: str = attrs.field(repr=False)
+    _shell: Shell = attrs.field(repr=False)
 
     def run(self) -> bool:
         """Runs this test and returns :code:`True` if it passes."""
-        raise NotImplementedError
+        raw_test_outcome = self._shell(self.command, cwd=self.cwd)
+        return raw_test_outcome.returncode == 0
