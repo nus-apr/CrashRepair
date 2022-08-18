@@ -13,16 +13,19 @@ private:
   clang::Stmt *stmt;
   clang::ASTContext &context;
   clang::FunctionDecl const *parentFunction;
+  clang::TranslationUnitDecl const *translationUnit;
 
   AstLinkedFixLocation(
     FixLocation const &fixLocation,
     clang::Stmt *stmt,
     clang::ASTContext &context,
-    clang::FunctionDecl const *parentFunction
+    clang::FunctionDecl const *parentFunction,
+    clang::TranslationUnitDecl const *translationUnit
   ) : fixLocation(fixLocation),
       stmt(stmt),
       context(context),
-      parentFunction(parentFunction)
+      parentFunction(parentFunction),
+      translationUnit(translationUnit)
   {}
 
 public:
@@ -32,11 +35,13 @@ public:
     clang::ASTContext &context
   ) {
     auto parentFunction = getParentFunctionDecl(stmt, context);
+    auto translationUnit = getParentTranslationUnitDecl(parentFunction, context);
     return AstLinkedFixLocation(
       fixLocation,
       stmt,
       context,
-      parentFunction
+      parentFunction,
+      translationUnit
     );
   }
 
@@ -54,6 +59,10 @@ public:
 
   clang::FunctionDecl const * getParentFunction() const {
     return parentFunction;
+  }
+
+  clang::TranslationUnitDecl const * getParentTranslationUnit() const {
+    return translationUnit;
   }
 
   std::string getStmtClassName() const {
