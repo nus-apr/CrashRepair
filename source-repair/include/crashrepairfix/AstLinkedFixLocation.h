@@ -73,6 +73,10 @@ public:
     return crashrepairfix::getSource(stmt, context);
   }
 
+  std::string getFilename() const {
+    return fixLocation.getLocation().file;
+  }
+
   FixLocation const & getFixLocation() const {
     return fixLocation;
   }
