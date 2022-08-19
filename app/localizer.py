@@ -17,15 +17,15 @@ comparison_op = ["==", "!=", ">", ">=", "<", "<="]
 symbol_op = arithmetic_op + comparison_op
 
 
-def generate_fix_locations(marked_byte_list, taint_map):
+def generate_fix_locations(marked_byte_list, taint_symbolic):
     emitter.sub_title("Generating Fix Locations")
     fix_locations = dict()
     loc_to_byte_map = collections.OrderedDict()
     is_input_influenced = len(marked_byte_list) > 0
-    for taint_info in taint_map:
+    for taint_info in taint_symbolic:
         src_file, line, col, inst_addr = taint_info.split(":")
         taint_loc = ":".join([src_file, line, col])
-        taint_expr_list = taint_map[taint_info]['symbolic-list']
+        taint_expr_list = taint_symbolic[taint_info]
         for taint_value in taint_expr_list:
             _, taint_expr = taint_value.split(":")
             taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
@@ -37,7 +37,7 @@ def generate_fix_locations(marked_byte_list, taint_map):
                 loc_to_byte_map[taint_loc] = set()
             loc_to_byte_map[taint_loc].update(set(tainted_bytes))
     source_mapping = collections.OrderedDict()
-    for taint_loc in taint_map:
+    for taint_loc in taint_symbolic:
         source_path, line_number, col_number, _ = taint_loc.split(":")
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
@@ -79,7 +79,7 @@ def generate_fix_locations(marked_byte_list, taint_map):
                     break
     sorted_fix_locations = []
     cached_list = []
-    for taint_info in taint_map.keys():
+    for taint_info in taint_symbolic.keys():
         src_file, line, col, inst_addr = taint_info.split(":")
         taint_loc = ":".join([src_file, line, col])
         if taint_loc in fix_locations and taint_loc not in cached_list:
@@ -88,7 +88,7 @@ def generate_fix_locations(marked_byte_list, taint_map):
     return sorted_fix_locations
 
 
-def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast, cfc_var_info_list):
+def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function_ast, cfc_var_info_list):
     global global_candidate_mapping
     if function_name in global_candidate_mapping:
         return global_candidate_mapping[function_name]
@@ -96,9 +96,9 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     func_line_range = extractor.extract_line_range(src_file, function_range)
     var_info_list = extractor.extract_var_list(function_ast, src_file)
     var_taint_list = collections.OrderedDict()
-    for taint_info in taint_map:
+    for taint_info in taint_symbolic:
         c_file, line, col, inst_add = taint_info.split(":")
-        taint_expr_list = taint_map[taint_info]['symbolic-list']
+        taint_expr_list = taint_symbolic[taint_info]
         if src_file != c_file:
             continue
         if int(line) not in func_line_range:
@@ -193,7 +193,7 @@ def get_candidate_map_for_func(function_name, taint_map, src_file, function_ast,
     return candidate_mapping
 
 
-def localize_cfc(taint_loc, cfc_info, taint_map):
+def localize_cfc(taint_loc, cfc_info, taint_symbolic):
     localized_cfc = None
     candidate_constraints = list()
     candidate_locations = set()
@@ -204,7 +204,7 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
     # cfc_expr.resolve_sizeof(cfc_var_info_list)
     cfc_expr_str = cfc_expr.to_string()
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
-    candidate_mapping = get_candidate_map_for_func(func_name, taint_map, src_file,
+    candidate_mapping = get_candidate_map_for_func(func_name, taint_symbolic, src_file,
                                                    function_ast, cfc_var_info_list)
     cfc_tokens = cfc_expr.get_symbol_list()
     for c_t in cfc_tokens:
@@ -256,42 +256,50 @@ def localize_cfc(taint_loc, cfc_info, taint_map):
     return candidate_constraints
 
 
-def localize_state_info(fix_loc, taint_map):
-    state_info_list = dict()
+def localize_state_info(fix_loc, taint_concrete):
+    """
+        Extracts for the given fix location the corresponding variable values, which are
+        in the scope and tracked by the taint analysis.
+    """
     src_file, fix_line, fix_col = fix_loc.split(":")
     func_name, function_ast = extractor.extract_func_ast(src_file, fix_line)
     func_line_range = extractor.extract_line_range(src_file, function_ast["range"])
     var_info_list = extractor.extract_var_list(function_ast, src_file)
-    for taint_info in taint_map:
-        c_file, taint_line, taint_col, inst_add = taint_info.split(":")
-        taint_value_list = taint_map[taint_info]['concrete-list']
-
-        if src_file != c_file:
-            continue
-        if int(taint_line) not in func_line_range:
-            continue
-        if int(taint_line) > int(fix_line):
-            continue
-
-        for var_info in var_info_list:
-            var_name, v_line, v_col, v_type = var_info
-            if "argv" in var_name:
+    state_info_list_values = dict()
+    taint_info_listed_occurences = taint_concrete[fix_loc]
+    for occurence in range(len(taint_info_listed_occurences)):
+        taint_info_list = taint_info_listed_occurences[occurence]
+        state_info_list_values[occurence] = dict()
+        for taint_loc, taint_value in taint_info_list.items():
+            c_file, taint_line, taint_col, inst_add = taint_loc.split(":")
+            if src_file != c_file:
                 continue
-            if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
-                var_info_index = (var_name, v_line, v_col, inst_add)
-                v_type = taint_value_list[0].split(":")[0]
-                value_list = [x.split(":")[1] for x in taint_value_list]
-                if var_info_index not in state_info_list:
-                    state_info_list[var_info_index] = {
-                       "data_type": v_type,
-                       "values": value_list
-                    }
-    return state_info_list
+            if int(taint_line) not in func_line_range:
+                continue
+            if int(taint_line) > int(fix_line):
+                continue
+            for var_info in var_info_list:
+                var_name, v_line, v_col, v_type = var_info
+                if "argv" in var_name:
+                    continue
+                if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
+                    # Remove previous values for the same variable.
+                    outdated_entries = [(var_name_a, v_line_a, v_col_a, inst_add_a) for (var_name_a, v_line_a, v_col_a, inst_add_a) in state_info_list_values[occurence].keys() if var_name_a == var_name and v_line_a < v_line]
+                    for entry in outdated_entries:
+                        del state_info_list_values[occurence][entry]
+                    var_info_index = (var_name, v_line, v_col, inst_add)
+                    var_type, var_value = taint_value.split(":")
+                    if var_info_index not in state_info_list_values[occurence]:
+                        state_info_list_values[occurence][var_info_index] = {
+                            "data_type": var_type,
+                            "values": var_value
+                        }
+    return state_info_list_values
 
 
-def fix_localization(input_byte_list, taint_map, cfc_info):
+def fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete):
     emitter.title("Fix Localization")
-    tainted_fix_locations = generate_fix_locations(input_byte_list, taint_map)
+    tainted_fix_locations = generate_fix_locations(input_byte_list, taint_symbolic)
     for taint_loc in tainted_fix_locations:
         emitter.highlight("\t[taint-loc] {}".format(taint_loc))
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
@@ -299,7 +307,7 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
     localized_loc_list = list()
     for func_name, tainted_fix_loc in tainted_fix_locations:
         src_file = tainted_fix_loc.split(":")[0]
-        candidate_constraints = localize_cfc(tainted_fix_loc, cfc_info, taint_map)
+        candidate_constraints = localize_cfc(tainted_fix_loc, cfc_info, taint_symbolic)
         for candidate_info in candidate_constraints:
             localization_obj = dict()
             localized_cfc, localized_line, localized_col = candidate_info
@@ -307,37 +315,38 @@ def fix_localization(input_byte_list, taint_map, cfc_info):
             if localized_loc in localized_loc_list:
                 continue
             localized_loc_list.append(localized_loc)
-            state_info = localize_state_info(localized_loc, taint_map)
+            state_info_list_values = localize_state_info(localized_loc, taint_concrete)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
             localization_obj["fix-location"] = localized_loc
             localization_obj["constraint-text"] = localized_cfc.to_string()
             localization_obj["constraint-ast"] = localized_cfc.to_json()
             localization_obj["state"] = list()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
-            # emitter.highlight("\t[state information]:")
-            # emitter.highlight("\t" + "="*60)
-            for state in state_info:
-                state_obj = dict()
-                var_name, line, col, inst_addr = state
-                value_list = state_info[state]["values"]
-                var_type = state_info[state]["data_type"]
-                state_obj["variable-name"] = var_name
-                state_obj["source-location"] = ":".join([src_file, str(line), str(col)])
-                state_obj["instruction-address"] = int(inst_addr)
-                state_obj["value-list"] = value_list
-                state_obj["data_type"] = var_type
-                print_list = [str(x) for x in value_list[:5]]
-                localization_obj["state"].append(state_obj)
-                # state_str = "[var-name] : {0:20}".format(var_name)
-                # state_str += " [var-loc] {0:4},{0:4}".format(line, col)
-                # state_str += " [instruction-address]: {0:4}".format(inst_addr)
-                # state_str += " [var-type]: {0:8}".format(var_type)
-                # state_str += " [values]: {0:2}".format(",".join(print_list)[:10])
-                # emitter.information("\t\t{ " + state_str + " }")
+            
+            # Writing state values in csv file.
+            fieldnames = ['occurence', 'variable-name', 'source-location', 'instruction-address', 'data_type', 'value']
+            rows = []
+            for occurence in state_info_list_values:
+                for var_info, var_content in state_info_list_values[occurence].items():
+                    row = dict()
+                    var_name, line, col, inst_addr = var_info
+                    var_value = var_content["values"]
+                    var_type = var_content["data_type"]
+                    row["occurence"] = occurence
+                    row["variable-name"] = var_name
+                    row["source-location"] = ":".join([src_file, str(line), str(col)])
+                    row["instruction-address"] = int(inst_addr)
+                    row["value"] = var_value
+                    row["data_type"] = var_type
+                    rows.append(row)
+            csv_file_path = definitions.DIRECTORY_OUTPUT + '/values/' + localized_loc.replace('/', '#') + ".csv"
+            writer.write_as_csv(fieldnames, rows, csv_file_path)
+            localization_obj["state-value-file"] = csv_file_path
+
             localization_list.append(localization_obj)
     if not localization_list:
         emitter.error("Unable to Localize a Crash Free Constraint")
         utilities.error_exit("Analysis Failed")
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))
-
+    emitter.success("\n\tstate values saved at {}{}".format(definitions.DIRECTORY_OUTPUT, '/values/'))

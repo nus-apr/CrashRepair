@@ -438,13 +438,14 @@ def read_tainted_expressions(taint_log_path):
             for line in taint_file:
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
-                    source_loc, data_type, taint_value = line.split(": ")
+                    source_loc, data_type, taint_value = line.split(": ")                                        
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
                     taint_value =  taint_value.replace("\n","")
                     if data_type.strip() == "float":
                         data_type = "double"
-                    taint_map[source_loc].append("{}:{}".format(data_type.strip(),taint_value))
+                    formatted_taint_value = "{}:{}".format(data_type.strip(), taint_value)
+                    taint_map[source_loc].append(formatted_taint_value)
     return taint_map
 
 def read_memory_values(memory_log_path):
@@ -476,28 +477,54 @@ def read_memory_values(memory_log_path):
 
 
 def read_taint_values(taint_log_path):
+    """
+        Parses the taint.log file and extracts the concrete values at each source location.
+        It will also keep track of multiple occurences of the same source line through the execution trace.
+        For each source location it will only store the current values.
+    """
     emitter.normal("\tcollecting tainted concrete values")
-    taint_map = OrderedDict()
+    taint_values = OrderedDict() # Stores the values at specific location.
+    values_loc = {} # Temporary storage for current values.
+    current_src_loc = -1
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
             for line in taint_file:
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_str = line.split(": ")
+
+                    # Remove instruction id from source_loc: filepath>:<line>:<column>:<instructionid>
+                    length_suffix_to_remove = len(source_loc.split(":")[3]) + 1
+                    trimmed_src_loc = source_loc[:-length_suffix_to_remove]
+
+                    if current_src_loc == -1:
+                        current_src_loc = trimmed_src_loc
+                    elif current_src_loc != trimmed_src_loc:
+                        # Store current values if the location changed.
+                        if current_src_loc not in taint_values:
+                            taint_values[current_src_loc] = list()
+                        taint_values[current_src_loc].append(values_loc.copy())
+                        current_src_loc = trimmed_src_loc
+
                     taint_str = taint_str.replace("\n", "")
                     if "_ bv" in taint_str:
                         taint_str = taint_str.split(" ")[1]
-                    if source_loc not in taint_map.keys():
-                        taint_map[source_loc] = []
                     if "true" in taint_str:
                         taint_value = 1
                     elif "false" in taint_str:
                         taint_value = 0
                     else:
                         taint_value = int(taint_str.replace("\n", "").replace("bv", ""))
-                    taint_map[source_loc].append("{}:{}".format(data_type.strip(),taint_value))
-    return taint_map
+                    formatted_taint_value = "{}:{}".format(data_type.strip(), taint_value)
+                    values_loc[source_loc] = formatted_taint_value
+            
+            # Check if we still have unstored values.
+            if current_src_loc != -1:
+                if current_src_loc not in taint_values:
+                    taint_values[current_src_loc] = list()
+                taint_values[current_src_loc].append(values_loc.copy()) 
 
+    return taint_values
 
 def read_compile_commands(database_path):
     command_list = read_json(database_path)
