@@ -39,7 +39,7 @@ std::string convertAPFloatToString(llvm::APFloat const &floating);
 bool isTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context);
 bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context);
 
-bool containsVarDecl(clang::Stmt const *stmt, clang::ASTContext &context);
+bool containsVarDecl(clang::Stmt const *stmt, clang::ASTContext const &context);
 
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context);
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context);

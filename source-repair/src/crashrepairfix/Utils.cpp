@@ -125,12 +125,12 @@ bool isTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context) {
   return isTopLevelStmt(node, context);
 }
 
-bool containsVarDecl(clang::Stmt const *stmt, clang::ASTContext &context) {
+bool containsVarDecl(clang::Stmt const *stmt, clang::ASTContext const &context) {
   class Visitor : public clang::LexicallyOrderedRecursiveASTVisitor<Visitor> {
   public:
     bool foundVarDecl = false;
 
-    explicit Visitor(clang::ASTContext &context)
+    explicit Visitor(clang::ASTContext const &context)
       : LexicallyOrderedRecursiveASTVisitor(context.getSourceManager())
       {}
 

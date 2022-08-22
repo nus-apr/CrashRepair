@@ -145,7 +145,6 @@ void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
   }
 }
 
-
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());
   addConditional(location, "return;");
@@ -192,7 +191,12 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
     returnValues.insert("NULL");
   }
 
-  // TODO: find reaching in-scope local variables with the same type
+  // find reaching in-scope local variables with the same type
+  for (auto varDecl : findReachingVars(location.getStmt(), const_cast<clang::ASTContext&>(context))) {
+    if (varDecl->getType().getTypePtr() == returnTypeInfo) {
+      returnValues.insert(varDecl->getNameAsString());
+    }
+  }
 
   for (auto &returnValue : returnValues) {
     auto snippet = fmt::format("return {};", returnValue);
@@ -201,7 +205,26 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
 }
 
 void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
-  spdlog::info("wrapping guard around statement: {}", location.getSource());
+  auto stmt = location.getStmt();
+  auto &context = location.getContext();
+  auto source = location.getSource();
+  auto sourceRange = crashrepairfix::getRangeWithTokenEnd(stmt, context);
+
+  spdlog::info("wrapping guard around statement: {}", source);
+
+  // for now, don't guard statements that contain a declaration
+  // we can make this a little less strict by allowing a closing bracket to be placed at either:
+  // - the end of the parent block
+  // - the earliest possible point in the block that does not cause a compiler error
+  if (containsVarDecl(stmt, context)) {
+    spdlog::warn("skipping wrap guard statement [contains decl]: {}", source);
+    return;
+  }
+
+  auto cfcSource = location.getConstraint()->toSource();
+  auto mutatedSource = fmt::format("if ({}) {{ {} }}", cfcSource, source);
+  auto replacement = Replacement::replace(mutatedSource, sourceRange, context);
+  create(location, {replacement});
 }
 
 void ProgramMutator::create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements) {
