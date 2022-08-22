@@ -206,4 +206,21 @@ std::string convertAPFloatToString(llvm::APFloat const &floating) {
   return output;
 }
 
+std::set<clang::VarDecl const *> findReachingVars(clang::Stmt const *stmt, clang::ASTContext &context) {
+  auto node = clang::DynTypedNode::create(*stmt);
+  return findReachingVars(node, context);
+}
+
+std::set<clang::VarDecl const *> findReachingVars(clang::DynTypedNode node, clang::ASTContext &context) {
+  // FIXME everything in scope here BEFORE a given location
+  std::set<clang::VarDecl const *> result;
+  auto *function = getParentFunctionDecl(node, context);
+  for (auto *decl : function->decls()) {
+    if (auto varDecl = clang::dyn_cast<clang::VarDecl>(decl)) {
+      result.insert(varDecl);
+    }
+  }
+  return result;
+}
+
 }

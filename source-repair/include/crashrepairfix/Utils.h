@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -46,5 +47,8 @@ clang::TranslationUnitDecl const * getParentTranslationUnitDecl(clang::DynTypedN
 
 clang::FunctionDecl const * getParentFunctionDecl(clang::Stmt const *stmt, clang::ASTContext &context);
 clang::FunctionDecl const * getParentFunctionDecl(clang::DynTypedNode node, clang::ASTContext &context);
+
+std::set<clang::VarDecl const *> findReachingVars(clang::Stmt const *stmt, clang::ASTContext &context);
+std::set<clang::VarDecl const *> findReachingVars(clang::DynTypedNode node, clang::ASTContext &context);
 
 }
