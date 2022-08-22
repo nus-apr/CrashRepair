@@ -65,8 +65,8 @@ public:
 
   explicit ConstantFinder(clang::ASTContext const &context, std::string const &restrictToFile)
     : LexicallyOrderedRecursiveASTVisitor(context.getSourceManager()),
-      restrictToFile(restrictToFile),
       context(context),
+      restrictToFile(restrictToFile),
       sourceManager(const_cast<clang::SourceManager&>(context.getSourceManager())),
       relativeToAbsoluteFilenames(),
       result()
