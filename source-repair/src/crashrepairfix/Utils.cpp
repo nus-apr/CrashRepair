@@ -7,6 +7,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <clang/AST/LexicallyOrderedRecursiveASTVisitor.h>
 #include <clang/Basic/FileManager.h>
 
 namespace crashrepairfix {
@@ -122,6 +123,26 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
 bool isTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context) {
   auto node = clang::DynTypedNode::create(*stmt);
   return isTopLevelStmt(node, context);
+}
+
+bool containsVarDecl(clang::Stmt const *stmt, clang::ASTContext &context) {
+  class Visitor : public clang::LexicallyOrderedRecursiveASTVisitor<Visitor> {
+  public:
+    bool foundVarDecl = false;
+
+    explicit Visitor(clang::ASTContext &context)
+      : LexicallyOrderedRecursiveASTVisitor(context.getSourceManager())
+      {}
+
+    bool VisitVarDecl(clang::VarDecl *decl) {
+      foundVarDecl = true;
+      return false;
+    }
+  };
+
+  Visitor visitor(context);
+  visitor.TraverseStmt(const_cast<clang::Stmt*>(stmt));
+  return visitor.foundVarDecl;
 }
 
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context) {
