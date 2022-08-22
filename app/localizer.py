@@ -271,7 +271,7 @@ def localize_state_info(fix_loc, taint_concrete):
         taint_info_list = taint_info_listed_occurences[occurence]
         state_info_list_values[occurence] = dict()
         for taint_loc, taint_value in taint_info_list.items():
-            c_file, taint_line, taint_col, inst_add = taint_loc.split(":")
+            c_file, taint_line, taint_col, inst_addr = taint_loc.split(":")
             if src_file != c_file:
                 continue
             if int(taint_line) not in func_line_range:
@@ -283,17 +283,27 @@ def localize_state_info(fix_loc, taint_concrete):
                 if "argv" in var_name:
                     continue
                 if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
-                    # Remove previous values for the same variable.
-                    outdated_entries = [(var_name_a, v_line_a, v_col_a, inst_add_a) for (var_name_a, v_line_a, v_col_a, inst_add_a) in state_info_list_values[occurence].keys() if var_name_a == var_name and v_line_a < v_line]
+                    # Remove previous values for the same variable at a different line.
+                    outdated_entries = [(var_name_a, v_line_a, v_col_a) for (var_name_a, v_line_a, v_col_a) in state_info_list_values[occurence].keys() if var_name_a == var_name and v_line_a != v_line]
                     for entry in outdated_entries:
                         del state_info_list_values[occurence][entry]
-                    var_info_index = (var_name, v_line, v_col, inst_add)
+                    
+                    # Create index.
+                    var_info_index = (var_name, v_line, v_col)
                     var_type, var_value = taint_value.split(":")
-                    if var_info_index not in state_info_list_values[occurence]:
-                        state_info_list_values[occurence][var_info_index] = {
-                            "data_type": var_type,
-                            "values": var_value
-                        }
+
+                    # We only want to to keep the last value for variable at a specific location (line+column).
+                    # However, we can have multiple instructions mapped to one variable, hence, we need to filter.
+                    if var_info_index in state_info_list_values[occurence]:
+                        other_state_info = state_info_list_values[occurence][var_info_index]
+                        if int(other_state_info["inst_addr"]) >= int(inst_addr):
+                            continue
+                    
+                    state_info_list_values[occurence][var_info_index] = {
+                        "inst_addr": inst_addr,
+                        "data_type": var_type,
+                        "values": var_value
+                    }
     return state_info_list_values
 
 
@@ -329,9 +339,10 @@ def fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete):
             for occurence in state_info_list_values:
                 for var_info, var_content in state_info_list_values[occurence].items():
                     row = dict()
-                    var_name, line, col, inst_addr = var_info
+                    var_name, line, col = var_info
                     var_value = var_content["values"]
                     var_type = var_content["data_type"]
+                    inst_addr = var_content["inst_addr"]
                     row["occurence"] = occurence
                     row["variable-name"] = var_name
                     row["source-location"] = ":".join([src_file, str(line), str(col)])
