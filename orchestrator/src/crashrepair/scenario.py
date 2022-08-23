@@ -10,6 +10,7 @@ import attrs
 
 from loguru import logger
 
+from .analyzer import Analyzer
 from .candidate import PatchCandidate
 from .fuzzer import FuzzerConfig
 from .shell import Shell
@@ -227,7 +228,8 @@ class Scenario:
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
 
-        raise NotImplementedError
+        analyzer = Analyzer.for_scenario(self)
+        analyzer.run()
 
     def fuzz(self) -> None:
         """Generates additional test cases via concentrated fuzzing."""
