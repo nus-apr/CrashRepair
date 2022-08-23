@@ -10,6 +10,7 @@ DESCRIPTION = "crashrepair: automated repair of C/C++ security bugs"
 
 def do_repair(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
+    scenario.should_terminate_early = args.should_terminate_early
     scenario.repair()
 
 
@@ -24,6 +25,12 @@ def parse_args() -> argparse.Namespace:
     parser_repair.add_argument(
         "filename",
         help="the path to the bug.json file for the bug scenario",
+    )
+    parser_repair.add_argument(
+        "--stop-early",
+        help="stops generating patches after an acceptable patch has been found",
+        dest="should_terminate_early",
+        action="store_true",
     )
     parser_repair.set_defaults(func=do_repair)
 
