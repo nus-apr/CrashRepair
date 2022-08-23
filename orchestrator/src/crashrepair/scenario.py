@@ -303,12 +303,20 @@ class Scenario:
 
         # TODO apply ranking of candidate patches prior to evaluation
 
+        # TODO add resource limits
+
         # TODO evaluate candidates in parallel via worker queue
         # note that doing so will require us to create copies of the scenario directory
         for candidate in candidates:
-            self.evaluate(candidate)
+            if self.evaluate(candidate):
+                logger.info(f"saving successful patch #{candidate.id_}...")
+                patch_filename = f"{candidate.id_}.diff"
+                patch_filename = os.path.join(self.patches_directory, patch_filename)
+                candidate.write(patch_filename)
 
-        raise NotImplementedError
+                if self.should_terminate_early:
+                    logger.info("stopping search: patch was found")
+                    return
 
     def evaluate(self, candidate: PatchCandidate) -> bool:
         """Evaluates a candidate repair and returns :code:`True` if it passes all tests."""

@@ -42,6 +42,9 @@ class PatchCandidate:
 
     def write(self, filename: str) -> None:
         """Writes the patch encoded to a unified diff text file."""
+        directory = os.path.dirname(filename)
+        os.makedirs(directory, exist_ok=True)
+
         modification_time_string = datetime.now().isoformat()
         header_from_line = f"--- {self.filename} {modification_time_string}"
         header_to_line = f"+++ {self.filename} {modification_time_string}"
