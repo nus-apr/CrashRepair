@@ -16,6 +16,8 @@ from loguru import logger
 if t.TYPE_CHECKING:
     from .scenario import Scenario
 
+PATH_ANALYZER = "crepair"
+
 # FIXME what are test_input_list and poc_list? how are lists delimited?
 _CONFIG_TEMPLATE = """
 dir_exp:{project_directory}
@@ -65,6 +67,10 @@ class Analyzer:
 
     # TODO how can we specify to where the analyzer should write its output?
     def run(self) -> None:
+        shell = self.scenario.shell
         with self._generate_config() as config_filename:
             logger.debug(f"wrote analyzer config file to: {config_filename}")
-            raise NotImplementedError
+            command = f"{PATH_ANALYZER} --conf={config_filename}"
+            shell(command, cwd=self.scenario.directory)
+
+        # TODO ensure that the results exist!
