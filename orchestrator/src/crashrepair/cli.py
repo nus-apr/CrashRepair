@@ -10,8 +10,7 @@ DESCRIPTION = "crashrepair: automated repair of C/C++ security bugs"
 
 def do_repair(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
-    print(scenario)
-    print("TODO: implement end-to-end repair integration")
+    scenario.repair()
 
 
 def parse_args() -> argparse.Namespace:
