@@ -53,6 +53,8 @@ class Scenario:
         The command that should be used prior to building the program (e.g., configure).
     build_command: str
         The command that should be used to build the program.
+    crashing_input: str
+        The input that is supplied to the binary to cause the crash.
     """
     subject: str
     name: str
@@ -62,6 +64,7 @@ class Scenario:
     clean_command: str
     prebuild_command: str
     build_command: str
+    crashing_input: str
     shell: Shell
     crash_test: Test
     should_terminate_early: bool = attrs.field(default=True)
@@ -119,6 +122,7 @@ class Scenario:
         clean_command: str,
         prebuild_command: str,
         build_command: str,
+        crashing_input: str,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -148,6 +152,7 @@ class Scenario:
             clean_command=clean_command,
             prebuild_command=prebuild_command,
             build_command=build_command,
+            crashing_input=crashing_input,
             shell=shell,
             crash_test=crash_test,
         )
@@ -165,6 +170,7 @@ class Scenario:
         try:
             project_dict = bug_dict["project"]
             subject = project_dict["name"]
+            crashing_input = bug_dict["crashing-input"]
             name = bug_dict["name"]
             binary_path = bug_dict["binary"]
             source_directory = bug_dict["source-directory"]
@@ -185,6 +191,7 @@ class Scenario:
             clean_command=clean_command,
             prebuild_command=prebuild_command,
             build_command=build_command,
+            crashing_input=crashing_input,
         )
 
     @classmethod
@@ -227,6 +234,8 @@ class Scenario:
         if self.analysis_results_exist():
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
+
+        self.shell(self.clean_command, cwd=self.source_directory)
 
         analyzer = Analyzer.for_scenario(self)
         analyzer.run()

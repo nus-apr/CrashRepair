@@ -18,7 +18,6 @@ if t.TYPE_CHECKING:
 
 PATH_ANALYZER = "crepair"
 
-# FIXME what are test_input_list and poc_list? how are lists delimited?
 _CONFIG_TEMPLATE = """
 dir_exp:{project_directory}
 tag_id:{bug_name}
@@ -26,8 +25,8 @@ src_directory:{source_directory}
 binary_path:{binary_path}
 config_command:CC=crepair-cc CXX=crepair-cxx {prebuild_command}
 build_command:make CC=crepair-cc CXX=crepair-cxx {build_command}
-test_input_list:-D $POC
-poc_list:$script_dir/../tests/1.bin
+test_input_list:{crashing_input}
+poc_list:NONE
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
 """
 
@@ -53,6 +52,7 @@ class Analyzer:
                 binary_path=scenario.binary_path,
                 prebuild_command=scenario.prebuild_command,
                 build_command=scenario.build_command,
+                crashing_input=scenario.crashing_input,
             )
             with open(filename, "w") as fh:
                 fh.write(contents)
@@ -68,9 +68,18 @@ class Analyzer:
     # TODO how can we specify to where the analyzer should write its output?
     def run(self) -> None:
         shell = self.scenario.shell
+
+        # destroy any existing contents of the analyzer output directory
+        output_directory = "/CrashRepair/output/crash"
+        localization_filename = os.path.join(output_directory, "localization.json")
+
         with self._generate_config() as config_filename:
             logger.debug(f"wrote analyzer config file to: {config_filename}")
             command = f"{PATH_ANALYZER} --conf={config_filename}"
             shell(command, cwd=self.scenario.directory)
 
         # TODO ensure that the results exist!
+        if not os.path.exists(localization_filename):
+            raise RuntimeError(
+                f"analysis failed: localization file wasn't produced [{localization_filename}]",
+            )
