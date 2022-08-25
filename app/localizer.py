@@ -330,26 +330,36 @@ def fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete):
             localization_obj["fix-location"] = localized_loc
             localization_obj["constraint-text"] = localized_cfc.to_string()
             localization_obj["constraint-ast"] = localized_cfc.to_json()
-            localization_obj["state"] = list()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
             
-            # Writing state values in csv file.
-            fieldnames = ['occurence', 'variable-name', 'source-location', 'instruction-address', 'data_type', 'value']
+            fieldnames = []
             rows = []
+            variables = []
             for occurence in state_info_list_values:
+                row = dict()
                 for var_info, var_content in state_info_list_values[occurence].items():
-                    row = dict()
                     var_name, line, col = var_info
                     var_value = var_content["values"]
                     var_type = var_content["data_type"]
-                    inst_addr = var_content["inst_addr"]
-                    row["occurence"] = occurence
-                    row["variable-name"] = var_name
-                    row["source-location"] = ":".join([src_file, str(line), str(col)])
-                    row["instruction-address"] = int(inst_addr)
-                    row["value"] = var_value
-                    row["data_type"] = var_type
-                    rows.append(row)
+                    inst_addr = int(var_content["inst_addr"])
+                
+                    var_meta_data = {
+                        "variable-name": var_name, 
+                        "line": line, 
+                        "column": col, 
+                        "instruction-address": inst_addr,
+                        "data_type": var_type
+                    }
+
+                    if var_meta_data not in variables:
+                        variables.append(var_meta_data)
+
+                    if var_name not in fieldnames:
+                        fieldnames.append(var_name)
+                    
+                    row[var_name] = var_value
+                rows.append(row)
+            localization_obj["variables"] = variables
             csv_file_path = definitions.DIRECTORY_OUTPUT + '/values/' + localized_loc.replace('/', '#') + ".csv"
             writer.write_as_csv(fieldnames, rows, csv_file_path)
             localization_obj["state-value-file"] = csv_file_path
