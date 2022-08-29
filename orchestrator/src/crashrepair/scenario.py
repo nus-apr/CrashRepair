@@ -33,6 +33,8 @@ class Scenario:
         The name of the bug scenario
     directory: str
         The absolute path of the bug scenario directory
+    build_directory: str
+        The absolute path of the build directory for this bug scenario
     source_directory: str
         The absolute path of the source directory for this bug scenario
     compile_commands_path: str
@@ -59,6 +61,7 @@ class Scenario:
     subject: str
     name: str
     directory: str
+    build_directory: str
     source_directory: str
     binary_path: str
     clean_command: str
@@ -117,6 +120,7 @@ class Scenario:
         filename: str,
         subject: str,
         name: str,
+        build_directory: str,
         source_directory: str,
         binary_path: str,
         clean_command: str,
@@ -126,6 +130,9 @@ class Scenario:
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
+
+        if not os.path.isabs(build_directory):
+            build_directory = os.path.join(directory, build_directory)
 
         if not os.path.isabs(source_directory):
             source_directory = os.path.join(directory, source_directory)
@@ -147,6 +154,7 @@ class Scenario:
             subject=subject,
             name=name,
             directory=directory,
+            build_directory=build_directory,
             source_directory=source_directory,
             binary_path=binary_path,
             clean_command=clean_command,
@@ -175,6 +183,7 @@ class Scenario:
             binary_path = bug_dict["binary"]
             source_directory = bug_dict["source-directory"]
             build_dict = bug_dict["build"]
+            build_directory = build_dict["directory"]
             build_commands = build_dict["commands"]
             clean_command = build_commands["clean"]
             prebuild_command = build_commands["prebuild"]
@@ -187,6 +196,7 @@ class Scenario:
             subject=subject,
             name=name,
             binary_path=binary_path,
+            build_directory=build_directory,
             source_directory=source_directory,
             clean_command=clean_command,
             prebuild_command=prebuild_command,
@@ -225,9 +235,9 @@ class Scenario:
         }
         env = {**default_env, **env}
 
-        self.shell(self.clean_command, cwd=self.source_directory)
-        self.shell(self.prebuild_command, env=env, cwd=self.source_directory)
-        self.shell(f"bear {self.build_command}", env=env, cwd=self.source_directory)
+        self.shell(self.clean_command, cwd=self.build_directory)
+        self.shell(self.prebuild_command, env=env, cwd=self.build_directory)
+        self.shell(f"bear {self.build_command}", env=env, cwd=self.build_directory)
 
     def analyze(self) -> None:
         """Analyzes the underlying cause of the bug and generates repair hints."""
@@ -235,7 +245,7 @@ class Scenario:
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
 
-        self.shell(self.clean_command, cwd=self.source_directory)
+        self.shell(self.clean_command, cwd=self.build_directory)
 
         analyzer = Analyzer.for_scenario(self)
         analyzer.run(write_to=self.analysis_directory)
