@@ -238,7 +238,7 @@ class Scenario:
         self.shell(self.clean_command, cwd=self.source_directory)
 
         analyzer = Analyzer.for_scenario(self)
-        analyzer.run()
+        analyzer.run(write_to=self.analysis_directory)
 
     def fuzz(self) -> None:
         """Generates additional test cases via concentrated fuzzing."""

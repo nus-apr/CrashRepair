@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import shutil
 import tempfile
 import typing as t
 
@@ -66,11 +67,11 @@ class Analyzer:
                 os.remove(filename)
 
     # TODO how can we specify to where the analyzer should write its output?
-    def run(self) -> None:
+    def run(self, write_to: str) -> None:
         shell = self.scenario.shell
 
         # destroy any existing contents of the analyzer output directory
-        output_directory = "/CrashRepair/output/crash"
+        output_directory = f"/CrashRepair/output/{self.scenario.name}"
         localization_filename = os.path.join(output_directory, "localization.json")
 
         with self._generate_config() as config_filename:
@@ -78,8 +79,15 @@ class Analyzer:
             command = f"{PATH_ANALYZER} --conf={config_filename}"
             shell(command, cwd=self.scenario.directory)
 
-        # TODO ensure that the results exist!
+        # ensure that the results exist!
         if not os.path.exists(localization_filename):
             raise RuntimeError(
                 f"analysis failed: localization file wasn't produced [{localization_filename}]",
             )
+
+        if not os.path.exists(write_to):
+            logger.warning("analysis output directory does not exist [{write_to}]: creating...")
+
+        # copy across the analysis results
+        shutil.copytree(output_directory, write_to)
+        shutil.rmtree(output_directory, ignore_errors=True)
