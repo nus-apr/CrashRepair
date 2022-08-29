@@ -15,8 +15,10 @@ z3: builder
 llvm-6: builder
 	docker build -f Dockerfile.llvm-6 -t crepair:llvm-6 .
 
+# be aware that the following command can nondeterministically fail:
+# docker pull christimperley/llvm11
 llvm-11: builder
-	docker pull christimperley/llvm11
+	docker tag christimperley/llvm11 crepair:llvm-11
 
 klee: builder llvm-6 z3
 	docker build -f Dockerfile.klee -t crepair:klee .

@@ -1,7 +1,7 @@
 FROM crepair:builder
 COPY --from=crepair:z3 /opt/z3/ /opt/z3/
 COPY --from=crepair:llvm-6 /opt/llvm-6/ /opt/llvm-6/
-COPY --from=crepair:llvm-11 /opt/llvm-11/ /opt/llvm-11/
+COPY --from=crepair:llvm-11 /opt/llvm/ /opt/llvm11/
 COPY --from=crepair:klee /klee/ /klee
 COPY --from=crepair:klee /klee-uclibc /klee-uclibc
 
@@ -58,11 +58,12 @@ COPY Repair.py ./Repair.py
 ENV PATH="/opt/crashrepair/bin:/CrashRepair/compiler:/klee/build/bin:${PATH}"
 ENV CC=crepair-cc
 ENV CXX=crepair-cxx
-ENV LD_LIBRARY_PATH "/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH "/opt/crashrepair/lib:/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
 
 RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
 
 RUN crepair --help && exit 0
 
 COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
+RUN rm /opt/crashrepair/lib/libz3.so
 COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
