@@ -55,7 +55,7 @@ COPY experiments ./experiments
 COPY tests ./tests
 COPY Repair.py ./Repair.py
 
-ENV PATH=/CrashRepair/compiler:/klee/build/bin:${PATH}
+ENV PATH="/opt/crashrepair/bin:/CrashRepair/compiler:/klee/build/bin:${PATH}"
 ENV CC=crepair-cc
 ENV CXX=crepair-cxx
 ENV LD_LIBRARY_PATH "/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
