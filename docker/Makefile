@@ -22,9 +22,12 @@ klee: builder llvm-6 z3
 fuzzer: builder
 	docker build -f Dockerfile.fuzzer -t crepair:fuzzer ..
 
-crepair: builder klee llvm-11 sourcerepair
+crepair: builder klee llvm-11 orchestrator sourcerepair
 	docker build -f Dockerfile.crepair -t crepair:tool ..
+
+orchestrator:
+	docker build -t crepair:orchestrator ../orchestrator
 
 install: crepair
 
-.PHONY: builder llvm-6 llvm-11 z3 klee crepair fuzzer install
+.PHONY: builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install

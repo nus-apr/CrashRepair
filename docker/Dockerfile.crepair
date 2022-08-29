@@ -41,14 +41,28 @@ RUN pypy3 -m easy_install wllvm
 RUN python3 -m easy_install wllvm
 ENV PATH "/opt/llvm-6/bin:/klee/build/bin:${PATH}"
 ENV LLVM_COMPILER=clang
-ADD . /CrashRepair
+
 WORKDIR /CrashRepair
-RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
-RUN cd /CrashRepair/lib && KLEE_INCLUDE_PATH=/klee/source/include make
+
+COPY lib ./lib
+RUN cd /CrashRepair/lib \
+ && KLEE_INCLUDE_PATH=/klee/source/include make
+
+COPY app ./app
+COPY bin ./bin
+COPY compiler ./compiler
+COPY experiments ./experiments
+COPY tests ./tests
+COPY Repair.py ./Repair.py
+
 ENV PATH=/CrashRepair/compiler:/klee/build/bin:${PATH}
 ENV CC=crepair-cc
 ENV CXX=crepair-cxx
 ENV LD_LIBRARY_PATH "/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
+
+RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
+
 RUN crepair --help && exit 0
 
 COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
+COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
