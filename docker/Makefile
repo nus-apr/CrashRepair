@@ -1,9 +1,11 @@
 all: install
 
 deps:
-    git submodule update --init --recursive
+	git submodule update --init --recursive
+
 builder: deps
 	docker build -f Dockerfile.builder -t crepair:builder .
+
 sourcerepair:
 	docker build -t crepair:sourcerepair ../source-repair
 
