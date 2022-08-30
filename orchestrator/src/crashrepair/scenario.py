@@ -71,6 +71,7 @@ class Scenario:
     shell: Shell
     crash_test: Test
     should_terminate_early: bool = attrs.field(default=True)
+    skip_fuzzing: bool = attrs.field(default=False)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
 
     @property
@@ -127,6 +128,7 @@ class Scenario:
         prebuild_command: str,
         build_command: str,
         crashing_input: str,
+        skip_fuzzing: bool,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -163,12 +165,18 @@ class Scenario:
             crashing_input=crashing_input,
             shell=shell,
             crash_test=crash_test,
+            skip_fuzzing=skip_fuzzing,
         )
         logger.info(f"loaded bug scenario: {scenario}")
         return scenario
 
     @classmethod
-    def for_file(cls, filename: str) -> Scenario:
+    def for_file(
+        cls,
+        filename: str,
+        *,
+        skip_fuzzing: bool = False,
+    ) -> Scenario:
         if not os.path.exists(filename):
             raise ValueError(f"bug file not found: {filename}")
 
@@ -202,6 +210,7 @@ class Scenario:
             prebuild_command=prebuild_command,
             build_command=build_command,
             crashing_input=crashing_input,
+            skip_fuzzing=skip_fuzzing,
         )
 
     @classmethod
@@ -252,32 +261,42 @@ class Scenario:
 
     def fuzz(self) -> None:
         """Generates additional test cases via concentrated fuzzing."""
-        if self.fuzzer_outputs_exist():
-            logger.info(f"skipping fuzzing: outputs already exist [{self.fuzzer_directory}]")
+        if self.skip_fuzzing:
+            logger.info("skipping fuzzing: disabled by request")
             return
+
+        # NOTE for now, use the provided config file
+        assert os.path.exists(self.fuzzer_config_path)
 
         # TODO generate config file based on bug.json contents
         # - rand_seed={fuzzer_seed}
         # - store_all_inputs=False
         # - combination_num={max_fuzzing_combinations}
 
-        # NOTE for now, use the provided config file
-        assert os.path.exists(self.fuzzer_config_path)
+        # [{scenario.name}]
+        # bin_path={}
+        # global_timeout={}
+        # local_timeout={}
+        # mutate_range=default
+        # folder={scenario.directory}
+        # rand_seed={fuzzer_seed}
+        # trace_cmd={}
 
-        # TODO build the program for fuzzing
-        # NOTE for now, we can use build-for-fuzzer, but going forward, we can
-        # generate the appropriate build call here (and save the need to write another script for each scenario!)
-        self.rebuild()
-
-        # run the fuzzer and block until completion
-        command = " ".join((
-            FUZZER_PATH,
-            "--config_file",
-            self.fuzzer_config_path,
-            "--tag",
-            self.name,
-        ))
-        self.shell(command, cwd=self.directory)
+        if self.fuzzer_outputs_exist():
+            logger.info(f"skipping fuzzing: outputs already exist [{self.fuzzer_directory}]")
+        else:
+            # TODO build the program for fuzzing
+            # NOTE for now, we can use build-for-fuzzer, but going forward, we can
+            # generate the appropriate build call here (and save the need to write another script for each scenario!)
+            self.rebuild()
+            command = " ".join((
+                FUZZER_PATH,
+                "--config_file",
+                self.fuzzer_config_path,
+                "--tag",
+                self.name,
+            ))
+            self.shell(command, cwd=self.directory)
 
         # construct reproducible test cases from concentrated inputs
         fuzzer_config = FuzzerConfig.load(self.fuzzer_config_path)
