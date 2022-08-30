@@ -25,10 +25,13 @@ public:
       states(std::move(states))
   {}
 
-  static std::unique_ptr<FixLocation> fromJSON(nlohmann::json j) {
+  static std::unique_ptr<FixLocation> fromJSON(
+    nlohmann::json j,
+    std::string const &localizationFilename
+  ) {
     SourceLocation location = SourceLocation::fromString(j["location"]);
     auto expr = parse(j["constraint"]);
-    auto states = ProgramStates::fromJSON(j["states"]);
+    auto states = ProgramStates::fromJSON(j["states"], localizationFilename);
     return std::make_unique<FixLocation>(location, std::move(expr), states);
   }
 

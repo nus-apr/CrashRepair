@@ -23,10 +23,10 @@ public:
     std::ifstream input(filename);
     nlohmann::json j;
     input >> j;
-    return fromJSON(j);
+    return fromJSON(j, filename);
   }
 
-  static FixLocalization fromJSON(nlohmann::json j) {
+  static FixLocalization fromJSON(nlohmann::json j, std::string const &filename) {
     FixLocalization localization;
     for (auto &entry : j) {
       // skip entries that are marked as "ignore"
@@ -35,7 +35,7 @@ public:
         continue;
       }
 
-      localization.add(FixLocation::fromJSON(entry));
+      localization.add(FixLocation::fromJSON(entry, filename));
     }
     return localization;
   }

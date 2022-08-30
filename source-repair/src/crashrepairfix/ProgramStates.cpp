@@ -50,7 +50,10 @@ std::unique_ptr<ProgramStates::Values> ProgramStates::Values::fromJSON(
   return std::make_unique<Values>(std::move(values));
 }
 
-ProgramStates ProgramStates::fromJSON(nlohmann::json const &j) {
+ProgramStates ProgramStates::fromJSON(
+  nlohmann::json const &j,
+  std::string const &localizationFilename
+) {
   std::vector<std::unique_ptr<Variable>> variables;
   for (auto jVariable : j["variables"]) {
     variables.push_back(Variable::fromJSON(jVariable));
@@ -61,7 +64,7 @@ ProgramStates ProgramStates::fromJSON(nlohmann::json const &j) {
     values.push_back(Values::fromJSON(variables, jValues));
   }
 
-  return ProgramStates(variables, values);
+  return ProgramStates(localizationFilename, variables, values);
 }
 
 z3::expr ProgramStates::Values::toZ3(z3::context &z3c) const {

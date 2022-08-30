@@ -55,7 +55,7 @@ public:
     > values;
   };
 
-  static ProgramStates fromJSON(nlohmann::json const &j);
+  static ProgramStates fromJSON(nlohmann::json const &j, std::string const &localizationFilename);
 
   std::vector<std::unique_ptr<Values>> const & getValues() const {
     return values;
@@ -70,13 +70,18 @@ public:
   {}
 
 private:
+  std::string localizationFilename;
   std::vector<std::unique_ptr<Variable>> variables;
   std::vector<std::unique_ptr<Values>> values;
 
   ProgramStates(
+    std::string const &localizationFilename,
     std::vector<std::unique_ptr<Variable>> &variables,
     std::vector<std::unique_ptr<Values>> &values
-  ) : variables(std::move(variables)), values(std::move(values)) {}
+  ) : localizationFilename(localizationFilename),
+      variables(std::move(variables)),
+      values(std::move(values))
+  {}
 };
 
 }
