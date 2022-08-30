@@ -321,6 +321,18 @@ class Scenario:
         self.rebuild()
         assert os.path.exists(self.compile_commands_path)
 
+        # extract a list of implicated source files
+        implicated_files: t.Set[str] = set()
+        with open(self.localization_path, "r") as fh:
+            localization: t.List[t.Dict[str, t.Any]] = json.load(fh)
+            for entry in localization:
+                if entry.get("ignore", False):
+                    continue
+                filename = entry["location"].split(":")[0]
+                implicated_files.add(filename)
+
+        logger.info(f"generating candidate repairs in implicated files: {implicated_files}")
+
         command = " ".join((
             CRASHREPAIRFIX_PATH,
             "--output-to",
@@ -330,6 +342,7 @@ class Scenario:
             self.localization_path,
             "-p",
             self.compile_commands_path,
+            " ".join(implicated_files),
             "-extra-arg=-I/opt/llvm11/lib/clang/11.1.0/include/",
         ))
         self.shell(command, cwd=self.source_directory)
