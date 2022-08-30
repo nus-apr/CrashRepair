@@ -25,9 +25,9 @@ tag_id:{bug_name}
 src_directory:{source_directory}
 binary_path:{binary_path}
 config_command:CC=crepair-cc CXX=crepair-cxx {prebuild_command}
-build_command:make CC=crepair-cc CXX=crepair-cxx {build_command}
+build_command:CC=crepair-cc CXX=crepair-cxx {build_command}
 test_input_list:{crashing_input}
-poc_list:NONE
+poc_list:{poc_list}
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
 """
 
@@ -54,6 +54,10 @@ class Analyzer:
                 prebuild_command=scenario.prebuild_command,
                 build_command=scenario.build_command,
                 crashing_input=scenario.crashing_input,
+                # NOTE we need to pass any file that actually exists here, but that file does not need
+                # to contain the POC if it is already embedded within the crashing input. This is helpful
+                # for cases where the program is crashed by command-line arguments rather than a file input.
+                poc_list=filename,
             )
             with open(filename, "w") as fh:
                 fh.write(contents)
@@ -86,7 +90,7 @@ class Analyzer:
             )
 
         if not os.path.exists(write_to):
-            logger.warning("analysis output directory does not exist [{write_to}]: creating...")
+            logger.warning(f"analysis output directory does not exist [{write_to}]: creating...")
 
         # copy across the analysis results
         shutil.copytree(output_directory, write_to)
