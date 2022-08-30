@@ -11,7 +11,7 @@ DESCRIPTION = "crashrepair: automated repair of C/C++ security bugs"
 def do_repair(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
     scenario.should_terminate_early = args.should_terminate_early
-    scenario.skip_fuzzing = args.skip_fuzzing
+    scenario.skip_fuzzing = args.no_fuzzing
     scenario.repair()
 
 
