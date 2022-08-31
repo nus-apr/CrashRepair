@@ -327,9 +327,9 @@ def fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete):
             localized_loc_list.append(localized_loc)
             state_info_list_values = localize_state_info(localized_loc, taint_concrete)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
-            localization_obj["fix-location"] = localized_loc
-            localization_obj["constraint-text"] = localized_cfc.to_string()
-            localization_obj["constraint-ast"] = localized_cfc.to_json()
+            localization_obj["location"] = localized_loc
+            localization_obj["constraint"] = localized_cfc.to_string()
+            # localization_obj["constraint-ast"] = localized_cfc.to_json()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
             
             fieldnames = []
