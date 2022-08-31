@@ -39,9 +39,9 @@ public:
 
   class Values {
   public:
-    static std::unique_ptr<Values> fromJSON(
+    static std::unique_ptr<Values> load(
       std::vector<std::unique_ptr<Variable>> const &variables,
-      nlohmann::json const &j
+      std::string const &valuesFilename
     );
 
     Values(std::unordered_map<Variable const *, std::variant<double, long>> values) : values(values) {}
@@ -55,9 +55,10 @@ public:
     > values;
   };
 
-  static ProgramStates fromJSON(nlohmann::json const &j, std::string const &localizationFilename);
+  static ProgramStates fromJSON(nlohmann::json const &j, std::string const &valuesFilename);
 
   std::vector<std::unique_ptr<Values>> const & getValues() const {
+    // TODO load values if not already loaded
     return values;
   }
   std::vector<std::unique_ptr<Variable>> const & getVariables() const {
@@ -66,22 +67,25 @@ public:
 
   ProgramStates(ProgramStates const &other) = delete;
   ProgramStates(ProgramStates&& other) noexcept :
-    variables(std::move(other.variables)), values(std::move(other.values))
+    valuesFilename(other.valuesFilename),
+    variables(std::move(other.variables)),
+    values(std::move(other.values))
   {}
 
 private:
-  std::string localizationFilename;
+  std::string valuesFilename;
   std::vector<std::unique_ptr<Variable>> variables;
   std::vector<std::unique_ptr<Values>> values;
 
   ProgramStates(
-    std::string const &localizationFilename,
-    std::vector<std::unique_ptr<Variable>> &variables,
-    std::vector<std::unique_ptr<Values>> &values
-  ) : localizationFilename(localizationFilename),
+    std::string const &valuesFilename,
+    std::vector<std::unique_ptr<Variable>> &variables
+  ) : valuesFilename(valuesFilename),
       variables(std::move(variables)),
-      values(std::move(values))
+      values()
   {}
+
+  void loadValues();
 };
 
 }

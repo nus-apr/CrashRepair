@@ -1,9 +1,74 @@
 #include <crashrepairfix/ProgramStates.h>
 
+#include <fstream>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
 namespace crashrepairfix {
+
+void ProgramStates::loadValues() {
+  std::ifstream fh(valuesFilename);
+
+  if (!fh.is_open()) {
+    spdlog::error("failed to open state values file: {}", valuesFilename);
+    abort();
+  }
+
+  // read the header
+  std::vector<Variable const *> columns;
+  std::string line;
+  if (!std::getline(fh, line)) {
+    spdlog::error("failed to read header from state values file");
+    abort();
+  }
+
+  // TODO use ; as a delimiter to allow complex names
+  for (auto column : split(line, ',')) {
+    strip_whitespace(column);
+
+    // find the corresponding variable with the same name as the column
+    for (auto const &variable : variables) {
+      if (variable->getName() == column) {
+        columns.push_back(variable.get());
+        continue;
+      }
+    }
+  }
+  size_t numColumns = columns.size();
+
+  // read each row
+  while (std::getline(fh, line)) {
+    // TODO handling of newline before EOF?
+    auto cells = split(line, ',');
+    if (cells.size() != numColumns) {
+      spdlog::error("failed to read state values line (wrong number of columns): {}", line);
+      abort();
+    }
+
+    std::unordered_map<Variable const *, std::variant<double, long>> row;
+    for (int col = 0; col < numColumns; col++) {
+      auto cellString = cells[col];
+      auto const *variable = columns[col];
+      std::variant<double, long> value;
+
+      switch (variable->getResultType()) {
+        case ResultType::Int:
+        case ResultType::Pointer:
+          value = std::stol(cellString);
+          break;
+        case ResultType::Float:
+          value = std::stod(cellString);
+          break;
+        row[variable] = value;
+      }
+    }
+
+    values.push_back(std::move(std::make_unique<Values>(std::move(row))));
+  }
+
+  fh.close();
+}
 
 std::string ProgramStates::Variable::toString() const {
   return fmt::format("Variable({}, {})", name, Expr::resultTypeToString(type));
@@ -25,46 +90,18 @@ std::unique_ptr<ProgramStates::Variable> ProgramStates::Variable::fromJSON(nlohm
   return variable;
 }
 
-std::unique_ptr<ProgramStates::Values> ProgramStates::Values::fromJSON(
-  std::vector<std::unique_ptr<Variable>> const &variables,
-  nlohmann::json const &j
-) {
-  std::unordered_map<Variable const *, std::variant<double, long>> values;
-
-  for (auto const &variable : variables) {
-    std::variant<double, long> value;
-    switch (variable->type) {
-      case ResultType::Int:
-      case ResultType::Pointer:
-        value = j[variable->name].get<long>();
-        break;
-      case ResultType::Float:
-        value = j[variable->name].get<double>();
-        break;
-      default:
-        assert (false);
-    }
-    values[variable.get()] = value;
-  }
-
-  return std::make_unique<Values>(std::move(values));
-}
 
 ProgramStates ProgramStates::fromJSON(
   nlohmann::json const &j,
-  std::string const &localizationFilename
+  std::string const &valuesFilename
 ) {
   std::vector<std::unique_ptr<Variable>> variables;
   for (auto jVariable : j["variables"]) {
     variables.push_back(Variable::fromJSON(jVariable));
   }
-
-  std::vector<std::unique_ptr<Values>> values;
-  for (auto jValues : j["values"]) {
-    values.push_back(Values::fromJSON(variables, jValues));
-  }
-
-  return ProgramStates(localizationFilename, variables, values);
+  auto states = ProgramStates(valuesFilename, variables);
+  states.loadValues();
+  return std::move(states);
 }
 
 z3::expr ProgramStates::Values::toZ3(z3::context &z3c) const {

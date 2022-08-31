@@ -1,9 +1,11 @@
 #include <crashrepairfix/Utils.h>
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <queue>
+#include <vector>
 
 #include <spdlog/spdlog.h>
 
@@ -11,6 +13,12 @@
 #include <clang/Basic/FileManager.h>
 
 namespace crashrepairfix {
+
+// adapted from https://stackoverflow.com/questions/83439/remove-spaces-from-stdstring-in-c
+void strip_whitespace(std::string &str) {
+  auto end_pos = std::remove(str.begin(), str.end(), ' ');
+  str.erase(end_pos, str.end());
+}
 
 // adapted from https://stackoverflow.com/a/27511119
 std::vector<std::string> split(const std::string &s, char delim) {

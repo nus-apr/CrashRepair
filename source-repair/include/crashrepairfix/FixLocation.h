@@ -1,11 +1,15 @@
 #pragma once
 
+#include <filesystem>
+
 #include <nlohmann/json.hpp>
 
 #include "ProgramStates.h"
 #include "SourceLocation.h"
 #include "Expr/Expr.h"
 #include "Expr/Parser.h"
+
+namespace fs = std::filesystem;
 
 namespace crashrepairfix {
 
@@ -31,7 +35,12 @@ public:
   ) {
     SourceLocation location = SourceLocation::fromString(j["location"]);
     auto expr = parse(j["constraint"]);
-    auto states = ProgramStates::fromJSON(j["states"], localizationFilename);
+
+    auto localizationFilepath = fs::path(localizationFilename);
+    auto localizationDirectory = localizationFilepath.parent_path();
+    std::string valuesFilename = j["values-file"];
+    auto valuesPath = localizationDirectory / fs::path("values") / valuesFilename;
+    auto states = ProgramStates::fromJSON(j["states"], valuesPath.string());
     return std::make_unique<FixLocation>(location, std::move(expr), states);
   }
 

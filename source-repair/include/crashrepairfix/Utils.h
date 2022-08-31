@@ -17,6 +17,8 @@
 
 namespace crashrepairfix {
 
+void strip_whitespace(std::string &str);
+
 std::vector<std::string> split(const std::string &s, char delim);
 
 std::string getSource(clang::Stmt const *stmt, clang::SourceManager const &sourceManager);
