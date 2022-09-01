@@ -22,6 +22,6 @@ def write_as_pickle(data, output_file_path):
 def write_as_csv(fieldnames, rows, output_file_path):
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
     with open(output_file_path, 'w', encoding='UTF8', newline='') as out_file:
-        writer = csv.DictWriter(out_file, fieldnames=fieldnames)
+        writer = csv.DictWriter(out_file, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
         writer.writerows(rows)
