@@ -34,4 +34,7 @@ orchestrator:
 
 install: crepair
 
+experiments: crepair
+    docker build -t crepair:experiments -f Dockerfile.vulnloc .
+
 .PHONY: builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install
