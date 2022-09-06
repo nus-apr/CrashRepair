@@ -1,5 +1,6 @@
 from ast import Or
 import collections
+import time
 import os
 from typing import OrderedDict
 import app.configuration
@@ -49,6 +50,7 @@ def analyze():
         emitter.highlight("\tUsing Binary: " + str(program_path))
 
         # c_src_file, var_list, cfc = extractor.extract_sanitizer_information(program_path, argument_list, definitions.FILE_CRASH_LOG)
+        sanitizer_start = time.time()
         extractor.extract_byte_code(program_path)
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
@@ -74,7 +76,8 @@ def analyze():
             values.IS_CRASH = True
             if latest_crash_loc not in values.CONF_LOC_LIST_CRASH:
                 values.CONF_LOC_LIST_CRASH.append(latest_crash_loc)
-
+        sanitizer_end = time.time()
+        values.TIME_SANITIZER_RUN = format((sanitizer_end - sanitizer_start) / 60, '.3f')
         if crash_type == definitions.CRASH_TYPE_DIV_ZERO:
             emitter.information("\t\t\t[info] identified crash type: divide by zero")
 
@@ -108,6 +111,7 @@ def analyze():
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
 
+        concolic_start = time.time()
         values.ARGUMENT_LIST = generalized_arg_list
         _, second_var_list = generator.generate_angelic_val(klee_concrete_out_dir, generalized_arg_list, poc_path)
         exit_code = klee.run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
@@ -120,6 +124,8 @@ def analyze():
         values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
         input_byte_list = []
         updated_var_info = collections.OrderedDict()
+        concolic_end = time.time()
+        values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
         for var_name in var_info:
             sym_expr_list = var_info[var_name]["expr_list"]
             var_type = var_info[var_name]["data_type"]
@@ -156,6 +162,7 @@ def analyze():
         builder.build_normal()
         extractor.extract_byte_code(program_path)
 
+        taint_start = time.time()
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
         values.ARGUMENT_LIST = generalized_arg_list
@@ -164,7 +171,8 @@ def analyze():
                                            klee_taint_out_dir)
 
         taint_log_path = klee_taint_out_dir + "/taint.log"
-
+        taint_end = time.time()
+        values.TIME_TAINT_ANALYSIS = format((taint_end - taint_start) / 60, '.3f')
         # Retrieve symbolic expressions from taint.log of concolic run.
         taint_map_symbolic = reader.read_tainted_expressions(taint_log_path)
 

@@ -14,6 +14,9 @@ time_info = {
     definitions.KEY_DURATION_INITIALIZATION: '0',
     definitions.KEY_DURATION_BUILD: '0',
     definitions.KEY_DURATION_BOOTSTRAP: '0',
+    definitions.KEY_DURATION_SANITIZER: '0',
+    definitions.KEY_DURATION_CONCOLIC: '0',
+    definitions.KEY_DURATION_TAINT: '0',
     definitions.KEY_DURATION_LOCALIZATION: '0',
     definitions.KEY_DURATION_ANALYSIS: '0',
     definitions.KEY_DURATION_REPAIR: '0',
@@ -80,6 +83,10 @@ def run(arg_list):
 
     duration = format((time.time() - time_check) / 60, '.3f')
     time_info[definitions.KEY_DURATION_ANALYSIS] = str(duration)
+    time_info[definitions.KEY_DURATION_CONCOLIC] = values.TIME_CONCOLIC_ANALYSIS
+    time_info[definitions.KEY_DURATION_SANITIZER] = values.TIME_SANITIZER_RUN
+    time_info[definitions.KEY_DURATION_TAINT] = values.TIME_TAINT_ANALYSIS
+
 
     time_check = time.time()
     localizer.fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete)
