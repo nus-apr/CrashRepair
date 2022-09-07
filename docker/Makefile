@@ -10,18 +10,25 @@ sourcerepair:
 	docker build -t crepair:sourcerepair ../source-repair
 
 z3: builder
-	docker build -f Dockerfile.z3 -t crepair:z3 .
+	# docker build -f Dockerfile.z3 -t crepair:z3 .
+	docker pull rshariffdeen/crepair:z3
+	docker tag rshariffdeen/crepair:z3 crepair:z3
 
 llvm-6: builder
-	docker build -f Dockerfile.llvm-6 -t crepair:llvm-6 .
+	# docker build -f Dockerfile.llvm-6 -t crepair:llvm-6 .
+        docker pull rshariffdeen/crepair:llvm-6
+	docker tag rshariffdeen/crepair:llvm-6 crepair:llvm-6
 
 # be aware that the following command can nondeterministically fail:
 # docker pull christimperley/llvm11
 llvm-11: builder
+	docker pull christimperley/llvm11
 	docker tag christimperley/llvm11 crepair:llvm-11
 
 klee: builder llvm-6 z3
-	docker build -f Dockerfile.klee -t crepair:klee .
+	# docker build -f Dockerfile.klee -t crepair:klee .
+	docker pull rshariffdeen/crepair:klee
+	docker tag rshariffdeen/crepair:klee crepair:klee
 
 fuzzer: builder
 	docker build -f Dockerfile.fuzzer -t crepair:fuzzer ..
