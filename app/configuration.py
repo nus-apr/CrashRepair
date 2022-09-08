@@ -19,6 +19,8 @@ def read_conf(arg_list):
                 values.IS_DISABLE_DISTANCE_CAL = True
             elif definitions.ARG_COLLECT_STAT in arg:
                 values.CONF_COLLECT_STAT = True
+            elif definitions.ARG_USE_CACHE in arg:
+                values.CONF_USE_CACHE = True
             elif definitions.ARG_DIST_METRIC in arg:
                 option = int(arg.replace(definitions.ARG_DIST_METRIC, ''))
                 values.CONF_DISTANCE_METRIC = values.OPTIONS_DIST_METRIC[option]
@@ -546,9 +548,13 @@ def update_configuration():
     definitions.DIRECTORY_OUTPUT = definitions.DIRECTORY_OUTPUT_BASE + "/" + values.CONF_TAG_ID
     definitions.DIRECTORY_LOG = definitions.DIRECTORY_LOG_BASE + "/" + values.CONF_TAG_ID
 
-    if os.path.isdir(definitions.DIRECTORY_OUTPUT):
-        shutil.rmtree(definitions.DIRECTORY_OUTPUT)
-    os.mkdir(definitions.DIRECTORY_OUTPUT)
+    if values.CONF_USE_CACHE:
+        values.DEFAULT_USE_CACHE = True
+
+    if not values.DEFAULT_USE_CACHE:
+        if os.path.isdir(definitions.DIRECTORY_OUTPUT):
+            shutil.rmtree(definitions.DIRECTORY_OUTPUT)
+        os.mkdir(definitions.DIRECTORY_OUTPUT)
 
     if os.path.isdir(definitions.DIRECTORY_LOG):
         shutil.rmtree(definitions.DIRECTORY_LOG)

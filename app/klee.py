@@ -106,7 +106,9 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
                     + input_argument
     if not print_output:
         klee_command += " > " + File_Log_Path + " 2>&1 "
-    return_code = utilities.execute_command(klee_command)
+    return_code = 0
+    if not os.path.isdir(klee_out_dir):
+        return_code = utilities.execute_command(klee_command)
     emitter.debug("changing directory:" + current_dir)
     os.chdir(current_dir)
 
@@ -235,7 +237,9 @@ def run_concrete_execution(program, argument_list, print_output=False, klee_out_
 
     if not print_output:
         klee_command += " > " + File_Log_Path + " 2>&1 "
-    return_code = utilities.execute_command(klee_command)
+    return_code = 0
+    if not os.path.isdir(klee_out_dir):
+        return_code = utilities.execute_command(klee_command)
     emitter.debug("changing directory:" + current_dir)
     os.chdir(current_dir)
     trace_log_path = klee_out_dir + "/trace.log"
