@@ -63,13 +63,17 @@ def analyze():
         # Retrieve concrete values from the taint.log file.
         taint_values_concrete = reader.read_taint_values(taint_log_path)
 
-        c_src_file, var_list, cfc = extractor.extract_crash_information(program_path, argument_list, values.get_file_message_log())
+        c_src_file, var_list, \
+        cfc, c_func_name = extractor.extract_crash_information(program_path,
+                                                               argument_list,
+                                                               values.get_file_message_log())
         cfc_info["file"] = c_src_file
         cfc_info["var-list"] = var_list
         cfc_info["expr"] = cfc
         latest_crash_loc, crash_type = reader.collect_crash_point(values.get_file_message_log())
         cfc_info["loc"] = latest_crash_loc
         cfc_info["type"] = crash_type
+        cfc_info["function"] = c_func_name
         # if oracle.is_loc_in_trace(values.CONF_LOC_PATCH):
         #     values.USEFUL_SEED_ID_LIST.append(test_case_id)
         if latest_crash_loc:

@@ -198,7 +198,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     emitter.highlight("\t\t[info] crash address: {}".format(c_address))
     emitter.highlight("\t\t[info] crash free constraint: {}".format(cfc.to_string()))
     emitter.highlight("\t\t[info] crash inducing variables: {}".format(", ".join(var_name_list)))
-    return c_file, var_list, cfc
+    return c_file, var_list, cfc, c_func_name
 
 
 def extract_sanitizer_information(binary_path, argument_list, log_path):

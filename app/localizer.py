@@ -17,25 +17,26 @@ comparison_op = ["==", "!=", ">", ">=", "<", "<="]
 symbol_op = arithmetic_op + comparison_op
 
 
-def generate_fix_locations(marked_byte_list, taint_symbolic):
+def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
     emitter.sub_title("Generating Fix Locations")
     fix_locations = dict()
     loc_to_byte_map = collections.OrderedDict()
     is_input_influenced = len(marked_byte_list) > 0
-    for taint_info in taint_symbolic:
-        src_file, line, col, inst_addr = taint_info.split(":")
-        taint_loc = ":".join([src_file, line, col])
-        taint_expr_list = taint_symbolic[taint_info]
-        for taint_value in taint_expr_list:
-            _, taint_expr = taint_value.split(":")
-            taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
-            tainted_bytes = extractor.extract_input_bytes_used(taint_expr_code)
-            if not tainted_bytes:
-                if len(taint_value) > 16:
-                    tainted_bytes = [taint_value.split(" ")[1]]
-            if taint_loc not in loc_to_byte_map:
-                loc_to_byte_map[taint_loc] = set()
-            loc_to_byte_map[taint_loc].update(set(tainted_bytes))
+    if not is_input_influenced:
+        for taint_info in taint_symbolic:
+            src_file, line, col, inst_addr = taint_info.split(":")
+            taint_loc = ":".join([src_file, line, col])
+            taint_expr_list = taint_symbolic[taint_info]
+            for taint_value in taint_expr_list:
+                _, taint_expr = taint_value.split(":")
+                taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
+                tainted_bytes = extractor.extract_input_bytes_used(taint_expr_code)
+                if not tainted_bytes:
+                    if len(taint_value) > 16:
+                        tainted_bytes = [taint_value.split(" ")[1]]
+                if taint_loc not in loc_to_byte_map:
+                    loc_to_byte_map[taint_loc] = set()
+                loc_to_byte_map[taint_loc].update(set(tainted_bytes))
     source_mapping = collections.OrderedDict()
     for taint_loc in taint_symbolic:
         source_path, line_number, col_number, _ = taint_loc.split(":")
@@ -70,13 +71,15 @@ def generate_fix_locations(marked_byte_list, taint_symbolic):
             observed_tainted_bytes = set()
             for loc in sorted(func_loc_list):
                 source_loc = source_path + ":" + ":".join(loc)
+                if not is_input_influenced:
+                    if source_path == cfc_info["file"] and func_name == cfc_info["function"]:
+                        continue
                 observed_tainted_bytes.update(loc_to_byte_map[source_loc])
                 if not observed_tainted_bytes:
                     continue
                 if set(marked_byte_list) <= set(observed_tainted_bytes):
                     fix_locations[source_loc] = func_name
-                if not is_input_influenced and len(fix_locations) >= 20:
-                    break
+
     sorted_fix_locations = []
     cached_list = []
     for taint_info in taint_symbolic.keys():
@@ -309,7 +312,7 @@ def localize_state_info(fix_loc, taint_concrete):
 
 def fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete):
     emitter.title("Fix Localization")
-    tainted_fix_locations = generate_fix_locations(input_byte_list, taint_symbolic)
+    tainted_fix_locations = generate_fix_locations(input_byte_list, taint_symbolic, cfc_info)
     for taint_loc in tainted_fix_locations:
         emitter.highlight("\t[taint-loc] {}".format(taint_loc))
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
