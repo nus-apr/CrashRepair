@@ -154,7 +154,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
-                        if crash_var_expr_list == var_expr_list:
+                        if oracle.is_expr_list_match(crash_var_expr_list, var_expr_list):
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
                             candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))

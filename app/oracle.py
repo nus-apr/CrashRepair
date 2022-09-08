@@ -277,3 +277,12 @@ def is_loc_match(check_loc, ast_range):
     if begin_loc[1] == c_line and begin_loc[2] == c_col:
         return True
     return False
+
+def is_expr_list_match(expr_list_a, expr_list_b):
+    for expr_a in expr_list_a:
+        value_a = expr_a.split(" ")[1]
+        for expr_b in expr_list_b:
+            value_b = expr_b.split(" ")[1]
+            if value_a != value_b:
+                return False
+    return True
