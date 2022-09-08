@@ -24,7 +24,7 @@ cp *.patch $dir_name/dev-patch/fix.patch
 FORCE_UNSAFE_CONFIGURE=1 CC=crepair-cc ./configure CFLAGS="-g -O0 -static -fPIE -Wno-error" CXXFLAGS="-g -O0 -static -fPIE -Wno-error"
 make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" CXXFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" LDFLAGS="-static"
 
-cat <<EOF > repair.conf
+cat <<EOF > $script_dir/repair.conf
 dir_exp:$dir_name
 tag_id:$bug_id
 src_directory:$dir_name/src
