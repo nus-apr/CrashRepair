@@ -36,7 +36,7 @@ def analyze():
         argument_list = app.configuration.extract_input_arg_list(argument_list)
 
         emitter.sub_sub_title("Running Sanitized Analysis")
-        if not values.CONF_SKIP_BUILD:
+        if not values.CONF_SKIP_BUILD and not values.DEFAULT_USE_CACHE:
             builder.build_normal()
             if values.CONF_PATH_PROGRAM:
                 assert os.path.isfile(values.CONF_PATH_PROGRAM)
