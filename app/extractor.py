@@ -162,9 +162,10 @@ def extract_ast_json(source_file_path):
                 diff_command += " -I{} ".format(path)
     diff_command += " -Xclang -ast-dump=json -fsyntax-only"
     ast_file_path = source_file_path + ".ast"
-    generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, diff_command, source_file_path,
-                                                                       ast_file_path)
-    utilities.execute_command(generate_ast_command)
+    if not os.path.isfile(ast_file_path):
+        generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, diff_command, source_file_path,
+                                                                           ast_file_path)
+        utilities.execute_command(generate_ast_command)
     ast_tree = reader.read_ast_tree(ast_file_path)
     return ast_tree
 
