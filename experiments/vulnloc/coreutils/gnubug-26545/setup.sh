@@ -31,6 +31,6 @@ binary_path:$dir_name/src/src/shred
 config_command:FORCE_UNSAFE_CONFIGURE=1 CC=crepair-cc ./configure CFLAGS="-g -O0 -static -fPIE -Wno-error" CXXFLAGS="-g -O0 -static -fPIE -Wno-error"
 build_command:make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" CXXFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" LDFLAGS="-static" src/shred
 test_input_list:-n4 -s7 \$POC
-poc_list:$script_dir/../tests/1.txt
+poc_list:$script_dir/tests/1.txt
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
 EOF
