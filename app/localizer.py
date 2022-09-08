@@ -22,7 +22,7 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
     fix_locations = dict()
     loc_to_byte_map = collections.OrderedDict()
     is_input_influenced = len(marked_byte_list) > 0
-    if not is_input_influenced:
+    if is_input_influenced:
         for taint_info in taint_symbolic:
             src_file, line, col, inst_addr = taint_info.split(":")
             taint_loc = ":".join([src_file, line, col])
@@ -37,6 +37,7 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
                 if taint_loc not in loc_to_byte_map:
                     loc_to_byte_map[taint_loc] = set()
                 loc_to_byte_map[taint_loc].update(set(tainted_bytes))
+
     source_mapping = collections.OrderedDict()
     for taint_loc in taint_symbolic:
         source_path, line_number, col_number, _ = taint_loc.split(":")
@@ -65,20 +66,24 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
                     tainted_function_list[source_path][func_name].append(loc)
 
     for source_path in tainted_function_list:
+        if not is_input_influenced and source_path != cfc_info["file"]:
+            continue
         function_list = tainted_function_list[source_path]
         for func_name in function_list:
+            if not is_input_influenced and func_name != cfc_info["function"]:
+                    continue
             func_loc_list = function_list[func_name]
             observed_tainted_bytes = set()
             for loc in sorted(func_loc_list):
                 source_loc = source_path + ":" + ":".join(loc)
                 if not is_input_influenced:
-                    if source_path == cfc_info["file"] and func_name == cfc_info["function"]:
-                        continue
-                observed_tainted_bytes.update(loc_to_byte_map[source_loc])
-                if not observed_tainted_bytes:
-                    continue
-                if set(marked_byte_list) <= set(observed_tainted_bytes):
                     fix_locations[source_loc] = func_name
+                else:
+                    observed_tainted_bytes.update(loc_to_byte_map[source_loc])
+                    if not observed_tainted_bytes:
+                        continue
+                    if set(marked_byte_list) <= set(observed_tainted_bytes):
+                        fix_locations[source_loc] = func_name
 
     sorted_fix_locations = []
     cached_list = []
