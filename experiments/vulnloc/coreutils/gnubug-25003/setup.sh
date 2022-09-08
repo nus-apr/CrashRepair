@@ -21,14 +21,15 @@ git format-patch -1 $fix_commit_id
 cp *.patch $dir_name/dev-patch/fix.patch
 
 ./bootstrap
-
+FORCE_UNSAFE_CONFIGURE=1 CC=crepair-cc ./configure CFLAGS="-g -O0 -static -fPIE -Wno-error" CXXFLAGS="-g -O0 -static -fPIE -Wno-error"
+make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" CXXFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" LDFLAGS="-static"
 
 cat <<EOF > $script_dir/repair.conf
 dir_exp:$dir_name
 tag_id:$bug_id
 src_directory:$dir_name/src
 binary_path:$dir_name/src/src/split
-config_command:FORCE_UNSAFE_CONFIGURE=1 CC=crepair-cc ./configure CFLAGS="-g -O0 -static -fPIE -Wno-error" CXXFLAGS="-g -O0 -static -fPIE -Wno-error"
+config_command:skip
 build_command:make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" CXXFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" LDFLAGS="-static" src/split
 test_input_list:-n7/75 /dev/null
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
