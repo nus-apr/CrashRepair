@@ -87,7 +87,8 @@ def analyze():
 
         emitter.sub_sub_title("Running Concolic Analysis")
         instrumentor.instrument_klee_var_expr(c_src_file, var_list)
-        builder.build_normal()
+        if not values.DEFAULT_USE_CACHE:
+            builder.build_normal()
         utilities.restore_file(c_src_file, c_src_file + ".bk")
         klee_concolic_out_dir = output_dir_path + "/klee-out-concolic-" + str(test_case_id - 1)
         generalized_arg_list = []
@@ -163,7 +164,8 @@ def analyze():
         input_byte_list = list(set(input_byte_list))
         cfc_info["var-info"] = updated_var_info
         emitter.sub_sub_title("Running Taint Analysis")
-        builder.build_normal()
+        if not values.DEFAULT_USE_CACHE:
+            builder.build_normal()
         extractor.extract_byte_code(program_path)
 
         taint_start = time.time()
