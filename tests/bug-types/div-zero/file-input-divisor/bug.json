@@ -2,7 +2,7 @@
   "project": {
     "name": "div-zero"
   },
-  "name": "arithmetic-divisor",
+  "name": "file-input-divisor",
   "binary": "src/test",
   "crashing-input": "./exploit",
   "source-directory": "src",
