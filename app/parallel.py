@@ -47,7 +47,7 @@ def abortable_worker(func, *args, **kwargs):
         return default_value, index
 
 
-def generate_loc_to_bytes(taint_symbolic):
+def generate_loc_to_bytes(taint_symbolic, is_taint_influenced):
     """
         This function will analyse the taint values along the trace and identify taint sources
         for each location along the trace
@@ -55,30 +55,36 @@ def generate_loc_to_bytes(taint_symbolic):
                returns a map for each source location their observed taint sources
      """
     global result_list
-    emitter.highlight("\t\t[info] found " + str(len(taint_symbolic)) + " tainted locations")
     loc_to_byte_map = collections.OrderedDict()
+    source_mapping = collections.OrderedDict()
+
+    emitter.normal("\tgenerating taint map")
+    logger.track_localization("generating taint map\n")
+    emitter.highlight("\t\t[info] found " + str(len(taint_symbolic)) + " tainted locations")
     emitter.normal("\t\tstarting parallel computing")
     pool = mp.Pool(mp.cpu_count(), initializer=mute)
+    count = 0
     for taint_info in taint_symbolic:
-        src_file, line, col, inst_addr = taint_info.split(":")
-        taint_loc = ":".join([src_file, line, col])
+        count = count + 1
+        if count >= values.DEFAULT_MAX_TAINT_LOCATIONS:
+            break
+        source_path, line_number, col_number, inst_addr = taint_info.split(":")
+        taint_loc = ":".join([source_path, line_number, col_number])
         taint_expr_list = taint_symbolic[taint_info]
         logger.track_localization("TAINT LOC:" + taint_loc)
-        for taint_value in taint_expr_list:
-            _, taint_expr = taint_value.split(":")
-            taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
-            # tainted_bytes = extractor.extract_input_bytes_used(taint_expr_code)
-            pool.apply_async(generator.generate_taint_sources,
-                             args=(taint_expr, taint_value, taint_loc),
-                             callback=collect_result)
+        if source_path not in source_mapping:
+            source_mapping[source_path] = set()
+        source_mapping[source_path].add((line_number, col_number))
+        if is_taint_influenced:
+            result_list.append(generator.generate_taint_sources(taint_expr_list, taint_loc))
+            # pool.apply_async(generator.generate_taint_sources,
+            #                  args=(taint_expr_list, taint_loc),
+            #                  callback=collect_result)
     pool.close()
     emitter.normal("\t\twaiting for thread completion")
     pool.join()
-
     for result in result_list:
         taint_loc, taint_source_list = result
-        if taint_loc not in loc_to_byte_map:
-            loc_to_byte_map[taint_loc] = set()
-        loc_to_byte_map[taint_loc].update(set(taint_source_list))
+        loc_to_byte_map[taint_loc] = list(set(taint_source_list))
         logger.track_localization("TAINT SOURCES:{}".format(loc_to_byte_map[taint_loc]))
-    return loc_to_byte_map
+    return loc_to_byte_map, source_mapping

@@ -21,20 +21,9 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
     emitter.sub_title("Generating Fix Locations")
     logger.track_localization("generating fix locations\n")
     fix_locations = dict()
-    loc_to_byte_map = collections.OrderedDict()
     is_taint_influenced = len(marked_byte_list) > 0
-    if is_taint_influenced:
-        emitter.normal("\tgenerating taint map")
-        logger.track_localization("generating taint map\n")
-        loc_to_byte_map = parallel.generate_loc_to_bytes(taint_symbolic)
-    source_mapping = collections.OrderedDict()
-    emitter.normal("\tgenerating traced source file list")
-    logger.track_localization("generating tainted source file list")
-    for taint_loc in taint_symbolic:
-        source_path, line_number, col_number, _ = taint_loc.split(":")
-        if source_path not in source_mapping:
-            source_mapping[source_path] = set()
-        source_mapping[source_path].add((line_number, col_number))
+    loc_to_byte_map, source_mapping = parallel.generate_loc_to_bytes(taint_symbolic,
+                                                                     is_taint_influenced)
     logger.track_localization("found {} source files".format(len(source_mapping)))
     logger.track_localization("found {} source locations".format(len(taint_symbolic)))
     emitter.highlight("\t\t[info] found " + str(len(source_mapping)) + " source files")
