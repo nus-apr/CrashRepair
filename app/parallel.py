@@ -64,27 +64,28 @@ def generate_loc_to_bytes(taint_symbolic, is_taint_influenced):
     emitter.normal("\t\tstarting parallel computing")
     pool = mp.Pool(mp.cpu_count(), initializer=mute)
     count = 0
-    for taint_info in taint_symbolic:
+    for taint_info in reversed(taint_symbolic.keys()):
         count = count + 1
         if count >= values.DEFAULT_MAX_TAINT_LOCATIONS:
             break
         source_path, line_number, col_number, inst_addr = taint_info.split(":")
         taint_loc = ":".join([source_path, line_number, col_number])
         taint_expr_list = taint_symbolic[taint_info]
-        logger.track_localization("TAINT LOC:" + taint_loc)
+        logger.track_localization("Analysing Loc:" + taint_loc)
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
         source_mapping[source_path].add((line_number, col_number))
         if is_taint_influenced:
-            result_list.append(generator.generate_taint_sources(taint_expr_list, taint_loc))
-            # pool.apply_async(generator.generate_taint_sources,
-            #                  args=(taint_expr_list, taint_loc),
-            #                  callback=collect_result)
+            # result_list.append(generator.generate_taint_sources(taint_expr_list, taint_loc))
+            pool.apply_async(generator.generate_taint_sources,
+                             args=(taint_expr_list, taint_loc),
+                             callback=collect_result)
     pool.close()
     emitter.normal("\t\twaiting for thread completion")
     pool.join()
     for result in result_list:
         taint_loc, taint_source_list = result
         loc_to_byte_map[taint_loc] = list(set(taint_source_list))
-        logger.track_localization("TAINT SOURCES:{}".format(loc_to_byte_map[taint_loc]))
+        logger.track_localization("Source Location:" + taint_loc)
+        logger.track_localization("Taint Sources:{}".format(loc_to_byte_map[taint_loc]))
     return loc_to_byte_map, source_mapping
