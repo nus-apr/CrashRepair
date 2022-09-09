@@ -163,14 +163,16 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                             if "width" in crash_var_expr_list:
                                 crash_size_bits = int(crash_var_expr_list["size"].replace("bv", ""))
                                 crash_size_width = int(crash_var_expr_list["width"])
-                                crash_size_bytes = -1
+                                crash_size_bytes = crash_size_bits / 4
                                 if crash_size_width > 0:
                                     crash_size_bytes = int(crash_size_bits/crash_size_width)
                                 var_size_bytes = int(var_expr_list[0].split(" ")[1].replace("bv", ""))
+                                if crash_var_name not in candidate_mapping:
+                                    candidate_mapping[crash_var_name] = set()
                                 if var_size_bytes == crash_size_bytes:
-                                    if crash_var_name not in candidate_mapping:
-                                        candidate_mapping[crash_var_name] = set()
                                     candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
+                                else:
+                                    candidate_mapping[crash_var_name].add((crash_size_bytes, v_line, v_col, v_addr))
                     elif var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)

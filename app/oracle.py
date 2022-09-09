@@ -279,6 +279,8 @@ def is_loc_match(check_loc, ast_range):
     return False
 
 def is_expr_list_match(expr_list_a, expr_list_b):
+    if "width" in expr_list_a or "width" in expr_list_b:
+        return False
     for expr_a in expr_list_a:
         value_a = expr_a.split(" ")[1]
         for expr_b in expr_list_b:

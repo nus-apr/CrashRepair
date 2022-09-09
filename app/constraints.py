@@ -371,13 +371,13 @@ def generate_memory_overflow_constraint(reference_node):
         constraint_left_expr = generate_expr_for_ast(iterator_node)
 
         # second generate the constraint logical-operator
-        less_than_eq_op = build_op_symbol("<=")
+        less_than_op = build_op_symbol("<")
 
         # last generate the expression for array size
         sizeof_op = build_op_symbol("sizeof ")
         array_expr = generate_expr_for_ast(array_node)
         constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
-        constraint_expr = make_binary_expression(less_than_eq_op, constraint_left_expr, constraint_right_expr)
+        constraint_expr = make_binary_expression(less_than_op, constraint_left_expr, constraint_right_expr)
     return constraint_expr
 
 
