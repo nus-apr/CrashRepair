@@ -19,11 +19,15 @@ def create():
         os.remove(definitions.FILE_ERROR_LOG)
     if os.path.exists(definitions.FILE_COMMAND_LOG):
         os.remove(definitions.FILE_COMMAND_LOG)
+    if os.path.exists(definitions.FILE_LOCALIZE_LOG):
+        os.remove(definitions.FILE_LOCALIZE_LOG)
     with open(definitions.FILE_LAST_LOG, 'w+') as last_log:
         last_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
     with open(definitions.FILE_ERROR_LOG, 'w+') as error_log:
         error_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
     with open(definitions.FILE_COMMAND_LOG, 'w+') as command_log:
+        command_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
+    with open(definitions.FILE_LOCALIZE_LOG, 'w+') as command_log:
         command_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
 
 def store_log_file(log_file_path):
@@ -36,6 +40,7 @@ def store_logs():
     store_log_file(definitions.FILE_ERROR_LOG)
     store_log_file(definitions.FILE_MAKE_LOG)
     store_log_file(definitions.FILE_CRASH_LOG)
+    store_log_file(definitions.FILE_LOCALIZE_LOG)
 
 
 def log(log_message):
@@ -59,6 +64,10 @@ def trace(function_name, arguments):
     message = "[TRACE]: " + function_name + ": " + str(arguments.keys()) + "\n"
     log(message)
 
+def track_localization(log_message):
+    log_output = "[{}]: {}\n".format(time.asctime(), log_message)
+    with open(definitions.FILE_LOCALIZE_LOG, 'a') as log_file:
+        log_file.write(log_output)
 
 def command(message):
     message = str(message).strip().replace("[command]", "")

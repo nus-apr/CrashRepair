@@ -6,7 +6,7 @@ import os
 import operator
 import collections
 from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, \
-    utilities
+    utilities, logger
 import ctypes
 import copy
 
@@ -19,6 +19,7 @@ symbol_op = arithmetic_op + comparison_op
 
 def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
     emitter.sub_title("Generating Fix Locations")
+    logger.track_localization("generating fix locations\n")
     fix_locations = dict()
     loc_to_byte_map = collections.OrderedDict()
     is_input_influenced = len(marked_byte_list) > 0
@@ -27,6 +28,7 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
             src_file, line, col, inst_addr = taint_info.split(":")
             taint_loc = ":".join([src_file, line, col])
             taint_expr_list = taint_symbolic[taint_info]
+            logger.track_localization("TAINT LOC:" + taint_loc)
             for taint_value in taint_expr_list:
                 _, taint_expr = taint_value.split(":")
                 taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
@@ -39,12 +41,17 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
                 loc_to_byte_map[taint_loc].update(set(tainted_bytes))
 
     source_mapping = collections.OrderedDict()
+    logger.track_localization("generating tainted source file list")
     for taint_loc in taint_symbolic:
         source_path, line_number, col_number, _ = taint_loc.split(":")
         if source_path not in source_mapping:
             source_mapping[source_path] = set()
         source_mapping[source_path].add((line_number, col_number))
+    logger.track_localization("found {} source files".format(len(source_mapping)))
+    logger.track_localization("found {} source locations".format(len(taint_symbolic)))
+    logger.track_localization("generating tainted function list")
     tainted_function_list = collections.OrderedDict()
+    func_count = 0
     for source_path in source_mapping:
         tainted_loc_list = source_mapping[source_path]
         source_dir = values.CONF_DIR_EXPERIMENT + "/src/"
@@ -62,9 +69,11 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
                     if source_path not in tainted_function_list:
                         tainted_function_list[source_path] = dict()
                     if func_name not in tainted_function_list[source_path]:
+                        func_count = func_count + 1
                         tainted_function_list[source_path][func_name] = list()
                     tainted_function_list[source_path][func_name].append(loc)
-
+    logger.track_localization("found {} tainted functions".format(func_count))
+    logger.track_localization("filtering tainted locations for fix")
     for source_path in tainted_function_list:
         if not is_input_influenced and source_path != cfc_info["file"]:
             continue
@@ -84,7 +93,8 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
                         continue
                     if set(marked_byte_list) <= set(observed_tainted_bytes):
                         fix_locations[source_loc] = func_name
-
+    logger.track_localization("found {} fix locations".format(len(fix_locations)))
+    logger.track_localization("sorting fix location based on trace")
     sorted_fix_locations = []
     cached_list = []
     for taint_info in taint_symbolic.keys():
@@ -93,6 +103,7 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
         if taint_loc in fix_locations and taint_loc not in cached_list:
             sorted_fix_locations.append((fix_locations[taint_loc], taint_loc))
             cached_list.append(taint_loc)
+    logger.track_localization("found {} unique fix locations".format(len(sorted_fix_locations)))
     return sorted_fix_locations
 
 
@@ -163,7 +174,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                             if "width" in crash_var_expr_list:
                                 crash_size_bits = int(crash_var_expr_list["size"].replace("bv", ""))
                                 crash_size_width = int(crash_var_expr_list["width"])
-                                crash_size_bytes = crash_size_bits / 4
+                                crash_size_bytes = int(crash_size_bits / 4)
                                 if crash_size_width > 0:
                                     crash_size_bytes = int(crash_size_bits/crash_size_width)
                                 var_size_bytes = int(var_expr_list[0].split(" ")[1].replace("bv", ""))
@@ -172,7 +183,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                                 if var_size_bytes == crash_size_bytes:
                                     candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
                                 else:
-                                    candidate_mapping[crash_var_name].add((crash_size_bytes, v_line, v_col, v_addr))
+                                    candidate_mapping[crash_var_name].add((str(crash_size_bytes), v_line, v_col, v_addr))
                     elif var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
@@ -217,6 +228,8 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
     candidate_mapping = get_candidate_map_for_func(func_name, taint_symbolic, src_file,
                                                    function_ast, cfc_var_info_list)
     cfc_tokens = cfc_expr.get_symbol_list()
+    logger.track_localization("CFC Tokens {}".format(cfc_tokens))
+    logger.track_localization("Candidate Map {}".format(candidate_mapping))
     for c_t in cfc_tokens:
         c_t_lookup = c_t.replace("(", "").replace(")", "")
         if c_t_lookup in candidate_mapping:
@@ -230,8 +243,10 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                 candidate_locations.add((int(c_line), int(c_col)))
                 candidate_locations.add((int(taint_line), int(taint_col)))
     sorted_candidate_locations = sorted(candidate_locations, key=operator.itemgetter(0, 1))
+    logger.track_localization("Sorted Locations {}".format(sorted_candidate_locations))
     for candidate_loc in sorted_candidate_locations:
         localized_tokens = dict()
+        used_candidates = list()
         candidate_line, candidate_col = candidate_loc
         for c_t in cfc_tokens:
             c_t_lookup = c_t.replace("(", "").replace(")", "")
@@ -249,16 +264,21 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                     if selected_line > m_line:
                         continue
                     selected_expr = m_expr
+                    if selected_expr in used_candidates:
+                        continue
                     selected_col = m_col
                     selected_line = m_line
-                if selected_expr:
-                    if c_t_lookup in localized_tokens:
-                        current_mapping = localized_tokens[c_t_lookup]
-                        if current_mapping != c_t_lookup:
-                            if len(current_mapping) > len(selected_expr):
-                                localized_tokens[c_t_lookup] = selected_expr
-                    else:
-                        localized_tokens[c_t_lookup] = selected_expr
+                    if selected_expr:
+                        if c_t_lookup in localized_tokens:
+                            current_mapping = localized_tokens[c_t_lookup]
+                            if current_mapping != c_t_lookup:
+                                if len(current_mapping) > len(selected_expr):
+                                    localized_tokens[c_t_lookup] = selected_expr
+                                    used_candidates.append(selected_expr)
+                        else:
+                            localized_tokens[c_t_lookup] = selected_expr
+                            used_candidates.append(selected_expr)
+        logger.track_localization("Localized Tokens {}".format(localized_tokens))
         if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
@@ -327,7 +347,9 @@ def fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete):
     localized_loc_list = list()
     for func_name, tainted_fix_loc in tainted_fix_locations:
         src_file = tainted_fix_loc.split(":")[0]
+        logger.track_localization("[taint-loc] {}:{}".format(func_name, tainted_fix_loc))
         candidate_constraints = localize_cfc(tainted_fix_loc, cfc_info, taint_symbolic)
+        logger.track_localization("[constraints] {}".format(candidate_constraints))
         for candidate_info in candidate_constraints:
             localization_obj = dict()
             localized_cfc, localized_line, localized_col = candidate_info
