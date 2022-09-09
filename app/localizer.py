@@ -6,7 +6,7 @@ import os
 import operator
 import collections
 from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, \
-    utilities, logger
+    utilities, logger, parallel
 import ctypes
 import copy
 
@@ -24,24 +24,11 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
     loc_to_byte_map = collections.OrderedDict()
     is_taint_influenced = len(marked_byte_list) > 0
     if is_taint_influenced:
-        for taint_info in taint_symbolic:
-            src_file, line, col, inst_addr = taint_info.split(":")
-            taint_loc = ":".join([src_file, line, col])
-            taint_expr_list = taint_symbolic[taint_info]
-            logger.track_localization("TAINT LOC:" + taint_loc)
-            for taint_value in taint_expr_list:
-                _, taint_expr = taint_value.split(":")
-                taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
-                tainted_bytes = extractor.extract_input_bytes_used(taint_expr_code)
-                if not tainted_bytes:
-                    if len(taint_value) > 16:
-                        tainted_bytes = [taint_value.split(" ")[1]]
-                if taint_loc not in loc_to_byte_map:
-                    loc_to_byte_map[taint_loc] = set()
-                logger.track_localization("TAINT BYTES:{}".format(loc_to_byte_map[taint_loc]))
-                loc_to_byte_map[taint_loc].update(set(tainted_bytes))
-
+        emitter.normal("\tgenerating taint map")
+        logger.track_localization("generating taint map\n")
+        loc_to_byte_map = parallel.generate_loc_to_bytes(taint_symbolic)
     source_mapping = collections.OrderedDict()
+    emitter.normal("\tgenerating traced source file list")
     logger.track_localization("generating tainted source file list")
     for taint_loc in taint_symbolic:
         source_path, line_number, col_number, _ = taint_loc.split(":")
@@ -50,6 +37,7 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
         source_mapping[source_path].add((line_number, col_number))
     logger.track_localization("found {} source files".format(len(source_mapping)))
     logger.track_localization("found {} source locations".format(len(taint_symbolic)))
+    emitter.highlight("\t\t[info] found " + str(len(source_mapping)) + " source files")
     logger.track_localization("generating tainted function list")
     tainted_function_list = collections.OrderedDict()
     func_count = 0
@@ -73,7 +61,9 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
                         func_count = func_count + 1
                         tainted_function_list[source_path][func_name] = list()
                     tainted_function_list[source_path][func_name].append(loc)
-    logger.track_localization("found {} tainted functions".format(func_count))
+
+    logger.track_localization("found {} executed functions".format(func_count))
+    emitter.highlight("\t\t[info] found " + str(func_count) + " executed functions")
     logger.track_localization("filtering tainted locations for fix")
     for source_path in tainted_function_list:
         if not is_taint_influenced and source_path != cfc_info["file"]:
@@ -98,11 +88,13 @@ def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
     logger.track_localization("sorting fix location based on trace")
     sorted_fix_locations = []
     cached_list = []
+    emitter.normal("\tgenerating possible fix locations")
     for taint_info in taint_symbolic.keys():
         src_file, line, col, inst_addr = taint_info.split(":")
         taint_loc = ":".join([src_file, line, col])
         if taint_loc in fix_locations and taint_loc not in cached_list:
             sorted_fix_locations.append((fix_locations[taint_loc], taint_loc))
+            emitter.highlight("\t\t[fix-loc] {}, {}".format(fix_locations[taint_loc],taint_loc))
             cached_list.append(taint_loc)
     logger.track_localization("found {} unique fix locations".format(len(sorted_fix_locations)))
     return sorted_fix_locations
@@ -347,11 +339,10 @@ def localize_state_info(fix_loc, taint_concrete):
 def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
     emitter.title("Fix Localization")
     tainted_fix_locations = generate_fix_locations(taint_byte_list, taint_symbolic, cfc_info)
-    for taint_loc in tainted_fix_locations:
-        emitter.highlight("\t[taint-loc] {}".format(taint_loc))
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     localization_list = list()
     localized_loc_list = list()
+    emitter.sub_title("Localizing Constraints")
     for func_name, tainted_fix_loc in tainted_fix_locations:
         src_file = tainted_fix_loc.split(":")[0]
         logger.track_localization("[taint-loc] {}:{}".format(func_name, tainted_fix_loc))

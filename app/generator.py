@@ -1088,3 +1088,11 @@ def generate_offset_to_line(src_file_path):
                 line += 1
             offset_to_line[offset] = line
     return offset_to_line
+
+def generate_taint_sources(sym_expr, concrete_value, taint_loc):
+    taint_expr_code = generate_z3_code_for_var(sym_expr, "TAINT")
+    tainted_sources = extractor.extract_input_bytes_used(taint_expr_code)
+    if not tainted_sources:
+        if len(concrete_value) > 16:
+            tainted_sources = [concrete_value.split(" ")[1]]
+    return taint_loc, tainted_sources
