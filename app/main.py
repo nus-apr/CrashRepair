@@ -79,8 +79,7 @@ def run(arg_list):
     time_info[definitions.KEY_DURATION_BOOTSTRAP] = str(duration)
 
     time_check = time.time()
-    input_byte_list, taint_symbolic, cfc_info, taint_concrete = analyzer.analyze()
-
+    taint_byte_list, taint_symbolic, cfc_info, taint_concrete = analyzer.analyze()
     duration = format((time.time() - time_check) / 60, '.3f')
     time_info[definitions.KEY_DURATION_ANALYSIS] = str(duration)
     time_info[definitions.KEY_DURATION_CONCOLIC] = values.TIME_CONCOLIC_ANALYSIS
@@ -89,7 +88,7 @@ def run(arg_list):
 
 
     time_check = time.time()
-    localizer.fix_localization(input_byte_list, taint_symbolic, cfc_info, taint_concrete)
+    localizer.fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete)
     duration = format((time.time() - time_check) / 60, '.3f')
     time_info[definitions.KEY_DURATION_LOCALIZATION] = str(duration)
 

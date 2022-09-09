@@ -128,7 +128,7 @@ def analyze():
 
         memory_track_log = klee_concolic_out_dir + "/memory.log"
         values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
-        input_byte_list = []
+        taint_byte_list = []
         updated_var_info = collections.OrderedDict()
         concolic_end = time.time()
         values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
@@ -149,20 +149,20 @@ def analyze():
                     }
 
         for var_name in updated_var_info:
-            tainted_byte_list = []
+            byte_list = []
             sym_expr_list = updated_var_info[var_name]["expr_list"]
             for sym_expr in sym_expr_list:
                 var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-                tainted_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+                byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                 # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
                 #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
                 #     break
-            tainted_byte_list = list(set(tainted_byte_list))
-            input_byte_list = input_byte_list + tainted_byte_list
-            tainted_bytes = sorted([str(i) for i in tainted_byte_list])
+            byte_list = list(set(byte_list))
+            taint_byte_list = taint_byte_list + byte_list
+            tainted_bytes = sorted([str(i) for i in byte_list])
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
 
-        input_byte_list = list(set(input_byte_list))
+        taint_byte_list = list(set(taint_byte_list))
         cfc_info["var-info"] = updated_var_info
         emitter.sub_sub_title("Running Taint Analysis")
         if not values.DEFAULT_USE_CACHE:
@@ -183,4 +183,4 @@ def analyze():
         # Retrieve symbolic expressions from taint.log of concolic run.
         taint_map_symbolic = reader.read_tainted_expressions(taint_log_path)
 
-        return input_byte_list, taint_map_symbolic, cfc_info, taint_values_concrete
+        return taint_byte_list, taint_map_symbolic, cfc_info, taint_values_concrete
