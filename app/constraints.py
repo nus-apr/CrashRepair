@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import os
 import typing as t
 
@@ -46,6 +48,17 @@ class ConstraintSymbol:
     def __init__(self, m_symbol: t.Optional[str], m_type: str) -> None:
         self._m_symbol = m_symbol
         self._m_cons_type = m_type
+
+    def __str__(self) -> str:
+        if self._m_cons_type == "NULL_VAL":
+            return "null"
+        if self._m_cons_type == "INT_VAR":
+            return f"@var(int, {self._m_symbol})"
+        if self._m_cons_type == "REAL_VAR":
+            return f"@var(float, {self._m_symbol})"
+
+        assert self._m_symbol
+        return self._m_symbol
 
     def get_type(self) -> str:
         return self._m_cons_type
@@ -144,22 +157,20 @@ class ConstraintExpression:
         return json_obj
 
     def to_string(self) -> str:
-        expr_str = str(self.get_symbol())
-        if not self.is_leaf():
-            l_expr = None
-            r_expr = None
-            if self.get_l_expr() is not None:
-                l_expr = self.get_l_expr().to_string()
-            if self.get_r_expr() is not None:
-                r_expr = self.get_r_expr().to_string()
+        expr_str = str(self._m_symbol)
 
-            if l_expr and r_expr:
-                expr_str = "({} {} {})".format(l_expr, expr_str, r_expr)
-            elif r_expr:
-                if self._m_symbol.is_sizeof():
-                    expr_str = "{}{}".format(expr_str, r_expr)
-                else:
-                    expr_str = "({} {})".format(expr_str, r_expr)
+        lhs_str: t.Optional[str] = None
+        rhs_str: t.Optional[str] = None
+
+        if self._m_lvalue:
+            lhs_str = self._m_lvalue.to_string()
+        if self._m_rvalue:
+            rhs_str = self._m_rvalue.to_string()
+
+        if lhs_str and rhs_str:
+            return f"({lhs_str} {expr_str} {rhs_str})"
+        if rhs_str:
+            return f"({expr_str} {rhs_str})"
         return expr_str
 
     def get_symbol_list(self):
