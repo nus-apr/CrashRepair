@@ -1,62 +1,62 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import typing as t
+
 from app import emitter, utilities, converter, values
 
 SymbolType = {
-                 "INT_CONST": "",
-                 "INT_VAR": "",
-                 "REAL_CONST": "",
-                 "REAL_VAR": "",
-                 "VAR_NAME": "",
+    "INT_CONST": "",
+    "INT_VAR": "",
+    "REAL_CONST": "",
+    "REAL_VAR": "",
 
-                 "OP_LT": "<",
-                 "OP_LTE": "<=",
-                 "OP_GT": ">",
-                 "OP_GTE": ">=",
-                 "OP_EQ": "==",
-                 "OP_NEQ": "!=",
+    "OP_LT": "<",
+    "OP_LTE": "<=",
+    "OP_GT": ">",
+    "OP_GTE": ">=",
+    "OP_EQ": "==",
+    "OP_NEQ": "!=",
 
-                 "OP_AND": "&&",
-                 "OP_OR": "||",
-                 "OP_NOT": "!",
+    "OP_AND": "&&",
+    "OP_OR": "||",
+    "OP_NOT": "!",
 
-                 "OP_INCREMENT": "++",
-                 "OP_DECREMENT": "--",
+    "OP_INCREMENT": "++",
+    "OP_DECREMENT": "--",
 
-                 "OP_ASSIGN": "=",
-                 "OP_ARITH_MINUS": "-",
-                 "OP_ARITH_PLUS": "+",
-                 "OP_ARITH_DIVIDE": "/",
-                 "OP_ARITH_MUL": "*",
+    "OP_ASSIGN": "=",
+    "OP_ARITH_MINUS": "-",
+    "OP_ARITH_PLUS": "+",
+    "OP_ARITH_DIVIDE": "/",
+    "OP_ARITH_MUL": "*",
 
-                 "OP_SHIFT_RIGHT": ">>",
-                 "OP_SHIFT_LEFT": "<<",
+    "OP_SHIFT_RIGHT": ">>",
+    "OP_SHIFT_LEFT": "<<",
 
-                 "OP_LET": "let ",
-                 "NULL_VAL": "null",
-                 "OP_SIZE_OF": "sizeof "
+    "NULL_VAL": "null",
+    "OP_SIZE_OF": "sizeof "
 }
 
 
 class ConstraintSymbol:
-    _m_symbol = None
-    _m_cons_type = None
+    _m_symbol: t.Optional[str]
+    _m_cons_type: str = None
 
-    def __init__(self, m_symbol, m_type):
+    def __init__(self, m_symbol: t.Optional[str], m_type: str) -> None:
         self._m_symbol = m_symbol
         self._m_cons_type = m_type
 
-    def get_type(self):
+    def get_type(self) -> str:
         return self._m_cons_type
 
-    def get_symbol(self):
+    def get_symbol(self) -> t.Optional[str]:
         return self._m_symbol
 
-    def update_symbol(self, new_symbol_str):
+    def update_symbol(self, new_symbol_str: t.Optional[str]) -> None:
         self._m_symbol = new_symbol_str
 
-    def is_operator(self):
+    def is_operator(self) -> bool:
         operator_type_list = [
             "OP_LT",
             "OP_LTE",
@@ -98,64 +98,53 @@ class ConstraintSymbol:
         return self._m_cons_type == "OP_SIZE_OF"
 
     def is_null(self):
-        return self._m_symbol is None
+        return self._m_cons_type == "NULL_VAL"
 
 
 class ConstraintExpression:
-    _m_symbol:ConstraintSymbol = None
-    _m_letsymbol = None
-    _m_lvalue = None
-    _m_rvalue = None
-    _hasLetVal = False
-    _m_mapping = None
-    _is_leaf = False
-    _sizeof = None
+    _m_symbol: ConstraintSymbol
+    _m_lvalue: t.Optional[ConstraintExpression]
+    _m_rvalue: t.Optional[ConstraintExpression]
 
-
-    def __init__(self, c_symbol, l_expr, r_expr):
+    def __init__(
+        self,
+        c_symbol: ConstraintSymbol,
+        l_expr: t.Optional[ConstraintExpression],
+        r_expr: t.Optional[ConstraintExpression],
+    ):
         self._m_symbol = c_symbol
-        if l_expr is None and r_expr is None:
-            self._is_leaf = True
-        else:
-            self._m_lvalue = l_expr
-            self._m_rvalue = r_expr
+        self._m_lvalue = l_expr
+        self._m_rvalue = r_expr
 
-    def get_type(self):
+    def get_type(self) -> str:
         return self._m_symbol.get_type()
 
-    def get_symbol(self)->ConstraintSymbol:
+    def get_symbol(self) -> t.Optional[str]:
         return self._m_symbol.get_symbol()
 
-    def is_leaf(self):
-        return self._is_leaf
+    def is_leaf(self) -> bool:
+        return not self._m_lvalue and not self._m_rvalue
 
-    def get_l_expr(self):
-        if self._m_lvalue is None:
-            return None
+    def get_l_expr(self) -> t.Optional[ConstraintExpression]:
         return self._m_lvalue
 
-    def get_r_expr(self):
-        if self._m_rvalue is None:
-            return None
+    def get_r_expr(self) -> t.Optional[ConstraintExpression]:
         return self._m_rvalue
 
-    def to_json(self):
+    def to_json(self) -> t.Dict[str, t.Any]:
         json_obj = dict()
         json_obj["type"] = self.get_type()
         json_obj["symbol"] = self.get_symbol()
-        if not self.is_leaf():
-            if self.get_l_expr() is not None:
-                json_obj["left"] = self.get_l_expr().to_json()
-            if self.get_r_expr() is not None:
-                json_obj["right"] = self.get_r_expr().to_json()
+
+        if self._m_lvalue:
+            json_obj["left"] = self._m_lvalue.to_json()
+        if self._m_rvalue:
+            json_obj["right"] = self._m_rvalue.to_json()
+
         return json_obj
 
-
-    def to_string(self):
+    def to_string(self) -> str:
         expr_str = str(self.get_symbol())
-        if self._m_symbol.is_sizeof():
-            if self._sizeof:
-                return self._sizeof
         if not self.is_leaf():
             l_expr = None
             r_expr = None
@@ -185,7 +174,6 @@ class ConstraintExpression:
             symbol_list = symbol_list + self._m_rvalue.get_symbol_list()
         return list(set(symbol_list))
 
-
     def resolve_sizeof(self, cfc_var_info_list):
         if self._m_symbol.is_sizeof():
             ptr_name = self.get_r_expr().to_string()
@@ -196,26 +184,19 @@ class ConstraintExpression:
                     utilities.error_exit("Unhandled Exception")
                 symbolic_ptr = crash_var_expr_list[0].split(" ")[1]
                 symbolic_size = values.MEMORY_TRACK[symbolic_ptr]['size']
-                self._sizeof = symbolic_size
+                self._m_symbol._m_symbol = symbolic_size
 
-
-        if not self.is_leaf():
-            if self.get_r_expr() is not None:
-                self.get_r_expr().resolve_sizeof(cfc_var_info_list)
-            if self.get_l_expr() is not None:
-                self.get_l_expr().resolve_sizeof(cfc_var_info_list)
-
-
+        if self._m_lvalue:
+            self._m_lvalue.resolve_sizeof(cfc_var_info_list)
+        if self._m_rvalue:
+            self._m_rvalue.resolve_sizeof(cfc_var_info_list)
 
     def update_symbols(self, symbol_mapping):
-        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var():
+        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_sizeof():
             symbol_str = self.get_symbol()
             if symbol_str in symbol_mapping:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
-        elif self._m_symbol.is_sizeof():
-            symbol_str = self.to_string()
-            if symbol_str in symbol_mapping:
-                self._sizeof = symbol_mapping[symbol_str]
+
         if self._m_lvalue:
             self._m_lvalue.update_symbols(symbol_mapping)
         if self._m_rvalue:
