@@ -97,6 +97,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
     func_line_range = extractor.extract_line_range(src_file, function_range)
     var_info_list = extractor.extract_var_list(function_ast, src_file)
     var_taint_list = collections.OrderedDict()
+    logger.track_localization("generating candidate map for function {} in {}".format(function_name, src_file))
+    logger.track_localization("VAR LIST: {}".format(var_info_list))
     for taint_info in taint_symbolic:
         c_file, line, col, inst_add = taint_info.split(":")
         taint_expr_list = taint_symbolic[taint_info]
@@ -124,6 +126,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                         "expr_list":filtered_taint_list,
                         "data_type": data_type
                     }
+    logger.track_localization("VAR TAINT LIST: {}".format(var_taint_list))
     candidate_mapping = collections.OrderedDict()
     for crash_var_name in cfc_var_info_list:
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
@@ -141,8 +144,12 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                 v_type = var_taint_list[var_taint_info]["data_type"]
                 if v_type != crash_var_type:
                     # print("SKIP", crash_var_name, var_name, crash_var_type, v_type)
+                    logger.track_localization("SKIP {} with {}".format((crash_var_name, crash_var_type),
+                                                                       (var_name, v_type, v_line, v_col)))
                     continue
                 # print("MATCH", crash_var_name, var_name, crash_var_type, v_type)
+                logger.track_localization("MATCH {} with {}".format((crash_var_name, crash_var_type),
+                                                                   (var_name, v_type, v_line, v_col)))
                 for var_expr in var_expr_list:
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)

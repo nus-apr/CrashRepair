@@ -207,7 +207,7 @@ def convert_array_iterator(iterator_node, only_string=False):
 def convert_array_subscript(ast_node, only_string=False):
     var_list = list()
     var_name = ""
-    var_data_type = ""
+    var_data_type = str(ast_node["type"]["qualType"])
     # print(ast_node)
     array_node = ast_node["inner"][0]
     array_type = str(array_node["kind"])
