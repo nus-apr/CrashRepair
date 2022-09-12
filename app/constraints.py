@@ -53,7 +53,7 @@ class ConstraintSymbol:
         if self._m_cons_type == "NULL_VAL":
             return "null"
         if self._m_cons_type == "INT_VAR":
-            return f"@var(int, {self._m_symbol})"
+            return f"@var(integer, {self._m_symbol})"
         if self._m_cons_type == "REAL_VAR":
             return f"@var(float, {self._m_symbol})"
 
