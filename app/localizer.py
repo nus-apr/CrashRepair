@@ -310,7 +310,7 @@ def localize_state_info(fix_loc, taint_concrete):
                     outdated_entries = [(var_name_a, v_line_a, v_col_a) for (var_name_a, v_line_a, v_col_a) in state_info_list_values[occurence].keys() if var_name_a == var_name and v_line_a != v_line]
                     for entry in outdated_entries:
                         del state_info_list_values[occurence][entry]
-                    
+
                     # Create index.
                     var_info_index = (var_name, v_line, v_col)
                     var_type, var_value = taint_value.split(":")
@@ -321,7 +321,7 @@ def localize_state_info(fix_loc, taint_concrete):
                         other_state_info = state_info_list_values[occurence][var_info_index]
                         if int(other_state_info["inst_addr"]) >= int(inst_addr):
                             continue
-                    
+
                     state_info_list_values[occurence][var_info_index] = {
                         "inst_addr": inst_addr,
                         "data_type": var_type,
@@ -355,7 +355,7 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
             localization_obj["constraint"] = localized_cfc.to_string()
             # localization_obj["constraint-ast"] = localized_cfc.to_json()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
-            
+
             fieldnames = []
             rows = []
             variables = []
@@ -366,13 +366,13 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
                     var_value = var_content["values"]
                     var_type = var_content["data_type"]
                     inst_addr = int(var_content["inst_addr"])
-                
+
                     var_meta_data = {
-                        "variable-name": var_name, 
-                        "line": line, 
-                        "column": col, 
+                        "name": var_name,
+                        "line": line,
+                        "column": col,
                         "instruction-address": inst_addr,
-                        "data_type": var_type
+                        "type": var_type
                     }
 
                     if var_meta_data not in variables:
@@ -380,13 +380,15 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
 
                     if var_name not in fieldnames:
                         fieldnames.append(var_name)
-                    
+
                     row[var_name] = var_value
                 rows.append(row)
             localization_obj["variables"] = variables
-            csv_file_path = definitions.DIRECTORY_OUTPUT + '/values/' + localized_loc.replace('/', '#') + ".csv"
-            writer.write_as_csv(fieldnames, rows, csv_file_path)
-            localization_obj["state-value-file"] = csv_file_path
+            values_directory = os.path.join(definitions.DIRECTORY_OUTPUT, "values")
+            rel_output_filename = f"{localized_loc.replace('/', '#')}.csv"
+            abs_output_filepath = os.path.join(values_directory, rel_output_filename)
+            writer.write_as_csv(fieldnames, rows, abs_output_filepath)
+            localization_obj["values-file"] = rel_output_filename
 
             localization_list.append(localization_obj)
     if not localization_list:

@@ -196,7 +196,6 @@ class ConstraintExpression:
     def get_sizeof(self):
         return self._m_sizeof_mapping
 
-
     def resolve_sizeof(self, symbolic_mapping):
         if self._m_symbol.is_sizeof():
             symbol_name = self.to_string()
