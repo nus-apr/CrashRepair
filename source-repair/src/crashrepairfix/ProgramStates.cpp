@@ -64,7 +64,7 @@ void ProgramStates::loadValues() {
       }
     }
 
-    values.push_back(std::move(std::make_unique<Values>(std::move(row))));
+    values.push_back(std::make_unique<Values>(std::move(row)));
   }
 
   fh.close();
@@ -101,7 +101,7 @@ ProgramStates ProgramStates::fromJSON(
   }
   auto states = ProgramStates(valuesFilename, variables);
   states.loadValues();
-  return std::move(states);
+  return states;
 }
 
 z3::expr ProgramStates::Values::toZ3(z3::context &z3c) const {

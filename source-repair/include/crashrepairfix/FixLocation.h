@@ -40,7 +40,7 @@ public:
     auto localizationDirectory = localizationFilepath.parent_path();
     std::string valuesFilename = j["values-file"];
     auto valuesPath = localizationDirectory / fs::path("values") / valuesFilename;
-    auto states = ProgramStates::fromJSON(j["states"], valuesPath.string());
+    auto states = ProgramStates::fromJSON(j, valuesPath.string());
     return std::make_unique<FixLocation>(location, std::move(expr), states);
   }
 
