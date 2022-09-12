@@ -143,7 +143,7 @@ public:
   virtual std::string toString() const = 0;
 
   static ResultType resultTypeFromString(std::string const &string) {
-    if (string == "int") {
+    if (string == "integer") {
       return ResultType::Int;
     } else if (string == "float") {
       return ResultType::Float;
@@ -159,7 +159,7 @@ public:
   static std::string resultTypeToString(ResultType const &type) {
     switch (type) {
       case ResultType::Int:
-        return "int";
+        return "integer";
       case ResultType::Float:
         return "float";
       case ResultType::Pointer:
