@@ -218,8 +218,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                                                    function_ast, cfc_var_info_list)
     cfc_tokens = cfc_expr.get_symbol_list()
     cfc_token_mappings = []
-    for c_t in cfc_tokens:
-        c_t_lookup = c_t.replace("(", "").replace(")", "")
+    for c_t_lookup in cfc_tokens:
         if c_t_lookup in candidate_mapping:
             cfc_token_mappings.append((c_t_lookup, len(candidate_mapping[c_t_lookup])))
     sorted_cfc_tokens = sorted(cfc_token_mappings, key=lambda x:x[1])
@@ -243,8 +242,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
         localized_tokens = collections.OrderedDict()
         used_candidates = list()
         candidate_line, candidate_col = candidate_loc
-        for c_t in sorted_cfc_tokens:
-            c_t_lookup = c_t.replace("(", "").replace(")", "")
+        for c_t_lookup in sorted_cfc_tokens:
             if c_t_lookup in symbol_op or str(c_t_lookup).isnumeric():
                 continue
             if c_t_lookup in candidate_mapping:

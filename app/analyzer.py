@@ -142,7 +142,7 @@ def analyze():
                 if crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
                     symbolic_ptr = sym_expr_list[0].split(" ")[1]
                     sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
-                    sizeof_name = "sizeof {}".format(var_name)
+                    sizeof_name = "(sizeof  @var(int, {}))".format(var_name)
                     updated_var_info[sizeof_name] = {
                         "expr_list": sizeof_expr_list,
                         "data_type": "integer"

@@ -116,6 +116,7 @@ class ConstraintSymbol:
 
 class ConstraintExpression:
     _m_symbol: ConstraintSymbol
+    _m_sizeof_mapping: t.Optional[ConstraintExpression]
     _m_lvalue: t.Optional[ConstraintExpression]
     _m_rvalue: t.Optional[ConstraintExpression]
 
@@ -128,6 +129,7 @@ class ConstraintExpression:
         self._m_symbol = c_symbol
         self._m_lvalue = l_expr
         self._m_rvalue = r_expr
+        self._m_sizeof_mapping = None
 
     def get_type(self) -> str:
         return self._m_symbol.get_type()
@@ -167,6 +169,12 @@ class ConstraintExpression:
         if self._m_rvalue:
             rhs_str = self._m_rvalue.to_string()
 
+        if self._m_symbol.is_sizeof():
+            resolved_expr = self.get_sizeof()
+            if resolved_expr is not None:
+                return resolved_expr.to_string()
+            return f"({expr_str} {rhs_str})"
+
         if lhs_str and rhs_str:
             return f"({lhs_str} {expr_str} {rhs_str})"
         if rhs_str:
@@ -185,28 +193,30 @@ class ConstraintExpression:
             symbol_list = symbol_list + self._m_rvalue.get_symbol_list()
         return list(set(symbol_list))
 
-    def resolve_sizeof(self, cfc_var_info_list):
-        if self._m_symbol.is_sizeof():
-            ptr_name = self.get_r_expr().to_string()
-            if ptr_name in cfc_var_info_list:
-                crash_var_expr_list = cfc_var_info_list[ptr_name]['expr_list']
-                if len(crash_var_expr_list) > 1:
-                    emitter.error("More than one pointer for SizeOf resolution")
-                    utilities.error_exit("Unhandled Exception")
-                symbolic_ptr = crash_var_expr_list[0].split(" ")[1]
-                symbolic_size = values.MEMORY_TRACK[symbolic_ptr]['size']
-                self._m_symbol._m_symbol = symbolic_size
+    def get_sizeof(self):
+        return self._m_sizeof_mapping
 
-        if self._m_lvalue:
-            self._m_lvalue.resolve_sizeof(cfc_var_info_list)
-        if self._m_rvalue:
-            self._m_rvalue.resolve_sizeof(cfc_var_info_list)
+
+    def resolve_sizeof(self, symbolic_mapping):
+        if self._m_symbol.is_sizeof():
+            symbol_name = self.to_string()
+            if symbol_name in symbolic_mapping:
+                mapping = symbolic_mapping[symbol_name]
+                # assumption: mapping is either constant or variable, not an expression i.e. a+b
+                if str(mapping).isnumeric():
+                    mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
+                    self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
+                else:
+                    mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
+                    self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
 
     def update_symbols(self, symbol_mapping):
-        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_sizeof():
+        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var():
             symbol_str = self.get_symbol()
             if symbol_str in symbol_mapping:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
+        elif self._m_symbol.is_sizeof():
+            self.resolve_sizeof(symbol_mapping)
 
         if self._m_lvalue:
             self._m_lvalue.update_symbols(symbol_mapping)
