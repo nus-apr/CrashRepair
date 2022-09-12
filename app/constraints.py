@@ -295,7 +295,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         child_node = ast_node["inner"][0]
         return generate_expr_for_ast(child_node)
     elif node_type == "IntegerLiteral":
-        symbol_str = int(ast_node["value"])
+        symbol_str = str(ast_node["value"])
         op_type = "INT_CONST"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
