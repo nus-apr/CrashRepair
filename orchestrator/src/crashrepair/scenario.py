@@ -55,8 +55,10 @@ class Scenario:
         The command that should be used prior to building the program (e.g., configure).
     build_command: str
         The command that should be used to build the program.
+    crashing_command: str
+        The command that should be used to trigger the program to crash.
     crashing_input: str
-        The input that is supplied to the binary to cause the crash.
+        The path to the file that causes the binary to crash. (FIXME: how does this work for command-line arguments?)
     """
     subject: str
     name: str
@@ -67,9 +69,11 @@ class Scenario:
     clean_command: str
     prebuild_command: str
     build_command: str
+    crashing_command: str
     crashing_input: str
     shell: Shell
     crash_test: Test
+    additional_klee_flags: str = attrs.field(default="")
     should_terminate_early: bool = attrs.field(default=True)
     skip_fuzzing: bool = attrs.field(default=False)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
@@ -127,8 +131,10 @@ class Scenario:
         clean_command: str,
         prebuild_command: str,
         build_command: str,
+        crashing_command: str,
         crashing_input: str,
         skip_fuzzing: bool,
+        additional_klee_flags: str,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -162,10 +168,12 @@ class Scenario:
             clean_command=clean_command,
             prebuild_command=prebuild_command,
             build_command=build_command,
+            crashing_command=crashing_command,
             crashing_input=crashing_input,
             shell=shell,
             crash_test=crash_test,
             skip_fuzzing=skip_fuzzing,
+            additional_klee_flags=additional_klee_flags,
         )
         logger.info(f"loaded bug scenario: {scenario}")
         return scenario
@@ -186,7 +194,6 @@ class Scenario:
         try:
             project_dict = bug_dict["project"]
             subject = project_dict["name"]
-            crashing_input = bug_dict["crashing-input"]
             name = bug_dict["name"]
             binary_path = bug_dict["binary"]
             source_directory = bug_dict["source-directory"]
@@ -196,6 +203,11 @@ class Scenario:
             clean_command = build_commands["clean"]
             prebuild_command = build_commands["prebuild"]
             build_command = build_commands["build"]
+
+            crash_dict = bug_dict["crash"]
+            crashing_command = crash_dict["command"]
+            crashing_input = crash_dict["input"]
+            additional_klee_flags = crash_dict.get("extra-klee-flags", "")
         except KeyError as exc:
             raise ValueError(f"missing field in bug.json: {exc}")
 
@@ -209,8 +221,10 @@ class Scenario:
             clean_command=clean_command,
             prebuild_command=prebuild_command,
             build_command=build_command,
+            crashing_command=crashing_command,
             crashing_input=crashing_input,
             skip_fuzzing=skip_fuzzing,
+            additional_klee_flags=additional_klee_flags,
         )
 
     @classmethod

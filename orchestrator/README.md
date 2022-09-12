@@ -30,4 +30,33 @@ crashrepair repair --help
 
 ## `bug.json` File Format
 
-TODO (Chris): add details
+Below is an example of a `bug.json` file, taken from the `buffer-overflow/dynamic-array` test program:
+
+```json
+{
+  "project": {
+    "name": "buffer-overflow"
+  },
+  "name": "dynamic-array",
+  "binary": "src/test",
+  "crash": {
+    "command": "$POC",
+    "input": "./exploit",
+    "extra-klee-flags": ""
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "test",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean",
+      "build": "make"
+    }
+  }
+}
+```
+
+* The `crash` section is used to provide the CrashRepair analyzer with the necessary information to diagnose the crash and produce an annotated fix localization. **(FIXME: resolve ambiguity between file-based and argument-based inputs.)**
+  * The optional `extra-klee-flags` property is used to inject additional KLEE flags, given as a string, at link time when the analyzer rebuilds the program.
+    In all cases, `--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca` will always be injected as a KLEE flag.

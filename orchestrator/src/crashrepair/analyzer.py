@@ -28,7 +28,7 @@ config_command:CC=crepair-cc CXX=crepair-cxx {prebuild_command}
 build_command:CC=crepair-cc CXX=crepair-cxx {build_command}
 test_input_list:{crashing_input}
 poc_list:{poc_list}
-klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
+klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca {extra_klee_flags}
 """
 
 
@@ -53,11 +53,10 @@ class Analyzer:
                 binary_path=scenario.binary_path,
                 prebuild_command=scenario.prebuild_command,
                 build_command=scenario.build_command,
-                crashing_input=scenario.crashing_input,
-                # NOTE we need to pass any file that actually exists here, but that file does not need
-                # to contain the POC if it is already embedded within the crashing input. This is helpful
-                # for cases where the program is crashed by command-line arguments rather than a file input.
-                poc_list=filename,
+                crashing_input=scenario.crashing_command,
+                # FIXME it isn't clear how this works when positional arguments are used
+                poc_list=scenario.crashing_input,
+                extra_klee_flags=scenario.additional_klee_flags,
             )
             with open(filename, "w") as fh:
                 fh.write(contents)
@@ -70,8 +69,8 @@ class Analyzer:
             if os.path.exists(filename):
                 os.remove(filename)
 
-    # TODO how can we specify to where the analyzer should write its output?
     def run(self, write_to: str) -> None:
+        """Runs the analysis and writes its results to a given output directory."""
         shell = self.scenario.shell
 
         # destroy any existing contents of the analyzer output directory
