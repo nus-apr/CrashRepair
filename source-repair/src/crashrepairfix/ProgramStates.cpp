@@ -10,6 +10,8 @@ namespace crashrepairfix {
 void ProgramStates::loadValues() {
   std::ifstream fh(valuesFilename);
 
+  spdlog::debug("loading state values from file: {}", valuesFilename);
+
   if (!fh.is_open()) {
     spdlog::error("failed to open state values file: {}", valuesFilename);
     abort();
@@ -23,8 +25,9 @@ void ProgramStates::loadValues() {
     abort();
   }
 
-  // TODO use ; as a delimiter to allow complex names
-  for (auto column : split(line, ',')) {
+  spdlog::debug("retrieved header line from state values file: {}", line);
+
+  for (auto column : split(line, ';')) {
     strip_whitespace(column);
 
     // find the corresponding variable with the same name as the column
@@ -34,15 +37,23 @@ void ProgramStates::loadValues() {
         continue;
       }
     }
+
+    spdlog::error("failed to match column to variable: {}", column);
+    abort();
   }
   size_t numColumns = columns.size();
+  spdlog::debug("state values file contains {} columns", numColumns);
 
   // read each row
+  size_t lineNumber = 0;
   while (std::getline(fh, line)) {
+    lineNumber++;
+
     // TODO handling of newline before EOF?
-    auto cells = split(line, ',');
+    auto cells = split(line, ';');
+    size_t numColumnsInRow = cells.size();
     if (cells.size() != numColumns) {
-      spdlog::error("failed to read state values line (wrong number of columns): {}", line);
+      spdlog::error("failed to read line {}: expected {} columns but has {}", lineNumber, numColumns, numColumnsInRow);
       abort();
     }
 
