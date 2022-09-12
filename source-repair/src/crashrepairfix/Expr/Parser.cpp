@@ -21,7 +21,7 @@ struct comma : seq<star<space>, one<','>, star<space>> {};
 struct open_bracket : seq<one<'('>, star<space>> {};
 struct close_bracket : seq<star<space>, one<')'>> {};
 
-struct type_int : string<'i', 'n', 't'> {};
+struct type_int : string<'i', 'n', 't', 'e', 'g', 'e', 'r'> {};
 struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
 struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
 struct type_name : sor<type_int, type_float, type_pointer> {};
