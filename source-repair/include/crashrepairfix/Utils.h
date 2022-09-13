@@ -17,6 +17,10 @@
 
 namespace crashrepairfix {
 
+std::string escape_character(char c);
+
+void remove_trailing_newline(std::string &str);
+
 void strip_whitespace(std::string &str);
 
 std::vector<std::string> split(const std::string &s, char delim);
