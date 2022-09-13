@@ -51,7 +51,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 std::vector<std::string> getLines(std::string const &s) {
   std::vector<std::string> lines;
   std::stringstream ss(s);
-  std::string line;    
+  std::string line;
   while (std::getline(ss, line)) {
     lines.push_back(std::move(line));
   }
@@ -62,8 +62,8 @@ std::string getSource(clang::Stmt const *stmt, clang::SourceManager const &sourc
   static clang::LangOptions languageOptions;
   auto range = clang::CharSourceRange::getTokenRange(stmt->getSourceRange());
   return clang::Lexer::getSourceText(
-    range, 
-    sourceManager, 
+    range,
+    sourceManager,
     languageOptions
   ).str();
 }
@@ -138,7 +138,7 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
     if (  nodeKind == "WhileStmt"
        || nodeKind == "ForStmt"
        || nodeKind == "CompoundStmt"
-    ) { 
+    ) {
       return true;
     }
   }
