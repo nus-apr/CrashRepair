@@ -957,8 +957,12 @@ def generate_z3_code_for_expr(var_expr, var_name, bit_size):
     else:
         zero = "x00000000"
     code = "(set-logic QF_AUFBV )\n"
+    unique_source_list = []
     for sel_expr in select_list:
         symbolic_source = sel_expr.split(" ")[2]
+        if symbolic_source in unique_source_list:
+            continue
+        unique_source_list.append(symbolic_source)
         code += "(declare-fun {} () (Array (_ BitVec 32) (_ BitVec 8) ) )\n".format(symbolic_source)
     code += "(declare-fun " + var_name + "() (_ BitVec " + str(bit_size) + "))\n"
     # code += "(declare-fun b () (_ BitVec " + str(bit_size) + "))\n"
@@ -991,8 +995,12 @@ def generate_source_definitions(sym_expr_a, sym_expr_b):
     source_list_b = extractor.extract_input_bytes_used(sym_expr_b)
     source_def_str = ""
     source_list = list(set(source_list_a + source_list_b))
+    unique_source_list = []
     for source in source_list:
         source_name, _ = source.split("_")
+        if source_name in unique_source_list:
+            continue
+        unique_source_list.append(source_name)
         source_def_str = source_def_str + \
                          ("(declare-fun {} () (Array (_ BitVec 32) (_ BitVec 8) ) )\n".
                                format(source_name))

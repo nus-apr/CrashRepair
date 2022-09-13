@@ -1,8 +1,11 @@
-from app import definitions, values, emitter, extractor, logger
+import os
+
+from app import definitions, values, emitter, extractor, logger, utilities
 from pysmt.shortcuts import is_sat, Not, And, is_unsat
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
 import numpy as np
+from subprocess import Popen, PIPE
 
 
 tautology_included = False
@@ -241,8 +244,17 @@ def is_satisfiable(z3_code):
         formula = script.get_last_formula()
         result = is_sat(formula, solver_name="z3")
     except Exception as ex:
-        emitter.warning("\t\t[warning] Z3 Exception")
+        emitter.debug("\t\t[warning] Z3 Exception in PYSM, Trying Z3 CLI")
         logger.information(z3_code)
+        with open("/tmp/z3_cli_code", "w") as z3_file:
+            z3_file.writelines(z3_code)
+            z3_file.close()
+        z3_cli_command = "z3 /tmp/z3_cli_code > /tmp/z3_cli_output"
+        utilities.execute_command(z3_cli_command)
+        with open("/tmp/z3_cli_output", "r") as log_file:
+            output_content = log_file.readlines()
+            if "sat" == output_content[-1].strip():
+                result = True
     return result
 
 
