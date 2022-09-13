@@ -24,45 +24,52 @@ void ProgramStates::loadValues() {
     spdlog::error("failed to read header from state values file");
     abort();
   }
+  remove_trailing_newline(line);
 
   spdlog::debug("retrieved header line from state values file: {}", line);
 
   for (auto column : split(line, ';')) {
-    spdlog::debug("column with whitespace: '{}'", column);
     strip_whitespace(column);
-    remove_trailing_newline(column);
-    spdlog::debug("column without whitespace: '{}'", column);
 
     // find the corresponding variable with the same name as the column
+    Variable const *matchingVariable;
     for (auto const &variable : variables) {
       if (variable->getName() == column) {
-        columns.push_back(variable.get());
-        continue;
+        matchingVariable = variable.get();
+        break;
       }
     }
 
-    spdlog::error("failed to match column to variable: '{}'", column);
+    // produce an error if no match is found
+    if (matchingVariable == nullptr) {
+      spdlog::error("failed to match column to variable: \"{}\"", column);
 
-    for (char character : column) {
-      if (!isprint(static_cast<unsigned char>(character))) {
-        spdlog::error("column contains unprintable character: {}", escape_character(character));
+      for (char character : column) {
+        if (!isprint(static_cast<unsigned char>(character))) {
+          spdlog::error("column contains unprintable character: {}", escape_character(character));
+        }
       }
+
+      spdlog::error("known variables:");
+      for (auto const &variable : variables) {
+        spdlog::error("* \"{}\"", variable->getName());
+      }
+      abort();
     }
 
-    spdlog::error("known variables:");
-    for (auto const &variable : variables)
-      spdlog::error("* \"{}\"", variable->getName());
-    abort();
+    // otherwise record the variable
+    columns.push_back(matchingVariable);
   }
+
   size_t numColumns = columns.size();
   spdlog::debug("state values file contains {} columns", numColumns);
 
   // read each row
   size_t lineNumber = 0;
   while (std::getline(fh, line)) {
+    remove_trailing_newline(line);
     lineNumber++;
 
-    // TODO handling of newline before EOF?
     auto cells = split(line, ';');
     size_t numColumnsInRow = cells.size();
     if (cells.size() != numColumns) {
@@ -73,6 +80,7 @@ void ProgramStates::loadValues() {
     std::unordered_map<Variable const *, std::variant<double, long>> row;
     for (int col = 0; col < numColumns; col++) {
       auto cellString = cells[col];
+      strip_whitespace(cellString);
       auto const *variable = columns[col];
       std::variant<double, long> value;
 
