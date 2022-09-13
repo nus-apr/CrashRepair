@@ -108,7 +108,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
             continue
         for var_info in var_info_list:
             var_name, v_line, v_col, v_type = var_info
-            if int(v_col) == int(col) and int(v_line) == int(line):
+            if int(v_line) == int(line) and int(col) in range(int(v_col), int(v_col) + len(var_name)):
+                # print(var_name, v_line, v_col, line, col, range(int(v_col), int(v_col) + len(var_name)))
                 var_info_index = (var_name, v_line, v_col, inst_add)
                 if var_info_index not in var_taint_list:
                     filtered_taint_list = []
@@ -126,6 +127,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                         "expr_list":filtered_taint_list,
                         "data_type": data_type
                     }
+    # print(var_taint_list)
     logger.track_localization("VAR TAINT LIST: {}".format(var_taint_list))
     candidate_mapping = collections.OrderedDict()
     for crash_var_name in cfc_var_info_list:

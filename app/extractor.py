@@ -299,7 +299,7 @@ def extract_var_ref_list(ast_node, file_path):
             source_line = values.SOURCE_LINE_MAP[file_path][line_number-1]
             op_position = source_line.index(op_code, col_number) + 1
             assignment_var_name = converter.convert_node_to_str(left_side)
-            # print((str(assignment_var_name), line_number, op_position, data_type))
+            # print("ADD", (str(assignment_var_name), line_number, op_position, data_type))
             var_list.append((str(assignment_var_name), line_number, op_position, data_type))
         for var_name, line_number, col_number, var_type in operands_var_list:
             var_list.append((str(var_name), line_number, col_number, str(var_type)))
