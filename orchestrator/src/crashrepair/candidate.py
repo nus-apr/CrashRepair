@@ -10,6 +10,7 @@ from datetime import datetime
 from subprocess import DEVNULL
 
 import attrs
+from loguru import logger
 
 from .location import Location
 
@@ -56,6 +57,7 @@ class PatchCandidate:
 
     def apply(self) -> None:
         """Applies this patch to the program."""
+        logger.trace("applying candidate patch...")
         _, patch_filename = tempfile.mkstemp(suffix=".diff")
         self.write(patch_filename)
         command = f"patch -u {self.filename} {patch_filename}"
@@ -69,10 +71,13 @@ class PatchCandidate:
             )
         finally:
             os.remove(patch_filename)
+        logger.trace("applied candidate patch")
 
     def revert(self) -> None:
         """Reverts the changes introduced by this patch."""
+        logger.trace("reverting candidate patch...")
         _, patch_filename = tempfile.mkstemp(suffix=".diff")
+        self.write(patch_filename)
         command = f"patch -R -u {self.filename} {patch_filename}"
         try:
             subprocess.check_call(
@@ -84,3 +89,4 @@ class PatchCandidate:
             )
         finally:
             os.remove(patch_filename)
+        logger.trace("reverted candidate patch")
