@@ -320,7 +320,7 @@ def generate_div_zero_constraint(divisor_node):
     constraint_op_str = "!="
     constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
     constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
-    constraint_val_str = 0
+    constraint_val_str = "0"
     constraint_val_type = "INT_CONST"
     constraint_val = make_constraint_symbol(constraint_val_str, constraint_val_type)
     right_expr = make_symbolic_expression(constraint_val)
