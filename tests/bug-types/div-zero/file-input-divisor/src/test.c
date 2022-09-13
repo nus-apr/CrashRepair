@@ -20,7 +20,8 @@ int main(int argc, char *argv[]) {
   int res, a;
   char buffer[10];
   read_file(argv[1], buffer);
-  int b = buffer[0] - 65;
+  int b = 0;
+  b += buffer[0] - 65;
   printf("%d\n", b);
   a = b - 1;
   res = div(a);
