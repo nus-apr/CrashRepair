@@ -338,8 +338,11 @@ def convert_member_expr(ast_node, only_string=False):
         var_name = str(node_value.split(":")[-1])
         # print(var_name)
         var_data_type = str(ast_node["type"]["qualType"])
-        if "isArrow" not in ast_node.keys():
-            var_name = "." + var_name
+        if "isArrow" in ast_node.keys():
+            if ast_node["isArrow"] is False:
+                var_name = "." + var_name
+            else:
+                var_name = "->" + var_name
         else:
             var_name = "->" + var_name
     child_node = ast_node["inner"][0]
@@ -419,6 +422,7 @@ def convert_member_expr(ast_node, only_string=False):
 
 def convert_node_to_str(ast_node, only_string=False):
     node_str = ""
+    # print(ast_node)
     node_type = str(ast_node["kind"])
     if node_type == "ImplicitCastExpr":
         ast_node = ast_node["inner"][0]
@@ -429,7 +433,7 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = str(ast_node['value'])
     elif node_type == "ArraySubscriptExpr":
         node_str = str(convert_array_subscript(ast_node, True))
-    elif node_type == "MemberMemberExpr":
+    elif node_type == "MemberExpr":
         node_str = str(convert_member_expr(ast_node, True))
     if str(ast_node["kind"]) == "BinaryOperator":
         operator = str(ast_node['opcode'])

@@ -1,0 +1,18 @@
+{
+  "project": {
+    "name": "div-zero"
+  },
+  "name": "constant-divisor",
+  "binary": "src/test",
+  "crashing-input": "./exploit",
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "test",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean",
+      "build": "make CFLAGS='-g -O0 -fsanitize=undefined'"
+    }
+  }
+}
