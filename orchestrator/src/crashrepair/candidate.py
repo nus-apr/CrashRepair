@@ -46,16 +46,18 @@ class PatchCandidate:
         os.makedirs(directory, exist_ok=True)
 
         modification_time_string = datetime.now().isoformat()
-        header_from_line = f"--- {self.filename} {modification_time_string}"
-        header_to_line = f"+++ {self.filename} {modification_time_string}"
+        header_from_line = f"--- {self.filename} {modification_time_string}\n"
+        header_to_line = f"+++ {self.filename} {modification_time_string}\n"
 
         with open(filename, "w") as fh:
-            fh.writelines((header_from_line, header_to_line))
+            fh.write(header_from_line)
+            fh.write(header_to_line)
             fh.write(self.diff)
 
     def apply(self) -> None:
         """Applies this patch to the program."""
         _, patch_filename = tempfile.mkstemp(suffix=".diff")
+        self.write(patch_filename)
         command = f"patch -u {self.filename} {patch_filename}"
         try:
             subprocess.check_call(
@@ -63,6 +65,7 @@ class PatchCandidate:
                 stdin=DEVNULL,
                 stdout=DEVNULL,
                 stderr=DEVNULL,
+                shell=True,
             )
         finally:
             os.remove(patch_filename)
@@ -77,6 +80,7 @@ class PatchCandidate:
                 stdin=DEVNULL,
                 stdout=DEVNULL,
                 stderr=DEVNULL,
+                shell=True,
             )
         finally:
             os.remove(patch_filename)
