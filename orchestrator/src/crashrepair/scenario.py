@@ -59,6 +59,8 @@ class Scenario:
         The command that should be used to trigger the program to crash.
     crashing_input: str
         The path to the file that causes the binary to crash. (FIXME: how does this work for command-line arguments?)
+    expected_exit_code_for_crashing_input: int
+        The exit code that _should_ be produced by the program when the crashing input is provided (i.e., the oracle).
     """
     subject: str
     name: str
@@ -74,6 +76,7 @@ class Scenario:
     shell: Shell
     crash_test: Test
     additional_klee_flags: str = attrs.field(default="")
+    expected_exit_code_for_crashing_input: int = attrs.field(default=0)
     should_terminate_early: bool = attrs.field(default=True)
     skip_fuzzing: bool = attrs.field(default=False)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
@@ -133,6 +136,7 @@ class Scenario:
         build_command: str,
         crashing_command: str,
         crashing_input: str,
+        expected_exit_code_for_crashing_input: int,
         skip_fuzzing: bool,
         additional_klee_flags: str,
     ) -> Scenario:
@@ -150,10 +154,14 @@ class Scenario:
 
         shell = Shell(cwd=directory)
 
-        # TODO allow test command to be customized in bug.json
+        full_crash_command = f"{binary_path} {crashing_command}"
+        if crashing_input:
+            full_crash_command = full_crash_command.replace("$POC", crashing_input)
+
         crash_test = Test(
             name="crash",
-            command="./test",
+            command=full_crash_command,
+            expected_exit_code=expected_exit_code_for_crashing_input,
             cwd=directory,
             shell=shell,
         )
@@ -208,6 +216,7 @@ class Scenario:
             crashing_command = crash_dict["command"]
             crashing_input = crash_dict["input"]
             additional_klee_flags = crash_dict.get("extra-klee-flags", "")
+            expected_exit_code_for_crashing_input = crash_dict.get("expected-exit-code", 0)
         except KeyError as exc:
             raise ValueError(f"missing field in bug.json: {exc}")
 
@@ -225,6 +234,7 @@ class Scenario:
             crashing_input=crashing_input,
             skip_fuzzing=skip_fuzzing,
             additional_klee_flags=additional_klee_flags,
+            expected_exit_code_for_crashing_input=expected_exit_code_for_crashing_input,
         )
 
     @classmethod
@@ -313,6 +323,7 @@ class Scenario:
             self.shell(command, cwd=self.directory)
 
         # construct reproducible test cases from concentrated inputs
+        # FIXME all of these tests should pass on the original program (optionally verify this assumption)
         fuzzer_config = FuzzerConfig.load(self.fuzzer_config_path)
         fuzzer_tests_directory = os.path.join(self.fuzzer_directory, "concentrated_inputs")
         self.fuzzer_tests = []
@@ -324,6 +335,8 @@ class Scenario:
                 command=fuzzer_test_command,
                 cwd=self.directory,
                 shell=self.shell,
+                # FIXME the expected exit code should be the same as the original program!
+                expected_exit_code=0,
             )
             self.fuzzer_tests.append(fuzzer_test)
 

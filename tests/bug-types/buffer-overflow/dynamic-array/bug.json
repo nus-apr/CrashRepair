@@ -7,7 +7,8 @@
   "crash": {
     "command": "$POC",
     "input": "./exploit",
-    "extra-klee-flags": ""
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
   },
   "source-directory": "src",
   "build": {

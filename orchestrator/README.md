@@ -42,7 +42,8 @@ Below is an example of a `bug.json` file, taken from the `buffer-overflow/dynami
   "crash": {
     "command": "$POC",
     "input": "./exploit",
-    "extra-klee-flags": ""
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
   },
   "source-directory": "src",
   "build": {
@@ -60,3 +61,5 @@ Below is an example of a `bug.json` file, taken from the `buffer-overflow/dynami
 * The `crash` section is used to provide the CrashRepair analyzer with the necessary information to diagnose the crash and produce an annotated fix localization. **(FIXME: resolve ambiguity between file-based and argument-based inputs.)**
   * The optional `extra-klee-flags` property is used to inject additional KLEE flags, given as a string, at link time when the analyzer rebuilds the program.
     In all cases, `--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca` will always be injected as a KLEE flag.
+  * The `expected-exit-code` property is used to specify what exit code should be produced by the program if the crash is resolved.
+    If this property is left unspecified, it assumes its default value of `0`.
