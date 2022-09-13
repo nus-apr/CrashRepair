@@ -282,18 +282,25 @@ def extract_var_ref_list(ast_node, file_path):
     if node_type in ["ReturnStmt"]:
         if child_count == 0:
             return var_list
-    if node_type == "BinaryOperator":
+    if node_type in ["BinaryOperator", "CompoundAssignOperator"]:
         left_side = ast_node['inner'][0]
         right_side = ast_node['inner'][1]
         right_var_list = extract_var_ref_list(right_side, file_path)
         left_var_list = extract_var_ref_list(left_side, file_path)
         operands_var_list = right_var_list + left_var_list
-        if ast_node['opcode'] == "=":
+        op_code = ast_node['opcode']
+        if op_code in ["=", "+=", "-=", "*=", "/="]:
             begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
             data_type = left_side["type"]["qualType"]
             _, line_number, col_number = begin_loc
+            if file_path not in values.SOURCE_LINE_MAP:
+                with open(file_path, "r") as s_file:
+                    values.SOURCE_LINE_MAP[file_path] = s_file.readlines()
+            source_line = values.SOURCE_LINE_MAP[file_path][line_number-1]
+            op_position = source_line.index(op_code, col_number) + 1
             assignment_var_name = converter.convert_node_to_str(left_side)
-            var_list.append((str(assignment_var_name), line_number, col_number, data_type))
+            print((str(assignment_var_name), line_number, op_position, data_type))
+            var_list.append((str(assignment_var_name), line_number, op_position, data_type))
         for var_name, line_number, col_number, var_type in operands_var_list:
             var_list.append((str(var_name), line_number, col_number, str(var_type)))
         return var_list
