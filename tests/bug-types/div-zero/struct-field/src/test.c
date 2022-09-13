@@ -1,6 +1,6 @@
 #include <stdio.h>
 struct  Struct_1 {
-    int id;
+    short id;
     char *filepath;
     int dummy[10];
 };
@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
   fread(buffer, sizeof(int), 1, fp);
   fclose(fp);
   var_b.id = buffer[2] + x - 66;
+  printf("THIS IS SOMETHING\n");
+  int n = var_b.id + 10;
+  printf("NEW VALUE IS: %d\n", n);
   int res = divide(&var_b);
   return 0;
 }
