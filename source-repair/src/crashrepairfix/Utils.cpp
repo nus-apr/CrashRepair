@@ -14,6 +14,23 @@
 
 namespace crashrepairfix {
 
+// https://stackoverflow.com/questions/2417588/escaping-a-c-string
+std::string escape_character(char c) {
+  std::stringstream stream;
+  stream << std::hex << static_cast<unsigned int>(static_cast<unsigned char>(c));
+  std::string code = stream.str();
+  return fmt::format("\\x{}{}", (code.size() < 2 ? "0" : ""), code);
+}
+
+void remove_trailing_newline(std::string &str) {
+  if (str.back() == '\n') {
+    str.erase(str.size() - 1);
+  }
+  if (str.back() == '\r') {
+    str.erase(str.size() - 1);
+  }
+}
+
 // adapted from https://stackoverflow.com/questions/83439/remove-spaces-from-stdstring-in-c
 void strip_whitespace(std::string &str) {
   auto end_pos = std::remove(str.begin(), str.end(), ' ');

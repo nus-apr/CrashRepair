@@ -28,7 +28,10 @@ void ProgramStates::loadValues() {
   spdlog::debug("retrieved header line from state values file: {}", line);
 
   for (auto column : split(line, ';')) {
+    spdlog::debug("column with whitespace: '{}'", column);
     strip_whitespace(column);
+    remove_trailing_newline(column);
+    spdlog::debug("column without whitespace: '{}'", column);
 
     // find the corresponding variable with the same name as the column
     for (auto const &variable : variables) {
@@ -38,7 +41,17 @@ void ProgramStates::loadValues() {
       }
     }
 
-    spdlog::error("failed to match column to variable: {}", column);
+    spdlog::error("failed to match column to variable: '{}'", column);
+
+    for (char character : column) {
+      if (!isprint(static_cast<unsigned char>(character))) {
+        spdlog::error("column contains unprintable character: {}", escape_character(character));
+      }
+    }
+
+    spdlog::error("known variables:");
+    for (auto const &variable : variables)
+      spdlog::error("* \"{}\"", variable->getName());
     abort();
   }
   size_t numColumns = columns.size();
