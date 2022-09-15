@@ -112,7 +112,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
             continue
         for expr_info in (var_info_list+expr_info_list):
             e_str, e_line, e_col, e_type, dec_or_ref = expr_info
-            if int(e_line) == int(line) and int(col) in range(int(e_col), int(e_col) + len(e_str)):
+            if int(e_line) == int(line) and int(col) == int(e_col):
+            # if int(e_line) == int(line) and int(col) in range(int(e_col), int(e_col) + len(e_str)):
                 # print(var_name, v_line, v_col, line, col, range(int(v_col), int(v_col) + len(var_name)))
                 var_info_index = (e_str, e_line, e_col, inst_add)
                 if var_info_index not in expr_taint_list:
@@ -165,6 +166,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                         if oracle.is_expr_list_match(crash_var_expr_list, var_expr_list):
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
+                            logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                            logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                            logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
                             crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
@@ -181,6 +185,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                                     candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                                 else:
                                     candidate_mapping[crash_var_name].add((str(crash_size_bytes), e_line, e_col, e_addr, is_exp_dec))
+                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                                logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                     elif var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
@@ -188,6 +195,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                             found_mapping = True
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
+                            logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                            logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                            logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
                             z3_offset_code = generator.generate_z3_code_for_offset(var_sym_expr_code,
@@ -202,6 +212,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                                     mapping = "({} - {})".format(expr_str, offset)
                                     if crash_var_name not in candidate_mapping:
                                         candidate_mapping[crash_var_name] = set()
+                                    logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                                    logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                    logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
                                     candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
                     elif set(var_input_byte_list) <= set(crash_var_input_byte_list):
                         subset_var_list.append((expr_str, var_expr))
@@ -284,7 +297,6 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
-        # print(localized_tokens)
         if len(localized_tokens.keys()) == len(sorted_cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
@@ -306,7 +318,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
             # print(expression_str)
             if "sizeof " not in cfc_lhs_str:
                 if oracle.is_expression_equal(cfc_lhs_str, expression_str):
-                    # print("MATCH LHS", localized_cfc.to_string())
+                    # print("MATCH LHS", localized_cfc.to_string(), expression_str)
                     result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
                     result_expr = constraints.make_symbolic_expression(result_symbol)
                     candidate_cfc.set_l_expr(result_expr)
@@ -314,7 +326,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                     continue
             elif "sizeof " not in cfc_rhs_str:
                 if oracle.is_expression_equal(cfc_rhs_str, expression_str):
-                    # print("MATCH RHS", localized_cfc.to_string())
+                    # print("MATCH RHS", localized_cfc.to_string(), expression_str)
                     result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
                     result_expr = constraints.make_symbolic_expression(result_symbol)
                     candidate_cfc.set_r_expr(result_expr)
