@@ -276,10 +276,13 @@ def convert_call_expr(ast_node, only_string=False):
     var_list = list()
     call_function_node = ast_node["inner"][0]
     call_function_node_type = str(call_function_node["kind"])
+    if call_function_node_type == "ImplicitCastExpr":
+        call_function_node = call_function_node["inner"][0]
+        call_function_node_type = str(call_function_node["kind"])
     call_function_node_ref_type = str(call_function_node['referencedDecl']['kind'])
     operand_count = len(ast_node["inner"])
     if call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "FunctionDecl":
-        function_name = str(call_function_node['value'])
+        function_name = str(call_function_node['referencedDecl']['name'])
     elif call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "VarDecl":
         function_name = str(call_function_node["type"]["qualType"])
         operand = str(call_function_node['value'])
@@ -425,25 +428,31 @@ def convert_node_to_str(ast_node, only_string=False):
     # print(ast_node)
     node_type = str(ast_node["kind"])
     if node_type == "ImplicitCastExpr":
-        ast_node = ast_node["inner"][0]
-        node_type = str(ast_node["kind"])
+        return convert_node_to_str(ast_node["inner"][0], only_string)
     if node_type in ["DeclRefExpr"]:
         node_str = str(ast_node['referencedDecl']['name'])
+    elif node_type == "IntegerLiteral":
+        node_str = str(ast_node["value"])
     elif node_type in ["DeclStmt", "VarDecl"]:
         node_str = str(ast_node['value'])
     elif node_type == "ArraySubscriptExpr":
         node_str = str(convert_array_subscript(ast_node, True))
     elif node_type == "MemberExpr":
         node_str = str(convert_member_expr(ast_node, True))
-    if str(ast_node["kind"]) == "BinaryOperator":
+    elif node_type == "BinaryOperator":
         operator = str(ast_node['opcode'])
         right_operand = convert_node_to_str(ast_node["inner"][1], only_string)
         left_operand = convert_node_to_str(ast_node["inner"][0])
         node_str = left_operand + " " + operator + " " + right_operand
-    elif str(ast_node["kind"]) == "UnaryOperator":
+    elif node_type == "UnaryOperator":
         operator = str(ast_node['opcode'])
         child_operand = convert_node_to_str(ast_node["inner"][0])
         node_str = operator + child_operand
+    elif node_type == "CallExpr":
+        node_str = convert_call_expr(ast_node, True)
+    else:
+        print(ast_node)
+        utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
     return node_str
 
 
