@@ -12,6 +12,7 @@ SymbolType = {
     "INT_VAR": "",
     "REAL_CONST": "",
     "REAL_VAR": "",
+    "RESULT_INT": "",
 
     "OP_LT": "<",
     "OP_LTE": "<=",
@@ -56,7 +57,13 @@ class ConstraintSymbol:
             return f"@var(integer, {self._m_symbol})"
         if self._m_cons_type == "REAL_VAR":
             return f"@var(float, {self._m_symbol})"
+        if self._m_cons_type == "RESULT_INT":
+            return f"@result(int)"
 
+        assert self._m_symbol
+        return self._m_symbol
+
+    def get_expr(self)->str:
         assert self._m_symbol
         return self._m_symbol
 
@@ -94,6 +101,9 @@ class ConstraintSymbol:
 
     def is_int_var(self):
         return self._m_cons_type == "INT_VAR"
+
+    def is_result_int(self):
+        return self._m_cons_type == "RESULT_INT"
 
     def is_real_var(self):
         return self._m_cons_type == "REAL_VAR"
@@ -146,6 +156,12 @@ class ConstraintExpression:
     def get_r_expr(self) -> t.Optional[ConstraintExpression]:
         return self._m_rvalue
 
+    def set_r_expr(self, sym_expr):
+        self._m_rvalue = sym_expr
+
+    def set_l_expr(self, sym_expr):
+        self._m_lvalue = sym_expr
+
     def to_json(self) -> t.Dict[str, t.Any]:
         json_obj = dict()
         json_obj["type"] = self.get_type()
@@ -174,6 +190,31 @@ class ConstraintExpression:
             if resolved_expr is not None:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
+        if self._m_symbol.is_result_int():
+            return f"({expr_str})"
+
+        if lhs_str and rhs_str:
+            return f"({lhs_str} {expr_str} {rhs_str})"
+        if rhs_str:
+            return f"({expr_str} {rhs_str})"
+        return expr_str
+
+    def to_expression(self) -> str:
+        expr_str = self._m_symbol.get_expr()
+        lhs_str: t.Optional[str] = None
+        rhs_str: t.Optional[str] = None
+        if self._m_lvalue:
+            lhs_str = self._m_lvalue.to_expression()
+        if self._m_rvalue:
+            rhs_str = self._m_rvalue.to_expression()
+
+        if self._m_symbol.is_sizeof():
+            resolved_expr = self.get_sizeof()
+            if resolved_expr is not None:
+                return resolved_expr.to_expression()
+            return f"({expr_str} {rhs_str})"
+        if self._m_symbol.is_result_int():
+            return f"({expr_str})"
 
         if lhs_str and rhs_str:
             return f"({lhs_str} {expr_str} {rhs_str})"
