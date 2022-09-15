@@ -6,7 +6,7 @@ import os
 import operator
 import collections
 from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, \
-    utilities, logger, parallel
+    utilities, logger, parallel, converter, constraints
 import ctypes
 import copy
 
@@ -95,10 +95,14 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
         return global_candidate_mapping[function_name]
     function_range = function_ast["range"]
     func_line_range = extractor.extract_line_range(src_file, function_range)
+
     var_info_list = extractor.extract_var_list(function_ast, src_file)
-    var_taint_list = collections.OrderedDict()
+    expr_info_list = extractor.extract_expression_list(function_ast, src_file)
+    expr_taint_list = collections.OrderedDict()
     logger.track_localization("generating candidate map for function {} in {}".format(function_name, src_file))
     logger.track_localization("VAR LIST: {}".format(var_info_list))
+    logger.track_localization("EXPR LIST: {}".format(expr_info_list))
+
     for taint_info in taint_symbolic:
         c_file, line, col, inst_add = taint_info.split(":")
         taint_expr_list = taint_symbolic[taint_info]
@@ -106,29 +110,30 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
             continue
         if int(line) not in func_line_range:
             continue
-        for var_info in var_info_list:
-            var_name, v_line, v_col, v_type = var_info
-            if int(v_line) == int(line) and int(col) in range(int(v_col), int(v_col) + len(var_name)):
+        for expr_info in (var_info_list+expr_info_list):
+            e_str, e_line, e_col, e_type, dec_or_ref = expr_info
+            if int(e_line) == int(line) and int(col) in range(int(e_col), int(e_col) + len(e_str)):
                 # print(var_name, v_line, v_col, line, col, range(int(v_col), int(v_col) + len(var_name)))
-                var_info_index = (var_name, v_line, v_col, inst_add)
-                if var_info_index not in var_taint_list:
+                var_info_index = (e_str, e_line, e_col, inst_add)
+                if var_info_index not in expr_taint_list:
                     filtered_taint_list = []
                     data_type = None
                     for taint_expr in taint_expr_list:
                         data_type, taint_expr = taint_expr.split(":")
-                        if data_type == "integer" and v_type not in definitions.INTEGER_TYPES:
+                        if data_type == "integer" and e_type not in definitions.INTEGER_TYPES:
                             continue
-                        if data_type == "pointer" and "*" not in v_type and "[" not in v_type:
+                        if data_type == "pointer" and "*" not in e_type and "[" not in e_type:
                             continue
-                        if data_type == "double" and v_type != "double":
+                        if data_type == "double" and e_type != "double":
                             continue
                         filtered_taint_list.append(taint_expr)
-                    var_taint_list[var_info_index] = {
+                    expr_taint_list[var_info_index] = {
                         "expr_list":filtered_taint_list,
-                        "data_type": data_type
+                        "data_type": data_type,
+                        "is_dec": dec_or_ref == "dec"
                     }
     # print(var_taint_list)
-    logger.track_localization("VAR TAINT LIST: {}".format(var_taint_list))
+    logger.track_localization("VAR TAINT LIST: {}".format(expr_taint_list))
     candidate_mapping = collections.OrderedDict()
     for crash_var_name in cfc_var_info_list:
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
@@ -140,26 +145,27 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
             subset_var_list = list()
             crash_var_sym_expr_code = generator.generate_z3_code_for_var(crash_var_expr, crash_var_name)
             crash_var_input_byte_list = extractor.extract_input_bytes_used(crash_var_sym_expr_code)
-            for var_taint_info in var_taint_list:
-                var_name, v_line, v_col, v_addr = var_taint_info
-                var_expr_list = var_taint_list[var_taint_info]["expr_list"]
-                v_type = var_taint_list[var_taint_info]["data_type"]
-                if v_type != crash_var_type:
+            for expr_taint_info in expr_taint_list:
+                expr_str, e_line, e_col, e_addr = expr_taint_info
+                var_expr_list = expr_taint_list[expr_taint_info]["expr_list"]
+                e_type = expr_taint_list[expr_taint_info]["data_type"]
+                is_exp_dec = expr_taint_list[expr_taint_info]["is_dec"]
+                if e_type != crash_var_type:
                     # print("SKIP", crash_var_name, var_name, crash_var_type, v_type)
                     logger.track_localization("SKIP {} with {}".format((crash_var_name, crash_var_type),
-                                                                       (var_name, v_type, v_line, v_col)))
+                                                                       (expr_str, e_type, e_line, e_col, )))
                     continue
                 # print("MATCH", crash_var_name, var_name, crash_var_type, v_type)
                 logger.track_localization("MATCH {} with {}".format((crash_var_name, crash_var_type),
-                                                                   (var_name, v_type, v_line, v_col)))
+                                                                   (expr_str, e_type, e_line, e_col)))
                 for var_expr in var_expr_list:
-                    var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, var_name)
+                    var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, expr_str)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
                         if oracle.is_expr_list_match(crash_var_expr_list, var_expr_list):
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
-                            candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
+                            candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
                             crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
                             if "width" in crash_var_expr_list:
@@ -172,9 +178,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 if var_size_bytes == crash_size_bytes:
-                                    candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
+                                    candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                                 else:
-                                    candidate_mapping[crash_var_name].add((str(crash_size_bytes), v_line, v_col, v_addr))
+                                    candidate_mapping[crash_var_name].add((str(crash_size_bytes), e_line, e_col, e_addr, is_exp_dec))
                     elif var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)
@@ -182,7 +188,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                             found_mapping = True
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
-                            candidate_mapping[crash_var_name].add((var_name, v_line, v_col, v_addr))
+                            candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
                             z3_offset_code = generator.generate_z3_code_for_offset(var_sym_expr_code,
                                                                                    crash_var_sym_expr_code)
@@ -193,12 +199,12 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                                     number = offset & 0xFFFFFFFF
                                     offset = ctypes.c_long(number).value
                                 if offset < 1000:
-                                    mapping = "({} - {})".format(var_name, offset)
+                                    mapping = "({} - {})".format(expr_str, offset)
                                     if crash_var_name not in candidate_mapping:
                                         candidate_mapping[crash_var_name] = set()
-                                    candidate_mapping[crash_var_name].add((mapping, v_line, v_col, v_addr))
+                                    candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
                     elif set(var_input_byte_list) <= set(crash_var_input_byte_list):
-                        subset_var_list.append((var_name, var_expr))
+                        subset_var_list.append((expr_str, var_expr))
             # if not found_mapping and subset_var_list:
             #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
     global_candidate_mapping[function_name] = candidate_mapping
@@ -231,8 +237,10 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
         if c_t_lookup in candidate_mapping:
             candidate_list = candidate_mapping[c_t_lookup]
             for candidate in candidate_list:
-                c_mapping, c_line, c_col, _ = candidate
+                c_mapping, c_line, c_col, _, is_dec = candidate
                 if int(c_line) > int(taint_line):
+                    continue
+                if int(c_line) == int(taint_line) and is_dec:
                     continue
                 if int(c_line) == int(taint_line) and int(c_col) > int(taint_col):
                     continue
@@ -253,10 +261,12 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                 selected_line = 0
                 selected_col = 0
                 for mapping in c_t_map:
-                    m_expr, m_line, m_col, _ = mapping
+                    m_expr, m_line, m_col, _, is_dec = mapping
                     if m_line > candidate_line:
                         continue
                     if selected_line > m_line:
+                        continue
+                    if m_line == candidate_line and is_dec:
                         continue
                     selected_expr = m_expr
                     if selected_expr in used_candidates:
@@ -274,10 +284,43 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
+        # print(localized_tokens)
         if len(localized_tokens.keys()) == len(sorted_cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
             candidate_constraints.append((localized_cfc, candidate_line, candidate_col))
+
+    # identify potential expression replacements
+    expression_string_list = extractor.extract_expression_string_list(function_ast, src_file)
+    updated_candidate_constraints = list()
+    for candidate_constraint in candidate_constraints:
+        candidate_cfc, candidate_line, candidate_col = candidate_constraint
+        candidate_loc = (candidate_line, candidate_col)
+        if candidate_loc in expression_string_list:
+            expression_str = expression_string_list[candidate_loc]
+            cfc_rhs_str = candidate_cfc.get_r_expr().to_expression()
+            cfc_lhs_str = candidate_cfc.get_l_expr().to_expression()
+            # print("CANDIDATE", candidate_loc)
+            # print(cfc_lhs_str)
+            # print(cfc_rhs_str)
+            # print(expression_str)
+            if "sizeof " not in cfc_lhs_str:
+                if oracle.is_expression_equal(cfc_lhs_str, expression_str):
+                    # print("MATCH LHS", localized_cfc.to_string())
+                    result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
+                    result_expr = constraints.make_symbolic_expression(result_symbol)
+                    candidate_cfc.set_l_expr(result_expr)
+                    updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))
+                    continue
+            elif "sizeof " not in cfc_rhs_str:
+                if oracle.is_expression_equal(cfc_rhs_str, expression_str):
+                    # print("MATCH RHS", localized_cfc.to_string())
+                    result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
+                    result_expr = constraints.make_symbolic_expression(result_symbol)
+                    candidate_cfc.set_r_expr(result_expr)
+                    updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))
+                    continue
+        updated_candidate_constraints.append(candidate_constraint)
     return candidate_constraints
 
 
@@ -304,7 +347,7 @@ def localize_state_info(fix_loc, taint_concrete):
             if int(taint_line) > int(fix_line):
                 continue
             for var_info in var_info_list:
-                var_name, v_line, v_col, v_type = var_info
+                var_name, v_line, v_col, v_type, _ = var_info
                 if "argv" in var_name:
                     continue
                 if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
@@ -351,6 +394,9 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
             if localized_loc in localized_loc_list:
                 continue
             localized_loc_list.append(localized_loc)
+            # location is not precise with assignments, hence avoid localization if location is not in taint map
+            if localized_loc not in taint_concrete:
+                continue
             state_info_list_values = localize_state_info(localized_loc, taint_concrete)
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
             localization_obj["location"] = localized_loc
