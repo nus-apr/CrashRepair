@@ -58,7 +58,7 @@ class ConstraintSymbol:
         if self._m_cons_type == "REAL_VAR":
             return f"@var(float, {self._m_symbol})"
         if self._m_cons_type == "RESULT_INT":
-            return f"@result(int)"
+            return f"@result(integer)"
 
         assert self._m_symbol
         return self._m_symbol
