@@ -5,6 +5,7 @@ from pysmt.shortcuts import is_sat, Not, And, is_unsat
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
 import numpy as np
+from sympy import sympify
 from subprocess import Popen, PIPE
 
 
@@ -234,6 +235,12 @@ def is_patch_duplicate(patch, index, lock):
     tree, _ = program
     result = is_tree_duplicate(tree, lock) or is_tree_logic_redundant(tree)
     return result, index
+
+
+def is_expression_equal(str_a, str_b):
+    expr_a = sympify(str_a.replace("[", "(").replace("]", ")"))
+    expr_b = sympify(str_b.replace("[", "(").replace("]", ")"))
+    return expr_a == expr_b
 
 
 def is_satisfiable(z3_code):

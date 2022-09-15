@@ -29,6 +29,7 @@ RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install funcy
 RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install six
 RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install numpy==1.19.1
 RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install wllvm; return 0;
+RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install sympy
 
 RUN pypy3 -m easy_install cython
 RUN pypy3 -m easy_install setuptools
@@ -38,6 +39,7 @@ RUN pypy3 -m easy_install funcy
 RUN pypy3 -m easy_install six
 RUN pypy3 -m easy_install numpy==1.19.1
 RUN pypy3 -m easy_install wllvm
+RUN pypy3 -m easy_install sympy
 RUN python3 -m easy_install wllvm
 ENV PATH "/opt/llvm-6/bin:/klee/build/bin:${PATH}"
 ENV LLVM_COMPILER=clang
