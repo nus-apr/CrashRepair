@@ -2,11 +2,12 @@ from app import definitions, values, emitter, extractor, utilities
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
 from pysmt.typing import BV32, BV8, ArrayType, BV64
-from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat
+from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, reset_env
 
 
 def get_offset(z3_code):
     z3_code += "(get-model)\n"
+    reset_env()
     parser = SmtLibParser()
     offset = None
     try:
