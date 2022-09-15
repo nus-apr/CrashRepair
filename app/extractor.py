@@ -360,7 +360,7 @@ def extract_var_ref_list(ast_node, file_path):
         condition_node = ast_node['inner'][0]
         body_node = ast_node['inner'][1]
         condition_node_var_list = extract_var_ref_list(condition_node, file_path)
-        for var_name, line_number, col_number, var_type in condition_node_var_list:
+        for var_name, line_number, col_number, var_type, _ in condition_node_var_list:
             var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
         var_list = var_list + extract_var_ref_list(body_node, file_path)
         return var_list
@@ -839,9 +839,13 @@ def extract_expression_list(ast_node, src_file):
                     op_code = ast_node["opcode"]
                 else:
                     op_code = None
+        if op_code in [">", ">=", "<", "<=", "==", "!="]:
+            data_type = "bool"
+        else:
+            data_type = ast_node["type"]["qualType"]
         expression_str = converter.convert_node_to_str(ast_node)
         expression_loc = extract_loc(src_file, ast_node["range"]["begin"], op_code)
-        data_type = "int"
+
         expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
     return list(set(expression_list))
 
