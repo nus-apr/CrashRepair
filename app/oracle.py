@@ -301,9 +301,13 @@ def is_expr_list_match(expr_list_a, expr_list_b):
     if "width" in expr_list_a or "width" in expr_list_b:
         return False
     for expr_a in expr_list_a:
-        value_a = expr_a.split(" ")[1]
+        value_a = expr_a
+        if " " in expr_a:
+            value_a = expr_a.split(" ")[1]
         for expr_b in expr_list_b:
-            value_b = expr_b.split(" ")[1]
+            value_b = expr_b
+            if " " in expr_b:
+                value_b = expr_b.split(" ")[1]
             if value_a != value_b:
                 return False
     return True
