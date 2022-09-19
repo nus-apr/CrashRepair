@@ -33,9 +33,10 @@ std::vector<std::string> getLines(std::string const &s);
 
 std::string makeAbsolutePath(std::string const &path, clang::SourceManager const &sourceManager);
 
-clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::SourceManager const &sourceManager);
+clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::ASTContext const &context);
 clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::ASTContext const &context);
-clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager);
+// clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::SourceManager const &sourceManager);
+// clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager);
 
 std::string yesOrNo(bool status);
 

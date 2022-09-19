@@ -14,6 +14,48 @@
 
 namespace crashrepairfix {
 
+
+// Taken from https://clang.llvm.org/doxygen/Transforms_8cpp_source.html
+clang::SourceLocation findSemiAfterLocation(
+  clang::SourceLocation loc,
+  clang::ASTContext &Ctx,
+  bool IsDecl
+) {
+  clang::SourceManager &SM = Ctx.getSourceManager();
+  if (loc.isMacroID()) {
+    if (!clang::Lexer::isAtEndOfMacroExpansion(loc, SM, Ctx.getLangOpts(), &loc))
+      return clang::SourceLocation();
+  }
+  loc = clang::Lexer::getLocForEndOfToken(loc, /*Offset=*/0, SM, Ctx.getLangOpts());
+
+  // Break down the source location.
+  std::pair<clang::FileID, unsigned> locInfo = SM.getDecomposedLoc(loc);
+
+  // Try to load the file buffer.
+  bool invalidTemp = false;
+  llvm::StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
+  if (invalidTemp)
+    return clang::SourceLocation();
+
+  const char *tokenBegin = file.data() + locInfo.second;
+
+  // Lex from the start of the given location.
+  clang::Lexer lexer(SM.getLocForStartOfFile(locInfo.first),
+              Ctx.getLangOpts(),
+              file.begin(), tokenBegin, file.end());
+  clang::Token tok;
+  lexer.LexFromRawLexer(tok);
+  if (tok.isNot(clang::tok::semi)) {
+    if (!IsDecl)
+      return clang::SourceLocation();
+    // Declaration may be followed with other tokens; such as an __attribute,
+    // before ending with a semicolon.
+    return findSemiAfterLocation(tok.getLocation(), Ctx, /*IsDecl*/true);
+  }
+
+  return tok.getLocation();
+}
+
 // https://stackoverflow.com/questions/2417588/escaping-a-c-string
 std::string escape_character(char c) {
   std::stringstream stream;
@@ -119,16 +161,48 @@ std::string makeAbsolutePath(std::string const &path, clang::SourceManager const
 }
 
 clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::ASTContext const &context) {
-  return getRangeWithTokenEnd(stmt, context.getSourceManager());
+  return getRangeWithTokenEnd(stmt->getSourceRange(), context);
 }
 
-clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
-  return getRangeWithTokenEnd(stmt->getSourceRange(), sourceManager);
-}
+// clang::SourceRange getRangeWithTokenEnd(clang::Stmt const *stmt, clang::SourceManager const &sourceManager) {
+//   return getRangeWithTokenEnd(stmt->getSourceRange(), sourceManager);
+// }
 
-clang::SourceRange getRangeWithTokenEnd(clang::SourceRange const &range, clang::SourceManager const &sourceManager) {
+clang::SourceRange getRangeWithTokenEnd(
+  clang::SourceRange const &range,
+  clang::ASTContext const &context
+) {
   static const clang::LangOptions languageOptions;
+
+  auto const &sourceManager = context.getSourceManager();
   auto expandedEnd = clang::Lexer::getLocForEndOfToken(range.getEnd(), 0, sourceManager, languageOptions);
+
+  // TODO write function to getRangeWithSemiColon
+  // find the trailing semi-colon token, if any
+  // https://lists.llvm.org/pipermail/cfe-dev/2014-July/038339.html
+  // https://clang.llvm.org/doxygen/namespaceclang_1_1arcmt_1_1trans.html
+  auto semiLocation = findSemiAfterLocation(expandedEnd, const_cast<clang::ASTContext&>(context), false);
+  if (semiLocation.isValid()) {
+    expandedEnd = semiLocation;
+  }
+
+  // auto semiColonTokenStart = expandedEnd.getLocWithOffset(1);
+  // auto semiColonTokenLength = clang::Lexer::MeasureTokenLength(
+  //   semiColonTokenStart,
+  //   sourceManager,
+  //   languageOptions
+  // );
+  // auto semiColonTokenEnd = expandedEnd.getLocWithOffset(semiColonTokenLength);
+  // auto semiColonCharRange = clang::CharSourceRange::getTokenRange(
+  //   clang::SourceRange(semiColonTokenStart, semiColonTokenEnd)
+  // );
+  // auto semiColonText = clang::Lexer::getSourceText(
+  //   semiColonCharRange,
+  //   sourceManager,
+  //   languageOptions
+  // ).str();
+  // spdlog::debug("TODO: check token contents: {}", semiColonText);
+
   return clang::SourceRange(range.getBegin(), expandedEnd);
 }
 

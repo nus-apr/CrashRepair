@@ -36,38 +36,52 @@ public:
       relativeToAbsoluteFilenames()
     {}
 
-  std::string getStmtFilename(clang::Stmt const *stmt) {
-    auto filename = sourceManager.getFilename(stmt->getBeginLoc()).str();
+  std::string getLocationFilename(clang::SourceLocation const &location) {
+    auto filename = sourceManager.getFilename(location).str();
     if (relativeToAbsoluteFilenames.find(filename) == relativeToAbsoluteFilenames.end()) {
       relativeToAbsoluteFilenames[filename] = makeAbsolutePath(filename, sourceManager);
     }
     return relativeToAbsoluteFilenames[filename];
   }
 
+  bool VisitBinaryOperator(clang::BinaryOperator *binop) {
+    if (checkLocation(binop->getOperatorLoc())) {
+      spdlog::debug("found corresponding binary operator!");
+      result = binop;
+      return false;
+    }
+    return true;
+  }
+
   bool VisitStmt(clang::Stmt *stmt) {
-    auto stmtLoc = stmt->getBeginLoc();
-    if (!stmtLoc.isValid()) {
-      return true;
-    }
-
-    std::string stmtFilename = getStmtFilename(stmt);
-    if (stmtFilename != sourceLocation.file) {
-      return true;
-    }
-
-    auto stmtLine = sourceManager.getSpellingLineNumber(stmtLoc);
-    auto stmtColumn = sourceManager.getSpellingColumnNumber(stmtLoc);
-
-    if (stmtLine == sourceLocation.line)
-      spdlog::debug("stmt at: {}:{}:{}", stmtFilename, stmtLine, stmtColumn);
-
-    // we have a match! store it and stop searching
-    if (stmtColumn == sourceLocation.column && stmtLine == sourceLocation.line) {
+    if (checkLocation(stmt->getBeginLoc())) {
+      spdlog::debug("found corresponding statement!");
       result = stmt;
       return false;
     }
- 
     return true;
+  }
+
+private:
+  /** Returns true if a given location matches the expected location. */
+  bool checkLocation(clang::SourceLocation const &location) {
+    if (!location.isValid()) {
+      return false;
+    }
+
+    std::string locFilename = getLocationFilename(location);
+    if (locFilename != sourceLocation.file) {
+      return false;
+    }
+
+    auto locLine = sourceManager.getSpellingLineNumber(location);
+    auto locColumn = sourceManager.getSpellingColumnNumber(location);
+
+    if (locLine == sourceLocation.line) {
+      spdlog::debug("checking location: {}:{}:{}", locFilename, locLine, locColumn);
+    }
+
+    return locColumn == sourceLocation.column && locLine == sourceLocation.line;
   }
 };
 
