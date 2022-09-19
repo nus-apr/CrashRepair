@@ -210,6 +210,14 @@ void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
   auto source = location.getSource();
   auto sourceRange = crashrepairfix::getRangeWithTokenEnd(stmt, context);
 
+  // get the trailing semi-colon
+  auto semiLocation = findSemiAfterLocation(sourceRange.getEnd(), const_cast<clang::ASTContext&>(context));
+  if (semiLocation.isValid()) {
+    spdlog::debug("including semi-colon inside wrapped location");
+    sourceRange = clang::SourceRange(sourceRange.getBegin(), semiLocation.getLocWithOffset(1));
+    source = fmt::format("{};", source);
+  }
+
   spdlog::info("wrapping guard around statement: {}", source);
 
   // for now, don't guard statements that contain a declaration

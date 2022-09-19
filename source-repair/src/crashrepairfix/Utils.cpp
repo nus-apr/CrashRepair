@@ -18,15 +18,16 @@ namespace crashrepairfix {
 // Taken from https://clang.llvm.org/doxygen/Transforms_8cpp_source.html
 clang::SourceLocation findSemiAfterLocation(
   clang::SourceLocation loc,
-  clang::ASTContext &Ctx,
-  bool IsDecl
+  clang::ASTContext &Ctx
 ) {
   clang::SourceManager &SM = Ctx.getSourceManager();
   if (loc.isMacroID()) {
-    if (!clang::Lexer::isAtEndOfMacroExpansion(loc, SM, Ctx.getLangOpts(), &loc))
+    spdlog::error("failed to get semi-colon after location: location is a macro");
+    if (!clang::Lexer::isAtEndOfMacroExpansion(loc, SM, Ctx.getLangOpts(), &loc)) {
       return clang::SourceLocation();
+    }
   }
-  loc = clang::Lexer::getLocForEndOfToken(loc, /*Offset=*/0, SM, Ctx.getLangOpts());
+  // loc = clang::Lexer::getLocForEndOfToken(loc, /*Offset=*/0, SM, Ctx.getLangOpts());
 
   // Break down the source location.
   std::pair<clang::FileID, unsigned> locInfo = SM.getDecomposedLoc(loc);
@@ -34,26 +35,28 @@ clang::SourceLocation findSemiAfterLocation(
   // Try to load the file buffer.
   bool invalidTemp = false;
   llvm::StringRef file = SM.getBufferData(locInfo.first, &invalidTemp);
-  if (invalidTemp)
+  if (invalidTemp) {
+    spdlog::error("failed to get semi-colon after location: could not load file buffer");
     return clang::SourceLocation();
+  }
 
   const char *tokenBegin = file.data() + locInfo.second;
 
-  // Lex from the start of the given location.
+  // lex from the start of the given location
   clang::Lexer lexer(SM.getLocForStartOfFile(locInfo.first),
               Ctx.getLangOpts(),
               file.begin(), tokenBegin, file.end());
-  clang::Token tok;
-  lexer.LexFromRawLexer(tok);
-  if (tok.isNot(clang::tok::semi)) {
-    if (!IsDecl)
-      return clang::SourceLocation();
-    // Declaration may be followed with other tokens; such as an __attribute,
-    // before ending with a semicolon.
-    return findSemiAfterLocation(tok.getLocation(), Ctx, /*IsDecl*/true);
+  clang::Token token;
+  lexer.LexFromRawLexer(token);
+  if (token.isNot(clang::tok::semi)) {
+    spdlog::error(
+      "failed to get semi-colon after location: next token is not a semi-colon [{}]",
+      token.getName()
+    );
+    return clang::SourceLocation();
   }
 
-  return tok.getLocation();
+  return token.getLocation();
 }
 
 // https://stackoverflow.com/questions/2417588/escaping-a-c-string
@@ -181,10 +184,10 @@ clang::SourceRange getRangeWithTokenEnd(
   // find the trailing semi-colon token, if any
   // https://lists.llvm.org/pipermail/cfe-dev/2014-July/038339.html
   // https://clang.llvm.org/doxygen/namespaceclang_1_1arcmt_1_1trans.html
-  auto semiLocation = findSemiAfterLocation(expandedEnd, const_cast<clang::ASTContext&>(context), false);
-  if (semiLocation.isValid()) {
-    expandedEnd = semiLocation;
-  }
+  auto semiLocation = findSemiAfterLocation(expandedEnd, const_cast<clang::ASTContext&>(context));
+  // if (semiLocation.isValid()) {
+  //   expandedEnd = semiLocation;
+  // }
 
   // auto semiColonTokenStart = expandedEnd.getLocWithOffset(1);
   // auto semiColonTokenLength = clang::Lexer::MeasureTokenLength(

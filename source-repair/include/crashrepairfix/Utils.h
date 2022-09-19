@@ -17,6 +17,11 @@
 
 namespace crashrepairfix {
 
+clang::SourceLocation findSemiAfterLocation(
+  clang::SourceLocation loc,
+  clang::ASTContext &Ctx
+);
+
 std::string escape_character(char c);
 
 void remove_trailing_newline(std::string &str);
