@@ -240,8 +240,8 @@ def is_patch_duplicate(patch, index, lock):
 def is_expression_equal(str_a, str_b):
     if "(" in str_a or "(" in str_b:
         return False
-    expr_a = sympify(str_a.replace("[", "(").replace("]", ")"))
-    expr_b = sympify(str_b.replace("[", "(").replace("]", ")"))
+    expr_a = sympify(str_a.replace("[", "(").replace("]", ")").replace(".", "_"))
+    expr_b = sympify(str_b.replace("[", "(").replace("]", ")").replace(".", "_"))
     return expr_a == expr_b
 
 

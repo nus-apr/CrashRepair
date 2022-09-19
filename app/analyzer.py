@@ -125,7 +125,6 @@ def analyze():
         # assert exit_code == 0
         expr_trace_log = klee_concolic_out_dir + "/expr.log"
         var_info = reader.read_symbolic_expressions(expr_trace_log)
-
         memory_track_log = klee_concolic_out_dir + "/memory.log"
         values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
         taint_byte_list = []
@@ -138,10 +137,13 @@ def analyze():
             updated_var_info[var_name] = var_info[var_name]
             if var_type == "pointer":
                 if len(sym_expr_list) > 1:
-                    emitter.error("More than one value for pointer")
+                    emitter.warning("More than one value for pointer")
                 if crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
                     symbolic_ptr = sym_expr_list[0].split(" ")[1]
-                    sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
+                    if symbolic_ptr in values.MEMORY_TRACK:
+                        sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
+                    else:
+                        sizeof_expr_list = { "width": 1, "size": var_info[var_name]["meta_data"] }
                     sizeof_name = f"(sizeof  @var(integer, {var_name}))"
                     updated_var_info[sizeof_name] = {
                         "expr_list": sizeof_expr_list,

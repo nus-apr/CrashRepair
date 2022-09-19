@@ -350,7 +350,7 @@ def extract_var_ref_list(ast_node, file_path):
         for i in range(0, child_count - 1):
             condition_node = ast_node['inner'][i]
             condition_node_var_list = extract_var_ref_list(condition_node, file_path)
-            for var_name, line_number, col_number, var_type in condition_node_var_list:
+            for var_name, line_number, col_number, var_type, _ in condition_node_var_list:
                 var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
         var_list = var_list + extract_var_ref_list(body_node, file_path)
         return var_list
@@ -563,6 +563,8 @@ def extract_reference_node_list(ast_node):
 
 def extract_initialization_node_list(ast_node):
     init_node_list = list()
+    if not ast_node:
+        return init_node_list
     node_type = str(ast_node["kind"])
     if node_type == "BinaryOperator":
         node_value = str(ast_node['opcode'])
