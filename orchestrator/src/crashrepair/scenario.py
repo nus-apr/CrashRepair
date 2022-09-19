@@ -416,9 +416,9 @@ class Scenario:
                 logger.debug(f"testing candidate #{candidate.id_} against test #{test.name}...")
                 if test.run():
                     logger.info(f"candidate #{candidate.id_} passes test #{test.name}")
-                    return False
                 else:
                     logger.info(f"candidate #{candidate.id_} fails test #{test.name}")
+                    return False
 
             logger.info(f"repair found! candidate #{candidate.id_} passes all tests")
 
