@@ -9,14 +9,12 @@ from app import utilities
 
 def convert_cast_expr(ast_node, only_string=False):
     var_list = list()
-    type_node = ast_node["inner"][0]
-    type_value = type_node['value']
-    data_type = None
-    if "type" in type_node:
-        data_type = str(type_node["type"]["qualType"])
-    param_node = ast_node["inner"][1]
+    data_type = "None"
+    if "type" in ast_node:
+        data_type = str(ast_node["type"]["qualType"])
+    param_node = ast_node["inner"][0]
     param_node_type = param_node["kind"]
-    var_name = "(" + type_value + ") " + get_node_value(param_node)
+    var_name = "(" + data_type + ") " + get_node_value(param_node)
     if only_string:
         return var_name
     return var_name, var_list
@@ -450,6 +448,8 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = operator + child_operand
     elif node_type == "CallExpr":
         node_str = convert_call_expr(ast_node, True)
+    elif node_type == "CStyleCastExpr":
+        node_str = convert_cast_expr(ast_node, True)
     else:
         print(ast_node)
         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
