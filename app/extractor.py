@@ -871,6 +871,8 @@ def extract_expression_string_list(ast_node, src_file):
                     op_code = ast_node["opcode"]
                 else:
                     op_code = None
+        if op_code in [">", ">=", "<", "<=", "==", "!="]:
+            continue
         expression_str = converter.convert_node_to_str(ast_node)
         loc_range = ast_node["range"]["begin"]
         if ast_node["kind"] == "BinaryOperator":
