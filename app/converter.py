@@ -450,6 +450,8 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = convert_call_expr(ast_node, True)
     elif node_type == "CStyleCastExpr":
         node_str = convert_cast_expr(ast_node, True)
+    elif node_type == "ParenExpr":
+        node_str = convert_paren_node_to_expr(ast_node, True)
     else:
         print(ast_node)
         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
