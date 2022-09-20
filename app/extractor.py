@@ -296,7 +296,9 @@ def extract_var_ref_list(ast_node, file_path):
             if file_path not in values.SOURCE_LINE_MAP:
                 with open(file_path, "r") as s_file:
                     values.SOURCE_LINE_MAP[file_path] = s_file.readlines()
-            source_line = values.SOURCE_LINE_MAP[file_path][line_number-1]
+            source_line = values.SOURCE_LINE_MAP[file_path][line_number - 1]
+            if op_code not in source_line:
+                return var_list
             op_position = source_line.index(op_code, col_number) + 1
             assignment_var_name = converter.convert_node_to_str(left_side)
             # print("ADD", (str(assignment_var_name), line_number, op_position, data_type))
@@ -823,6 +825,8 @@ def extract_loc(file_path, ast_loc_info, op_code = None):
             with open(file_path, "r") as s_file:
                 values.SOURCE_LINE_MAP[file_path] = s_file.readlines()
         source_line = values.SOURCE_LINE_MAP[file_path][line_number - 1]
+        if op_code not in source_line:
+            return None
         col_number = source_line.index(op_code, col_number) + 1
     return file_path, line_number, col_number
 
@@ -847,7 +851,8 @@ def extract_expression_list(ast_node, src_file):
             data_type = ast_node["type"]["qualType"]
         expression_str = converter.convert_node_to_str(ast_node)
         expression_loc = extract_loc(src_file, ast_node["range"]["begin"], op_code)
-
+        if expression_loc is None:
+            continue
         expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
     return list(set(expression_list))
 
@@ -871,6 +876,8 @@ def extract_expression_string_list(ast_node, src_file):
         if ast_node["kind"] == "BinaryOperator":
             loc_range = ast_node["inner"][0]["range"]["end"]
         expression_loc = extract_loc(src_file, loc_range, op_code)
+        if expression_loc is None:
+            continue
         expression_index = (expression_loc[1], expression_loc[2])
         expression_list[expression_index] = expression_str
     return expression_list

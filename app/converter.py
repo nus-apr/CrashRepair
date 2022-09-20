@@ -268,7 +268,7 @@ def convert_array_subscript(ast_node, only_string=False):
 
 
 def convert_call_expr(ast_node, only_string=False):
-    var_name = ""
+    var_name = "()"
     function_name = ""
     operand_list = list()
     var_list = list()
@@ -277,52 +277,53 @@ def convert_call_expr(ast_node, only_string=False):
     if call_function_node_type == "ImplicitCastExpr":
         call_function_node = call_function_node["inner"][0]
         call_function_node_type = str(call_function_node["kind"])
-    call_function_node_ref_type = str(call_function_node['referencedDecl']['kind'])
-    operand_count = len(ast_node["inner"])
-    if call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "FunctionDecl":
-        function_name = str(call_function_node['referencedDecl']['name'])
-    elif call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "VarDecl":
-        function_name = str(call_function_node["type"]["qualType"])
-        operand = str(call_function_node['value'])
-        operand_list.append(operand)
-        operand_count = 0
-    else:
-        print(ast_node)
-        utilities.error_exit("unknown decl type in convert_call_expr")
-
-    for i in range(1, operand_count):
-        operand_node = ast_node["inner"][i]
-        operand_node_type = str(operand_node["kind"])
-        if operand_node_type == "CallExpr":
-            operand_var_name = convert_call_expr(operand_node, True)
-            operand_list.append(operand_var_name)
-            # var_list = var_list + operand_var_list
-        elif operand_node_type == "DeclRefExpr":
-            operand_var_name = str(operand_node['value'])
-            operand_list.append(operand_var_name)
-        elif operand_node_type == "MemberExpr":
-            operand_var_name = convert_member_expr(operand_node, True)
-            operand_list.append(operand_var_name)
-        elif operand_node_type == "Macro":
-            operand_var_name = str(operand_node['value'])
-            if "?" in operand_var_name:
-                continue
-            operand_list.append(operand_var_name)
-        elif operand_node_type == "IntegerLiteral":
-            operand_var_name = str(operand_node['value'])
-            operand_list.append(operand_var_name)
+    if "referencedDecl" in call_function_node:
+        call_function_node_ref_type = str(call_function_node['referencedDecl']['kind'])
+        operand_count = len(ast_node["inner"])
+        if call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "FunctionDecl":
+            function_name = str(call_function_node['referencedDecl']['name'])
+        elif call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "VarDecl":
+            function_name = str(call_function_node["type"]["qualType"])
+            operand = str(call_function_node['value'])
+            operand_list.append(operand)
+            operand_count = 0
         else:
-            operand_var_name = get_node_value(operand_node)
-            operand_list.append(operand_var_name)
+            print(ast_node)
+            utilities.error_exit("unknown decl type in convert_call_expr")
 
-    var_name = function_name + "("
-    for operand in operand_list:
-        var_name += operand
-        if operand != operand_list[-1]:
-            var_name += ","
+        for i in range(1, operand_count):
+            operand_node = ast_node["inner"][i]
+            operand_node_type = str(operand_node["kind"])
+            if operand_node_type == "CallExpr":
+                operand_var_name = convert_call_expr(operand_node, True)
+                operand_list.append(operand_var_name)
+                # var_list = var_list + operand_var_list
+            elif operand_node_type == "DeclRefExpr":
+                operand_var_name = str(operand_node['value'])
+                operand_list.append(operand_var_name)
+            elif operand_node_type == "MemberExpr":
+                operand_var_name = convert_member_expr(operand_node, True)
+                operand_list.append(operand_var_name)
+            elif operand_node_type == "Macro":
+                operand_var_name = str(operand_node['value'])
+                if "?" in operand_var_name:
+                    continue
+                operand_list.append(operand_var_name)
+            elif operand_node_type == "IntegerLiteral":
+                operand_var_name = str(operand_node['value'])
+                operand_list.append(operand_var_name)
+            else:
+                operand_var_name = get_node_value(operand_node)
+                operand_list.append(operand_var_name)
 
-    var_name += ")"
-    # print(var_name)
+        var_name = function_name + "("
+        for operand in operand_list:
+            var_name += operand
+            if operand != operand_list[-1]:
+                var_name += ","
+
+        var_name += ")"
+        # print(var_name)
     if only_string:
         return var_name
     return var_name, list(set(var_list))
