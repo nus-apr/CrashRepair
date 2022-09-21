@@ -330,7 +330,7 @@ def extract_var_ref_list(ast_node, file_path):
             source_line = values.SOURCE_LINE_MAP[file_path][line_number - 1]
             if op_code not in source_line:
                 return var_list
-            op_position = source_line.index(op_code, col_number) + 1
+            op_position = source_line.index(op_code, col_number-1) + 1
             assignment_var_name = converter.convert_node_to_str(left_side)
             # print("ADD", (str(assignment_var_name), line_number, op_position, data_type))
             var_list.append((str(assignment_var_name), line_number, op_position, data_type, "ref"))
@@ -880,7 +880,7 @@ def extract_loc(file_path, ast_loc_info, op_code = None):
         source_line = values.SOURCE_LINE_MAP[file_path][line_number - 1]
         if op_code not in source_line:
             return None
-        col_number = source_line.index(op_code, col_number) + 1
+        col_number = source_line.index(op_code, col_number-1) + 1
     return file_path, line_number, col_number
 
 def extract_expression_list(ast_node, src_file):
