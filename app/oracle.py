@@ -242,9 +242,11 @@ def is_expression_equal(str_a, str_b):
     prohibited_tok_list = ["(", "&"]
     if any(t in prohibited_tok_list for t in token_list):
         return False
-
-    expr_a = sympify(str_a.replace("[", "(").replace("]", ")").replace(".", "_").replace("->", "_"))
-    expr_b = sympify(str_b.replace("[", "(").replace("]", ")").replace(".", "_").replace("->", "_"))
+    try:
+        expr_a = sympify(str_a.replace("[", "(").replace("]", ")").replace(".", "_").replace("->", "_"))
+        expr_b = sympify(str_b.replace("[", "(").replace("]", ")").replace(".", "_").replace("->", "_"))
+    except Exception as ex:
+        return False
     return expr_a == expr_b
 
 
