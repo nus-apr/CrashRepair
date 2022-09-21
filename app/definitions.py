@@ -160,7 +160,7 @@ CRASH_TYPE_MEMSET_ERROR = 7
 
 INTEGER_TYPES = ["int", "short", "long",
                  "uint_fast8_t", "uint_fast8_t","uint_fast32_t", "uint_fast16_t",
-                 "uint8", "uint16", "uint32"]
+                 "uint8", "uint16", "uint32", "UI8", "UI16"]
 
 
 

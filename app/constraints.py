@@ -217,9 +217,9 @@ class ConstraintExpression:
             return f"({expr_str})"
 
         if lhs_str and rhs_str:
-            return f"({lhs_str} {expr_str} {rhs_str})"
+            return f"{lhs_str} {expr_str} {rhs_str}"
         if rhs_str:
-            return f"({expr_str} {rhs_str})"
+            return f"{expr_str}{rhs_str}"
         return expr_str
 
     def get_symbol_list(self):

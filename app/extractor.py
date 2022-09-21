@@ -365,8 +365,8 @@ def extract_var_ref_list(ast_node, file_path):
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, col_number = begin_loc
         var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
-        # for aux_var_name, aux_var_type in auxilary_list:
-        #     var_list.append((str(aux_var_name), line_number, col_number, aux_var_type))
+        for aux_var_name, aux_var_type in auxilary_list:
+            var_list.append((str(aux_var_name), line_number, col_number, aux_var_type, "ref"))
         return var_list
     if node_type in ["MemberExpr"]:
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
@@ -791,7 +791,7 @@ def extract_array_subscript_node_list(ast_node):
     return array_node_list
 
 
-def extract_unaryop_node_list(ast_node, filter_list):
+def extract_unaryop_node_list(ast_node, filter_list=None):
     unaryop_node_list = list()
     if not ast_node:
         return unaryop_node_list
@@ -913,7 +913,7 @@ def extract_expression_string_list(ast_node, src_file):
     expression_list = dict()
     binary_op_list = extract_binaryop_node_list(ast_node, src_file)
     initialize_op_list = extract_initialization_node_list(ast_node)
-    unary_op_list = extract_unaryop_node_list(ast_node, src_file)
+    unary_op_list = extract_unaryop_node_list(ast_node)
     for ast_node in (binary_op_list + unary_op_list + initialize_op_list):
         op_code = None
         if "opcode" in ast_node:

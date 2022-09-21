@@ -464,6 +464,8 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = convert_conditional_op_to_expr(ast_node, True)
     elif node_type == "UnaryExprOrTypeTraitExpr":
         node_str = convert_unaryexprortypetraitexpr_to_expr(ast_node, True)
+    elif node_type == "InitListExpr":
+        node_str = "{}"
     else:
         print(ast_node)
         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
