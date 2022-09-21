@@ -179,8 +179,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                                 if crash_size_width > 0:
                                     crash_size_bytes = int(crash_size_bits/crash_size_width)
                                 var_size_bytes = 0
-                                if "bv" in var_expr_list[0]:
-                                    var_size_bytes = int(var_expr_list[0].split(" ")[1].replace("bv", ""))
+                                if "bv" in var_expr:
+                                    var_size_bytes = int(var_expr.split(" ")[1].replace("bv", ""))
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 if var_size_bytes == crash_size_bytes:
