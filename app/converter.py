@@ -69,7 +69,7 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
 
 def convert_conditional_op_to_expr(ast_node, only_string=False):
     var_name = ""
-    condition_exp = convert_binary_node_to_expr(ast_node["inner"][0], True)
+    condition_exp = convert_node_to_str(ast_node["inner"][0], True)
     true_node = ast_node["inner"][1]
     true_node_value = get_node_value(true_node)
     false_node = ast_node["inner"][2]
@@ -430,7 +430,7 @@ def convert_node_to_str(ast_node, only_string=False):
         return convert_node_to_str(ast_node["inner"][0], only_string)
     if node_type in ["DeclRefExpr"]:
         node_str = str(ast_node['referencedDecl']['name'])
-    elif node_type == "IntegerLiteral":
+    elif node_type in ["IntegerLiteral", "CharacterLiteral"]:
         node_str = str(ast_node["value"])
     elif node_type in ["DeclStmt", "VarDecl"]:
         node_str = str(ast_node['value'])
@@ -453,6 +453,8 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = convert_cast_expr(ast_node, True)
     elif node_type == "ParenExpr":
         node_str = convert_paren_node_to_expr(ast_node, True)
+    elif node_type == "ConditionalOperator":
+        node_str = convert_conditional_op_to_expr(ast_node, True)
     else:
         print(ast_node)
         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))

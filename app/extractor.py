@@ -401,7 +401,7 @@ def extract_var_ref_list(ast_node, file_path):
         condition_node = ast_node['inner'][0]
         body_node = ast_node['inner'][1]
         condition_node_var_list = extract_var_ref_list(condition_node, file_path)
-        for var_name, line_number, col_number, var_type in condition_node_var_list:
+        for var_name, line_number, col_number, var_type, _ in condition_node_var_list:
             var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
         var_list = var_list + extract_var_ref_list(body_node, file_path)
         return var_list

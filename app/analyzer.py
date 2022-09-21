@@ -140,17 +140,19 @@ def analyze():
                     emitter.warning("More than one value for pointer")
                 if crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
                     symbolic_ptr = sym_expr_list[0].split(" ")[1]
+                    sizeof_expr_list = None
                     if symbolic_ptr in values.MEMORY_TRACK:
                         sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
                     else:
                         static_size = var_info[var_name]["meta_data"]
                         if str(static_size).isnumeric():
                             sizeof_expr_list = { "width": 1, "size": var_info[var_name]["meta_data"] }
-                            sizeof_name = f"(sizeof  @var(integer, {var_name}))"
-                            updated_var_info[sizeof_name] = {
-                                "expr_list": sizeof_expr_list,
-                                "data_type": "integer"
-                            }
+                    if sizeof_expr_list:
+                        sizeof_name = f"(sizeof  @var(integer, {var_name}))"
+                        updated_var_info[sizeof_name] = {
+                            "expr_list": sizeof_expr_list,
+                            "data_type": "integer"
+                        }
 
         for var_name in updated_var_info:
             byte_list = []
