@@ -19,6 +19,13 @@ def convert_cast_expr(ast_node, only_string=False):
         return var_name
     return var_name, var_list
 
+def convert_unaryexprortypetraitexpr_to_expr(ast_node, only_string=False):
+    var_list = list()
+    expr = "{}({})".format(ast_node["name"], ast_node["argType"]["qualType"])
+    if only_string:
+        return expr
+    return expr, var_list
+
 
 def convert_paren_node_to_expr(ast_node, only_string=False):
     var_name = ""
@@ -455,6 +462,8 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = convert_paren_node_to_expr(ast_node, True)
     elif node_type == "ConditionalOperator":
         node_str = convert_conditional_op_to_expr(ast_node, True)
+    elif node_type == "UnaryExprOrTypeTraitExpr":
+        node_str = convert_unaryexprortypetraitexpr_to_expr(ast_node, True)
     else:
         print(ast_node)
         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
