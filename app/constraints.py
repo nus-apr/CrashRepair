@@ -331,7 +331,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         return constraint_expr
     elif node_type == "Macro":
         utilities.error_exit("Unhandled node type for Expression: {}".format(node_type))
-    elif node_type in ["ParenExpr", "ImplicitCastExpr"]:
+    elif node_type in ["ParenExpr", "ImplicitCastExpr", "CStyleCastExpr"]:
         child_node = ast_node["inner"][0]
         return generate_expr_for_ast(child_node)
     elif node_type == "IntegerLiteral":
@@ -342,6 +342,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         return constraint_expr
     elif node_type in ["DeclRefExpr"]:
         symbol_str = str(ast_node["referencedDecl"]["name"])
+        data_type = ast_node["type"]["qualType"]
         op_type = "INT_VAR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
@@ -456,6 +457,35 @@ def generate_shift_overflow_constraint(shift_node):
 
     # last, concatenate both constraints into one
     constraint_expr = make_binary_expression(and_op, first_constraint_expr, second_constraint_expr)
+    return constraint_expr
+
+
+
+def generate_memset_constraint(call_node):
+    pointer_node = call_node["inner"][1]
+    size_node = call_node["inner"][3]
+    pointer_name = converter.convert_node_to_str(pointer_node)
+    size_value = converter.convert_node_to_str(size_node)
+
+    # Generating a constraint of type size_value > 0 && pointer_name != 0
+    # first generate the expressions for the two operands
+    pointer_expr = generate_expr_for_ast(pointer_node)
+    size_expr = generate_expr_for_ast(size_node)
+
+    # generate the first constraint 0 < size_value
+    zero_val_symbol = make_constraint_symbol("0", "INT_CONST")
+    zero_val_expr = make_symbolic_expression(zero_val_symbol)
+    less_than_op = build_op_symbol("<")
+    first_constraint_expr = make_binary_expression(less_than_op, zero_val_expr, size_expr)
+
+
+    # next generate the second constraint pointer != 0
+    not_eq_op = build_op_symbol("!=")
+    second_constraint_expr = make_binary_expression(not_eq_op, zero_val_expr, pointer_expr)
+
+    # last, concatenate both constraints into one
+    logical_and_op = build_op_symbol("&&")
+    constraint_expr = make_binary_expression(logical_and_op, first_constraint_expr, second_constraint_expr)
     return constraint_expr
 
 

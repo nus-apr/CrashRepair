@@ -170,12 +170,43 @@ def extract_ast_json(source_file_path):
     return ast_tree
 
 
+def extract_source_loc_from_stack(log_file):
+    source_loc = None
+    with open(log_file, "r") as log_file:
+        log_lines = log_file.readlines()
+        is_stack = False
+        crash_libc_func = None
+        for line in log_lines:
+            if is_stack:
+                if crash_libc_func is None:
+                    crash_libc_func = line.split(" in ")[-1].split(" ")[0]
+                else:
+                    bug_loc = line.split(" ")[-1]
+                    if "klee-uclibc" not in bug_loc:
+                        source_loc = bug_loc
+                        break
+            if "Stack" in line:
+                is_stack = True
+    return source_loc
+
 def extract_crash_information(binary_path, argument_list, klee_log_path):
     emitter.normal("\textracting crash information")
     binary_input = " ".join(argument_list)
     c_type, c_file, c_line, c_column, c_address = reader.collect_klee_crash_info(klee_log_path)
-    ast_tree = extract_ast_json(c_file)
-    function_node_list = extract_function_node_list(ast_tree)
+    if "klee-uclibc" in c_file:
+        klee_out_dir = Path(klee_log_path).parent.absolute()
+        klee_file_list = [f for f in os.listdir(klee_out_dir) if os.path.isfile(os.path.join(klee_out_dir, f))]
+        err_file = None
+        for filename in klee_file_list:
+            if ".err" in filename:
+                err_file = filename
+                break
+        source_loc = extract_source_loc_from_stack(os.path.join(klee_out_dir, err_file))
+        c_file, c_line = source_loc.split(":")
+        c_column = "-1"
+        c_address = "-1"
+    # ast_tree = extract_ast_json(c_file)
+    # function_node_list = extract_function_node_list(ast_tree)
     c_func_name, crash_func_ast = extract_func_ast(c_file, c_line)
     c_loc = ":".join([c_file, c_line, c_column])
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
@@ -474,6 +505,18 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_shift_overflow_constraint(crash_op_ast)
+    elif crash_type == definitions.CRASH_TYPE_MEMSET_ERROR:
+        call_node_list = extract_call_node_list(func_ast, None, ["memset"])
+        crash_call_ast = None
+        for call_ast in call_node_list:
+            if oracle.is_loc_in_range(crash_loc, call_ast["range"]):
+                crash_call_ast = call_ast
+                break
+        if crash_call_ast is None:
+            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            utilities.error_exit("Unable to generate crash free constraint")
+        var_list = extract_var_list(crash_call_ast, src_file)
+        cfc = constraints.generate_memset_constraint(crash_call_ast)
     else:
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
@@ -493,15 +536,22 @@ def extract_child_id_list(ast_node):
     return id_list
 
 
-def extract_call_node_list(ast_node):
+def extract_call_node_list(ast_node, black_list=None, white_list=None):
     call_expr_list = list()
     node_type = str(ast_node["kind"])
     if node_type == "CallExpr":
-        call_expr_list.append(ast_node)
+        func_ref_node = ast_node["inner"][0]
+        func_ref_name = func_ref_node["inner"][0]["referencedDecl"]["name"]
+        if black_list:
+            if func_ref_name not in black_list:
+                call_expr_list.append(ast_node)
+        if white_list:
+            if func_ref_name in white_list:
+                call_expr_list.append(ast_node)
     else:
-        if len(ast_node['inner']) > 0:
+        if "inner" in ast_node and len(ast_node['inner']) > 0:
             for child_node in ast_node['inner']:
-                child_call_list = extract_call_node_list(child_node)
+                child_call_list = extract_call_node_list(child_node, black_list, white_list)
                 call_expr_list = call_expr_list + child_call_list
     return call_expr_list
 
@@ -544,6 +594,9 @@ def extract_function_node_list(ast_node):
                 continue
             if "spellingLoc" in loc_info:
                 continue
+            if "storageClass" in child_node:
+                if child_node["storageClass"] == "extern":
+                    continue
             function_node_list[identifier] = child_node
     return function_node_list
 
