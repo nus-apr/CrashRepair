@@ -92,7 +92,7 @@ def get_node_value(ast_node):
     ast_type = str(ast_node["kind"])
     if ast_type in ["DeclRefExpr"]:
         ast_value = str(ast_node['referencedDecl']['name'])
-    elif ast_type in ["IntegerLiteral", "StringLiteral"]:
+    elif ast_type in ["IntegerLiteral", "StringLiteral", "CharacterLiteral"]:
         ast_value = str(ast_node['value'])
     elif ast_type in ["ParmVarDecl", "RecordDecl", "VarDecl"]:
         ast_value = ast_node['identifier']
@@ -126,7 +126,7 @@ def get_node_value(ast_node):
         ast_value = convert_conditional_op_to_expr(ast_node, True)
     elif ast_type in ["PredefinedExpr", "ImplicitCastExpr"]:
         ast_value = get_node_value(ast_node["inner"][0])
-    elif ast_type in ["CharacterLiteral", "CompoundLiteralExpr", "BinaryConditionalOperator"]:
+    elif ast_type in ["CompoundLiteralExpr", "BinaryConditionalOperator"]:
         return None
     else:
         print(ast_type)
