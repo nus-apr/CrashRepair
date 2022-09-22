@@ -124,7 +124,7 @@ def get_node_value(ast_node):
         ast_value = convert_unary_node_to_expr(ast_node, True)
     elif ast_type == "ConditionalOperator":
         ast_value = convert_conditional_op_to_expr(ast_node, True)
-    elif ast_type in ["PredefinedExpr", "ImplicitCastExpr"]:
+    elif ast_type in ["PredefinedExpr", "ImplicitCastExpr", "VAArgExpr"]:
         ast_value = get_node_value(ast_node["inner"][0])
     elif ast_type in ["CompoundLiteralExpr", "BinaryConditionalOperator"]:
         return None
@@ -433,7 +433,7 @@ def convert_node_to_str(ast_node, only_string=False):
     node_str = ""
     # print(ast_node)
     node_type = str(ast_node["kind"])
-    if node_type in ["ImplicitCastExpr", "PredefinedExpr"]:
+    if node_type in ["ImplicitCastExpr", "PredefinedExpr", "VAArgExpr"]:
         return convert_node_to_str(ast_node["inner"][0], only_string)
     if node_type in ["DeclRefExpr"]:
         node_str = str(ast_node['referencedDecl']['name'])
@@ -462,10 +462,8 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = convert_paren_node_to_expr(ast_node, True)
     elif node_type == "ConditionalOperator":
         node_str = convert_conditional_op_to_expr(ast_node, True)
-    elif node_type == "UnaryExprOrTypeTraitExpr":
-        node_str = convert_unaryexprortypetraitexpr_to_expr(ast_node, True)
-    elif node_type in ["InitListExpr", "StmtExpr"]:
-        node_str = "{}"
+    elif node_type in ["UnaryExprOrTypeTraitExpr", "InitListExpr", "StmtExpr"]:
+        node_str = ""
     else:
         print(ast_node)
         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
