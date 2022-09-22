@@ -2,9 +2,9 @@
 #include <limits.h>
 
 
-int add(int a, int b){
+int decrement(int a){
   int res;
-  res = b + a;
+  res = --a;
   return res;
 }
 
@@ -18,9 +18,8 @@ int main(int argc, char *argv[]) {
   int res;
   char buffer[10];
   read_file(argv[1], &buffer);
-  int x = buffer[1];
-  int y = INT_MAX;
-  printf("%d\n", x);
-  res = add(x,y);
+  int y = INT_MIN;
+  printf("%d\n", y);
+  res = decrement(y);
   return 0;
 }
