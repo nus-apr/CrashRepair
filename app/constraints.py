@@ -501,8 +501,8 @@ def generate_shift_overflow_constraint(shift_node):
 def generate_memset_constraint(call_node):
     pointer_node = call_node["inner"][1]
     size_node = call_node["inner"][3]
-    pointer_name = converter.convert_node_to_str(pointer_node)
-    size_value = converter.convert_node_to_str(size_node)
+    # pointer_name = converter.convert_node_to_str(pointer_node)
+    # size_value = converter.convert_node_to_str(size_node)
 
     # Generating a constraint of type size_value > 0 && pointer_name != 0
     # first generate the expressions for the two operands
@@ -525,6 +525,30 @@ def generate_memset_constraint(call_node):
     constraint_expr = make_binary_expression(logical_and_op, first_constraint_expr, second_constraint_expr)
     return constraint_expr
 
+
+
+def generate_memcpy_constraint(call_node):
+    source_ptr_node = call_node["inner"][1]
+    target_ptr_node = call_node["inner"][2]
+    size_node = call_node["inner"][3]
+    # source_name = converter.convert_node_to_str(source_ptr_node)
+    # target_name = converter.convert_node_to_str(target_ptr_node)
+    # size_value = converter.convert_node_to_str(size_node)
+
+    # Generating a constraint of type
+    # target - source < size
+    # first generate the expressions for the arithmetic expression
+    source_expr = generate_expr_for_ast(source_ptr_node)
+    target_expr = generate_expr_for_ast(target_ptr_node)
+    arithmetic_op = build_op_symbol("-")
+    left_hand_expr = make_binary_expression(arithmetic_op, target_expr, source_expr)
+
+    size_expr = generate_expr_for_ast(size_node)
+
+    # last, concatenate both constraints into one
+    less_than_op = build_op_symbol("<")
+    constraint_expr = make_binary_expression(less_than_op, left_hand_expr, size_expr)
+    return constraint_expr
 
 def get_type_limits(data_type):
     if data_type == "int":

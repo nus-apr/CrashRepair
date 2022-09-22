@@ -514,10 +514,22 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 crash_op_ast = binary_op_ast
                 break
         if crash_op_ast is None:
-            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            emitter.error("\t[error] unable to find binary operator for shift overflow")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_shift_overflow_constraint(crash_op_ast)
+    elif crash_type == definitions.CRASH_TYPE_MEMCPY_ERROR:
+        call_node_list = extract_call_node_list(func_ast, None, ["memcpy"])
+        crash_call_ast = None
+        for call_ast in call_node_list:
+            if oracle.is_loc_in_range(crash_loc, call_ast["range"]):
+                crash_call_ast = call_ast
+                break
+        if crash_call_ast is None:
+            emitter.error("\t[error] unable to find binary operator for memcpy error")
+            utilities.error_exit("Unable to generate crash free constraint")
+        var_list = extract_var_list(crash_call_ast, src_file)
+        cfc = constraints.generate_memcpy_constraint(crash_call_ast)
     elif crash_type == definitions.CRASH_TYPE_MEMSET_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memset"])
         crash_call_ast = None
@@ -526,7 +538,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 crash_call_ast = call_ast
                 break
         if crash_call_ast is None:
-            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            emitter.error("\t[error] unable to find binary operator for memset error")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_call_ast, src_file)
         cfc = constraints.generate_memset_constraint(crash_call_ast)

@@ -157,6 +157,7 @@ CRASH_TYPE_INT_SUB_OVERFLOW = 4
 CRASH_TYPE_MEMORY_OVERFLOW = 5
 CRASH_TYPE_SHIFT_OVERFLOW = 6
 CRASH_TYPE_MEMSET_ERROR = 7
+CRASH_TYPE_MEMCPY_ERROR = 8
 
 INTEGER_TYPES = ["int", "short", "long", "size_t",
                  "uint_fast8_t", "uint_fast8_t","uint_fast32_t", "uint_fast16_t",

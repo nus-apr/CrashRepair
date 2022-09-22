@@ -253,6 +253,8 @@ def collect_klee_crash_info(trace_file_path):
                     crash_reason = read_line.split(": ")[-1]
                     if "memset" in read_line:
                         crash_reason = "memset error"
+                    elif "memcpy" in read_line:
+                        crash_reason = "memcpy error"
                     break
     if "overflow on division or remainder" in crash_reason or "divide by zero" in crash_reason:
         crash_type = definitions.CRASH_TYPE_DIV_ZERO
@@ -268,6 +270,8 @@ def collect_klee_crash_info(trace_file_path):
         crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
     elif "memset error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMSET_ERROR
+    elif "memcpy error" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_MEMCPY_ERROR
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
 
 
