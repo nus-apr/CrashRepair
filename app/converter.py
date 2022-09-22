@@ -433,11 +433,11 @@ def convert_node_to_str(ast_node, only_string=False):
     node_str = ""
     # print(ast_node)
     node_type = str(ast_node["kind"])
-    if node_type == "ImplicitCastExpr":
+    if node_type in ["ImplicitCastExpr", "PredefinedExpr"]:
         return convert_node_to_str(ast_node["inner"][0], only_string)
     if node_type in ["DeclRefExpr"]:
         node_str = str(ast_node['referencedDecl']['name'])
-    elif node_type in ["IntegerLiteral", "CharacterLiteral"]:
+    elif node_type in ["IntegerLiteral", "CharacterLiteral", "StringLiteral"]:
         node_str = str(ast_node["value"])
     elif node_type in ["DeclStmt", "VarDecl"]:
         node_str = str(ast_node['value'])
@@ -464,7 +464,7 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = convert_conditional_op_to_expr(ast_node, True)
     elif node_type == "UnaryExprOrTypeTraitExpr":
         node_str = convert_unaryexprortypetraitexpr_to_expr(ast_node, True)
-    elif node_type == "InitListExpr":
+    elif node_type in ["InitListExpr", "StmtExpr"]:
         node_str = "{}"
     else:
         print(ast_node)

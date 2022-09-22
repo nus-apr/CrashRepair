@@ -891,7 +891,7 @@ def extract_loc(file_path, ast_loc_info, op_code = None):
             with open(file_path, "r") as s_file:
                 values.SOURCE_LINE_MAP[file_path] = s_file.readlines()
         source_line = values.SOURCE_LINE_MAP[file_path][line_number - 1]
-        if op_code not in source_line:
+        if source_line.find(op_code, col_number - 1) < 0:
             return None
         col_number = source_line.index(op_code, col_number-1) + 1
     return file_path, line_number, col_number
