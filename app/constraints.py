@@ -370,30 +370,67 @@ def generate_div_zero_constraint(divisor_node):
     return constraint_expr
 
 
-def generate_int_overflow_constraint(binary_node):
-    binary_left_ast = binary_node["inner"][0]
-    binary_right_ast = binary_node["inner"][1]
-    binary_op_str = binary_node["opcode"]
+def generate_type_underflow_constraint(ast_node):
+    result_data_type = ast_node["type"]["qualType"]
+    type_min, type_max = get_type_limits(result_data_type)
+    min_val_symbol = make_constraint_symbol(type_min, "INT_CONST")
+    min_val_expr = make_symbolic_expression(min_val_symbol)
+    node_type = ast_node["kind"]
 
-    # Generating a constraint of type {} <= INT_MAX {} {}
-    # first generate the left-side expression
-    binary_left_expr = generate_expr_for_ast(binary_left_ast)
-
-    # second generate the constraint logical-operator
+    # Generating a constraint of type
+    # TYPE_MIN (INVERTED_OP) expr_b <= expr_a
     less_than_eq_op = build_op_symbol("<=")
+    ast_op_str = ast_node["opcode"]
+    crash_op_converter = {"-": "+", "--": "+", "/": "*"}
+    arithmetic_op = build_op_symbol(crash_op_converter[ast_op_str])
 
-    # last, generate the right-side expression
-    crash_op_converter = {"*": "/", "+": "-", "-": "+"}
-    inverted_op = build_op_symbol(crash_op_converter[binary_op_str])
+    if node_type == "BinaryOperator":
+        binary_left_ast = ast_node["inner"][0]
+        binary_right_ast = ast_node["inner"][1]
+        expr_a = generate_expr_for_ast(binary_left_ast)
+        expr_b = generate_expr_for_ast(binary_right_ast)
+    elif node_type == "UnaryOperator":
+        child_ast = ast_node["inner"][0]
+        const_one_symbol = make_constraint_symbol("1", "INT_CONST")
+        expr_b = make_symbolic_expression(const_one_symbol)
+        expr_a = generate_expr_for_ast(child_ast)
+    else:
+        utilities.error_exit("Unhandled node type {}  in generate_add_overflow_constraint".format(node_type))
 
-    check_val_str = "INT_MAX"
-    check_val_type = "INT_CONST"
-    check_val_symbol = make_constraint_symbol(check_val_str, check_val_type)
-    check_val_expr = make_symbolic_expression(check_val_symbol)
-    binary_right_expr = generate_expr_for_ast(binary_right_ast)
+    constraint_right_expr = expr_a
+    constraint_left_expr = make_binary_expression(arithmetic_op, min_val_expr, expr_b)
+    constraint_expr = make_binary_expression(less_than_eq_op, constraint_left_expr, constraint_right_expr)
+    return constraint_expr
 
-    constraint_left_expr = binary_left_expr
-    constraint_right_expr = make_binary_expression(inverted_op, check_val_expr, binary_right_expr)
+
+def generate_type_overflow_constraint(ast_node):
+    result_data_type = ast_node["type"]["qualType"]
+    type_min, type_max = get_type_limits(result_data_type)
+    max_val_symbol = make_constraint_symbol(type_max, "INT_CONST")
+    max_val_expr = make_symbolic_expression(max_val_symbol)
+    node_type = ast_node["kind"]
+
+    # Generating a constraint of type
+    # expr_a <= TYPE_MAX (INVERTED_OP) expr_b
+    less_than_eq_op = build_op_symbol("<=")
+    ast_op_str = ast_node["opcode"]
+    crash_op_converter = {"*": "/", "+": "-", "++": "-"}
+    arithmetic_op = build_op_symbol(crash_op_converter[ast_op_str])
+    if node_type == "BinaryOperator":
+        binary_left_ast = ast_node["inner"][0]
+        binary_right_ast = ast_node["inner"][1]
+        expr_a = generate_expr_for_ast(binary_left_ast)
+        expr_b = generate_expr_for_ast(binary_right_ast)
+    elif node_type == "UnaryOperator":
+        child_ast = ast_node["inner"][0]
+        const_one_symbol = make_constraint_symbol("1", "INT_CONST")
+        expr_b = make_symbolic_expression(const_one_symbol)
+        expr_a = generate_expr_for_ast(child_ast)
+    else:
+        utilities.error_exit("Unhandled node type {}  in generate_add_overflow_constraint".format(node_type))
+
+    constraint_left_expr = expr_a
+    constraint_right_expr = make_binary_expression(arithmetic_op, max_val_expr, expr_b)
     constraint_expr = make_binary_expression(less_than_eq_op, constraint_left_expr, constraint_right_expr)
     return constraint_expr
 
