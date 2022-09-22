@@ -533,7 +533,7 @@ def get_type_limits(data_type):
         return "SHRT_MIN", "SHRT_MAX"
     elif data_type == "long":
         return  "LONG_MIN", "LONG_MAX"
-    elif data_type == "unsigned int":
+    elif data_type in ["unsigned int", "size_t"]:
         return "0", "UINT_MAX"
     else:
         utilities.error_exit("Unknown data type for limit constraints: {}".format(data_type))
