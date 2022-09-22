@@ -327,7 +327,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                     candidate_cfc.set_l_expr(result_expr)
                     updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))
                     continue
-            elif "sizeof " not in cfc_rhs_str:
+            if "sizeof " not in cfc_rhs_str:
                 if oracle.is_expression_equal(cfc_rhs_str, expression_str):
                     # print("MATCH RHS", localized_cfc.to_string(), expression_str)
                     result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
