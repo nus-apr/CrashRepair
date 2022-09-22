@@ -444,27 +444,27 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
     elif crash_type in [definitions.CRASH_TYPE_INT_MUL_OVERFLOW,
                         definitions.CRASH_TYPE_INT_ADD_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["*", "+"])
-        unaryop_list = extract_binaryop_node_list(func_ast, src_file, ["++"])
+        unaryop_list = extract_unaryop_node_list(func_ast, ["++"])
         crash_op_ast = None
         for op_ast in (binaryop_list + unaryop_list):
             if oracle.is_loc_in_range(crash_loc, op_ast["range"]):
                 crash_op_ast = op_ast
                 break
         if crash_op_ast is None:
-            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            emitter.error("\t[error] unable to find binary operator for overflow")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_overflow_constraint(crash_op_ast)
     elif crash_type in [definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["-"])
-        unaryop_list = extract_binaryop_node_list(func_ast, src_file, ["--"])
+        unaryop_list = extract_unaryop_node_list(func_ast, ["--"])
         crash_op_ast = None
         for op_ast in (binaryop_list + unaryop_list):
             if oracle.is_loc_in_range(crash_loc, op_ast["range"]):
                 crash_op_ast = op_ast
                 break
         if crash_op_ast is None:
-            emitter.error("\t[error] unable to find binary operator for {}".format(crash_type))
+            emitter.error("\t[error] unable to find binary operator for underflow")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_underflow_constraint(crash_op_ast)
