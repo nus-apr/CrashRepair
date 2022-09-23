@@ -16,9 +16,7 @@ bug_commit_id=68c5eec
 cd $dir_name
 git clone $project_url src
 cd src
-git checkout $bug_commit_id
-git format-patch -1 $fix_commit_id
-cp *.patch $dir_name/dev-patch/fix.patch
+touch src/a
 
 ./bootstrap
 FORCE_UNSAFE_CONFIGURE=1 CC=crepair-cc ./configure CFLAGS="-g -O0 -static -fPIE -Wno-error" CXXFLAGS="-g -O0 -static -fPIE -Wno-error"
