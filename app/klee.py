@@ -69,18 +69,18 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
     else:
         values.LIST_BIT_LENGTH = bit_length_list
     emitter.normal("\texecuting klee in concolic mode")
-    # hit_location_flag = " "
+    hit_location_flag = " "
     runtime_lib_path = definitions.DIRECTORY_LIB + "/libcrepair_runtime.bca"
     # if values.CONF_DISTANCE_METRIC == "control-loc":
-    hit_location_flag = "--hit-locations " + values.CONF_LOC_BUG + "," + values.CONF_LOC_PATCH
-    if values.CONF_LOC_LIST_CRASH:
-        crash_locations = ', '.join(['{}'.format(loc) for loc in values.CONF_LOC_LIST_CRASH])
-        hit_location_flag += "," + crash_locations + " "
-    else:
-        hit_location_flag += " "
+    # hit_location_flag = "--hit-locations " + values.CONF_LOC_BUG + "," + values.CONF_LOC_PATCH
+    # if values.CONF_LOC_LIST_CRASH:
+    #     crash_locations = ', '.join(['{}'.format(loc) for loc in values.CONF_LOC_LIST_CRASH])
+    #     hit_location_flag += "," + crash_locations + " "
+    # else:
+    #     hit_location_flag += " "
     ppc_log_flag = ""
-    if values.DEFAULT_DISTANCE_METRIC != values.OPTIONS_DIST_METRIC[2]:
-        ppc_log_flag = "--log-ppc "
+    # if values.DEFAULT_DISTANCE_METRIC != values.OPTIONS_DIST_METRIC[2]:
+    #     ppc_log_flag = "--log-ppc "
 
     klee_command = "timeout " + str(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC) + " "
     if klee_out_dir:
@@ -91,9 +91,6 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
     klee_command += "--posix-runtime " \
                     "--libc=uclibc " \
                     "--write-smt2s " \
-                    "-allow-seed-extension " \
-                    "-named-seed-matching " \
-                    "--log-trace " \
                     + "--external-calls=all " \
                     + "--link-llvm-lib={0} " .format(runtime_lib_path) \
                     + "--max-time={0} ".format(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC) \
@@ -226,7 +223,6 @@ def run_concrete_execution(program, argument_list, print_output=False, klee_out_
                     "--search=dfs " \
                     "--write-smt2s " \
                     "--external-calls=all " \
-                    "--log-trace " \
                     "--max-forks {0} ".format(values.DEFAULT_MAX_FORK) \
                     + values.CONF_KLEE_FLAGS + " " \
                     + "--max-time={0} ".format(values.DEFAULT_TIMEOUT_KLEE_CONCRETE) \
