@@ -40,20 +40,24 @@ public:
 
     auto const *binOp = static_cast<BinOp const *>(expr);
     auto oldOpcode = binOp->getOpcode();
+    auto oldOpcodeString = BinOp::opcodeToString(oldOpcode);
 
     if (binOp->isLogicalOpcode(oldOpcode)) {
+      spdlog::debug("mutating logical opcode: {}", oldOpcodeString);
       for (auto newOpcode : logicalOpcodes) {
         if (newOpcode != oldOpcode) {
           edits.emplace_back(std::make_unique<Edit>(newOpcode));
         }
       }
     } else if (binOp->isRelationalOpcode(oldOpcode)) {
+      spdlog::debug("mutating relational opcode: {}", oldOpcodeString);
       for (auto newOpcode : relationalOpcodes) {
         if (newOpcode != oldOpcode) {
           edits.emplace_back(std::make_unique<Edit>(newOpcode));
         }
       }
     } else if (binOp->isArithmeticOpcode(oldOpcode)) {
+      spdlog::debug("mutating arithemtic opcode: {}", oldOpcodeString);
       for (auto newOpcode : arithmeticOpcodes) {
         if (newOpcode != oldOpcode) {
           edits.emplace_back(std::make_unique<Edit>(newOpcode));

@@ -44,6 +44,14 @@ public:
 
   ~ExprMutations(){}
 
+  size_t size() const {
+    size_t numEdits = 0;
+    for (auto const &editsAtNode : nodeEdits) {
+      numEdits += editsAtNode.size();
+    }
+    return numEdits;
+  }
+
   struct Iterator {
     using iterator_category = std::input_iterator_tag;
 
@@ -62,6 +70,8 @@ public:
   };
 
   void add(std::unique_ptr<ExprMutator> mutator) {
+    auto numMutationsBefore = size();
+
     // TODO ensure that we haven't already added this mutator
     spdlog::info("adding mutator: {}", mutator->getName());
 
@@ -77,7 +87,10 @@ public:
       id++;
     }
 
-    spdlog::info("added mutations for mutator: {}", mutator->getName());
+    auto numMutationsAfter = size();
+    auto numMutationsAdded = numMutationsAfter - numMutationsBefore;
+
+    spdlog::info("added {} mutations for mutator: {}", numMutationsAdded, mutator->getName());
     mutators.push_back(std::move(mutator));
   }
 
