@@ -100,7 +100,7 @@ def get_node_value(ast_node):
         ast_value = ast_node['qualified_identifier'].split("::")[0] + "." + ast_node['identifier']
     elif ast_type == "FunctionDecl":
         ast_value = ast_node['identifier'] + "("
-    elif ast_type == "BinaryOperator":
+    elif ast_type in ["BinaryOperator", "CompoundAssignOperator"]:
         ast_value = convert_binary_node_to_expr(ast_node, True)
         # var_list = var_list + left_child_var_list
     elif ast_type == "ParenExpr":
@@ -445,7 +445,7 @@ def convert_node_to_str(ast_node, only_string=False):
         node_str = str(convert_array_subscript(ast_node, True))
     elif node_type == "MemberExpr":
         node_str = str(convert_member_expr(ast_node, True))
-    elif node_type == "BinaryOperator":
+    elif node_type in ["BinaryOperator", "CompoundAssignOperator"]:
         operator = str(ast_node['opcode'])
         right_operand = convert_node_to_str(ast_node["inner"][1], only_string)
         left_operand = convert_node_to_str(ast_node["inner"][0])
