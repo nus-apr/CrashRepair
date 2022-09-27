@@ -872,6 +872,8 @@ def extract_input_bytes_used(sym_expr):
 def extract_line(file_path, ast_loc_info):
     if "expansionLoc" in ast_loc_info:
         ast_loc_info = ast_loc_info["expansionLoc"]
+    if "offset" not in ast_loc_info:
+        return 0
     offset = int(ast_loc_info["offset"])
     if file_path not in values.AST_OFFSET_MAP:
         values.AST_OFFSET_MAP[file_path] = generator.generate_offset_to_line(file_path)
