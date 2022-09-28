@@ -1,5 +1,0 @@
-klee-*/
-test
-compile_commands.json
-*.ast
-*.bk

@@ -1,15 +1,23 @@
 {
-  "crash_command": "__BINARY__ ./exploit",
-  "source": {
-    "directory": "src"
+  "project": {
+    "name": "memory-overflow"
   },
+  "name": "memset",
+  "binary": "src/test",
+  "crash": {
+    "command": "$POC",
+    "input": "./exploit",
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
+  },
+  "source-directory": "src",
   "build": {
     "directory": "src",
     "binary": "test",
     "commands": {
       "prebuild": "exit 0",
-      "clean": "make -C src clean",
-      "build": "make -C src"
+      "clean": "make clean",
+      "build": "make CFLAGS='-g -O0 -fsanitize=undefined'"
     }
   }
 }

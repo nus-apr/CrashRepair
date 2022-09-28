@@ -2,7 +2,7 @@
   "project": {
     "name": "div-zero"
   },
-  "name": "struct-field",
+  "name": "user-input-divisor",
   "binary": "src/test",
   "crash": {
     "command": "$POC",

@@ -1,9 +1,4 @@
 PROGRAM=test
-CC=$(CRepair_CC)
-CFLAGS=-g -O0 -ftrapv
-
-%.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
 
 all: $(PROGRAM)
 

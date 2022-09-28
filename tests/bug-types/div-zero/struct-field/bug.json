@@ -2,9 +2,14 @@
   "project": {
     "name": "div-zero"
   },
-  "name": "constant-divisor",
+  "name": "struct-field",
   "binary": "src/test",
-  "crashing-input": "./exploit",
+  "crash": {
+    "command": "$POC",
+    "input": "./exploit",
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
+  },
   "source-directory": "src",
   "build": {
     "directory": "src",

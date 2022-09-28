@@ -1,2 +1,4 @@
 klee-*/
 test
+*patches/
+*analysis/

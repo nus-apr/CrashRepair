@@ -2,7 +2,7 @@
   "project": {
     "name": "buffer-overflow"
   },
-  "name": "fixed-triple-array",
+  "name": "malloc",
   "binary": "src/test",
   "crash": {
     "command": "$POC",

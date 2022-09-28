@@ -43,24 +43,28 @@ def run_analyze(test_dir):
                 result = "ERROR"
     return result
 
-#
-# def run_repair(test_dir):
-#     os.chdir(test_dir)
-#     repair_command = "rm -rf patches; rm -rf asts; hifix repair . > repair.log 2>&1"
-#     process = subprocess.Popen(repair_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-#     process.wait()
-#     ret_code = process.returncode
-#     result = "SUCCESS"
-#     with open('repair.log', 'rb', 0) as f:
-#         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as s:
-#             if s.find(b'FATAL ERROR') != -1:
-#                 result = "ERROR"
-#             if s.find(b'Stack dump') != -1:
-#                 result = "ERROR"
-#
-#     if ret_code != 0:
-#         result = "ERROR"
-#     return result
+
+def run_repair(test_dir):
+    os.chdir(test_dir)
+    repair_command = "git clean -f; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
+    process = subprocess.Popen(repair_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    process.wait()
+    ret_code = process.returncode
+    patch_dir = test_dir + "/patches"
+    patch_count = 0
+    if os.path.isdir(patch_dir):
+        patch_count = len(os.listdir(patch_dir))
+    result = "SUCCCESS({})".format(patch_count)
+    with open('repair.log', 'rb', 0) as f:
+        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as s:
+            if s.find(b'FATAL ERROR') != -1:
+                result = "ERROR"
+            if s.find(b'Stack dump') != -1:
+                result = "ERROR"
+
+    if ret_code != 0:
+        result = "CRASH"
+    return result
 
 
 def getListOfFiles(dirName):
@@ -95,7 +99,7 @@ def run(args):
             print("Test:{0:100} ".format(test_dir), end="\t")
             total_test += 1
             analyze_result = run_analyze(test_dir)
-            repair_result = "NONE"
+            repair_result = run_repair(test_dir)
             if analyze_result == "SUCCESS":
                 total_analyzed += 1
             # repair_result = run_repair(test_dir)

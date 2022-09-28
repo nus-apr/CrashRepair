@@ -2,7 +2,7 @@
   "project": {
     "name": "div-zero"
   },
-  "name": "floating-point-divisor",
+  "name": "multiplication-divisor",
   "binary": "src/test",
   "crash": {
     "command": "$POC",

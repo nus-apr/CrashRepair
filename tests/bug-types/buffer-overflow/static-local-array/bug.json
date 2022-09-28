@@ -2,7 +2,7 @@
   "project": {
     "name": "buffer-overflow"
   },
-  "name": "static-global-array",
+  "name": "static-local-array",
   "binary": "src/test",
   "crash": {
     "command": "$POC",

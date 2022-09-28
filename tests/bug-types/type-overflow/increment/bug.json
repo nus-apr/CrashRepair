@@ -1,8 +1,8 @@
 {
   "project": {
-    "name": "buffer-overflow"
+    "name": "type-overflow"
   },
-  "name": "dynamic-array",
+  "name": "increment",
   "binary": "src/test",
   "crash": {
     "command": "$POC",
@@ -17,7 +17,7 @@
     "commands": {
       "prebuild": "exit 0",
       "clean": "make clean",
-      "build": "make"
+      "build": "make CFLAGS='-g -O0 -fsanitize=integer'"
     }
   }
 }

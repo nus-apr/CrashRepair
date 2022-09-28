@@ -2,7 +2,7 @@
   "project": {
     "name": "buffer-overflow"
   },
-  "name": "dynamic-array",
+  "name": "fixed-double-array",
   "binary": "src/test",
   "crash": {
     "command": "$POC",
