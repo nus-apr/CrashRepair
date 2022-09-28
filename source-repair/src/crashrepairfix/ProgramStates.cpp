@@ -92,13 +92,17 @@ void ProgramStates::loadValues() {
         case ResultType::Float:
           value = std::stod(cellString);
           break;
-        row[variable] = value;
+        default:
+          assert(false);
       }
+
+      row[variable] = value;
     }
 
-    values.push_back(std::make_unique<Values>(std::move(row)));
+    values.push_back(std::make_unique<Values>(row));
   }
 
+  spdlog::debug("loaded {} state rows", values.size());
   fh.close();
 }
 
