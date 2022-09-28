@@ -72,7 +72,8 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
     location.getConstraint(),
     location.getStates()
   );
-  std::vector<std::unique_ptr<Expr>> mutations = generator.generate();
+  // TODO add --max-expr-patches and --max-expr-edits options
+  std::vector<std::unique_ptr<Expr>> mutations = generator.generate(50);
   spdlog::info("generated {} mutants", mutations.size());
 
   for (auto &replacementExpr : mutations) {

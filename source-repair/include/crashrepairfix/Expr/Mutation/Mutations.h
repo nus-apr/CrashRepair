@@ -21,6 +21,7 @@ public:
     auto mutations = ExprMutations(original, maxEdits);
     mutations.add(std::make_unique<ExprIdentityMutator>());
     mutations.add(std::make_unique<SwapBinOpcodeMutator>());
+    spdlog::debug("generated {} mutations", mutations.size());
     return mutations;
   }
 
@@ -28,6 +29,7 @@ public:
     std::function<bool(Expr const *)> predicate,
     size_t limit
   ) {
+    spdlog::debug("filtering {} mutations based on satisfiability", size());
     std::vector<size_t> editMask(numNodes, 0);
     std::vector<std::unique_ptr<Expr>> results;
     filter(predicate, limit, 0, 0, editMask, results);
