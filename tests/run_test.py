@@ -102,9 +102,9 @@ def run(args):
             repair_result = run_repair(test_dir)
             if analyze_result == "SUCCESS":
                 total_analyzed += 1
-            # repair_result = run_repair(test_dir)
-            # if repair_result == "SUCCESS":
-            #     total_repaired += 1
+            repair_result = run_repair(test_dir)
+            if "SUCCESS" in repair_result:
+                total_repaired += 1
             print(" analysis={} \t repair={}".format(analyze_result, repair_result))
 
             generated_file_list = getListOfFiles(test_dir)
