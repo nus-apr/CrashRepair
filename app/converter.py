@@ -50,7 +50,7 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
     # print(left_child)
     child_value = ""
     child_type = str(child_node["kind"])
-    if child_type in [ "IntegerLiteral"]:
+    if child_type in [ "IntegerLiteral", "FloatingLiteral"]:
         child_value = str(child_node['value'])
     elif child_type in ["DeclRefExpr"]:
         child_value = str(child_node['referencedDecl']['name'])
@@ -92,7 +92,7 @@ def get_node_value(ast_node):
     ast_type = str(ast_node["kind"])
     if ast_type in ["DeclRefExpr"]:
         ast_value = str(ast_node['referencedDecl']['name'])
-    elif ast_type in ["IntegerLiteral", "StringLiteral", "CharacterLiteral"]:
+    elif ast_type in ["IntegerLiteral", "StringLiteral", "CharacterLiteral", "FloatingLiteral"]:
         ast_value = str(ast_node['value'])
     elif ast_type in ["ParmVarDecl", "RecordDecl", "VarDecl"]:
         ast_value = ast_node['identifier']
@@ -177,7 +177,7 @@ def convert_array_iterator(iterator_node, only_string=False):
             iterator_data_type = str(iterator_node["type"]["qualType"])
         var_list.append((iterator_name, iterator_data_type))
         var_name = "[" + iterator_name + "]"
-    elif iterator_node_type in ["IntegerLiteral"]:
+    elif iterator_node_type in ["IntegerLiteral", "FloatingLiteral"]:
         iterator_value = str(iterator_node['value'])
         var_name = "[" + iterator_value + "]"
     elif iterator_node_type in ["BinaryOperator"]:
@@ -437,7 +437,7 @@ def convert_node_to_str(ast_node, only_string=False):
         return convert_node_to_str(ast_node["inner"][0], only_string)
     if node_type in ["DeclRefExpr"]:
         node_str = str(ast_node['referencedDecl']['name'])
-    elif node_type in ["IntegerLiteral", "CharacterLiteral", "StringLiteral"]:
+    elif node_type in ["IntegerLiteral", "CharacterLiteral", "StringLiteral", "FloatingLiteral"]:
         node_str = str(ast_node["value"])
     elif node_type in ["DeclStmt", "VarDecl"]:
         node_str = str(ast_node['value'])
