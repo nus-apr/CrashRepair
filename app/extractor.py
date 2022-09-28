@@ -923,7 +923,7 @@ def extract_expression_list(ast_node, src_file):
         data_type = index_node["type"]["qualType"]
         if expression_loc is None:
             continue
-        expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
+        # expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
 
     for op_node in (binary_op_list + unary_op_list + initialize_op_list):
         op_code = None
@@ -960,7 +960,7 @@ def extract_expression_string_list(ast_node, src_file):
         if expression_loc is None:
             continue
         expression_index = (expression_loc[1], expression_loc[2])
-        expression_list[expression_index] = expression_str
+        # expression_list[expression_index] = expression_str
     for ast_node in (binary_op_list + unary_op_list + initialize_op_list):
         op_code = None
         if "opcode" in ast_node:
