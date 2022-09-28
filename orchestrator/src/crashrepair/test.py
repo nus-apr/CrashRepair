@@ -16,5 +16,5 @@ class Test:
 
     def run(self) -> bool:
         """Runs this test and returns :code:`True` if it passes."""
-        raw_test_outcome = self._shell(self.command, cwd=self.cwd)
+        raw_test_outcome = self._shell(self.command, cwd=self.cwd, check_returncode=False)
         return raw_test_outcome.returncode == self.expected_exit_code
