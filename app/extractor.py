@@ -912,25 +912,35 @@ def extract_loc(file_path, ast_loc_info, op_code = None):
 
 def extract_expression_list(ast_node, src_file):
     expression_list = list()
+    array_access_list = extract_array_subscript_node_list(ast_node)
     binary_op_list = extract_binaryop_node_list(ast_node, src_file)
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node, src_file)
-    for ast_node in (binary_op_list + unary_op_list + initialize_op_list):
+    for subscript_node in array_access_list:
+        index_node = subscript_node["inner"][1]
+        expression_str = converter.convert_node_to_str(index_node)
+        expression_loc = extract_loc(src_file, index_node["range"]["begin"])
+        data_type = index_node["type"]["qualType"]
+        if expression_loc is None:
+            continue
+        expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
+
+    for op_node in (binary_op_list + unary_op_list + initialize_op_list):
         op_code = None
-        if "opcode" in ast_node:
-            op_code = ast_node["opcode"]
+        if "opcode" in op_node:
+            op_code = op_node["opcode"]
             if op_code == "=":
-                ast_node = ast_node["inner"][1]
-                if "opcode" in ast_node:
-                    op_code = ast_node["opcode"]
+                op_node = op_node["inner"][1]
+                if "opcode" in op_node:
+                    op_code = op_node["opcode"]
                 else:
                     op_code = None
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
             data_type = "bool"
         else:
-            data_type = ast_node["type"]["qualType"]
-        expression_str = converter.convert_node_to_str(ast_node)
-        expression_loc = extract_loc(src_file, ast_node["range"]["begin"], op_code)
+            data_type = op_node["type"]["qualType"]
+        expression_str = converter.convert_node_to_str(op_node)
+        expression_loc = extract_loc(src_file, op_node["range"]["begin"], op_code)
         if expression_loc is None:
             continue
         expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
@@ -939,8 +949,18 @@ def extract_expression_list(ast_node, src_file):
 def extract_expression_string_list(ast_node, src_file):
     expression_list = dict()
     binary_op_list = extract_binaryop_node_list(ast_node, src_file)
+    array_access_list = extract_array_subscript_node_list(ast_node)
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node)
+    for subscript_node in array_access_list:
+        index_node = subscript_node["inner"][1]
+        expression_str = converter.convert_node_to_str(index_node)
+        expression_loc = extract_loc(src_file, index_node["range"]["begin"])
+        data_type = index_node["type"]["qualType"]
+        if expression_loc is None:
+            continue
+        expression_index = (expression_loc[1], expression_loc[2])
+        expression_list[expression_index] = expression_str
     for ast_node in (binary_op_list + unary_op_list + initialize_op_list):
         op_code = None
         if "opcode" in ast_node:
