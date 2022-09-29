@@ -367,13 +367,13 @@ def localize_state_info(fix_loc, taint_concrete):
                     continue
                 if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
                     # Remove previous values for the same variable at a different line.
-                    outdated_entries = [(var_name_a, v_line_a, v_col_a) for (var_name_a, v_line_a, v_col_a) in state_info_list_values[occurence].keys() if var_name_a == var_name and v_line_a != v_line]
+                    outdated_entries = [(var_name_a, v_line_a, v_col_a, var_type_a) for (var_name_a, v_line_a, v_col_a, var_type_a) in state_info_list_values[occurence].keys() if var_name_a == var_name and var_type_a == v_type and v_line_a != v_line]
                     for entry in outdated_entries:
                         del state_info_list_values[occurence][entry]
 
                     # Create index.
-                    var_info_index = (var_name, v_line, v_col)
                     var_type, var_value = taint_value.split(":")
+                    var_info_index = (var_name, v_line, v_col, var_type)
 
                     # We only want to to keep the last value for variable at a specific location (line+column).
                     # However, we can have multiple instructions mapped to one variable, hence, we need to filter.
@@ -384,7 +384,6 @@ def localize_state_info(fix_loc, taint_concrete):
 
                     state_info_list_values[occurence][var_info_index] = {
                         "inst_addr": inst_addr,
-                        "data_type": var_type,
                         "values": var_value
                     }
     return state_info_list_values
@@ -425,9 +424,8 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
             for occurence in state_info_list_values:
                 row = dict()
                 for var_info, var_content in state_info_list_values[occurence].items():
-                    var_name, line, col = var_info
+                    var_name, line, col, var_type = var_info
                     var_value = var_content["values"]
-                    var_type = var_content["data_type"]
                     inst_addr = int(var_content["inst_addr"])
 
                     var_meta_data = {
@@ -441,16 +439,18 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
                     if var_meta_data not in variables:
                         variables.append(var_meta_data)
 
-                    if var_name not in fieldnames:
-                        fieldnames.append(var_name)
+                    var_id = var_name + " (" + var_type + ")"
 
-                    row[var_name] = var_value
+                    if var_id not in fieldnames:
+                        fieldnames.append(var_id)
+
+                    row[var_id] = var_value
                 rows.append(row)
             # Fill in missing values
             for row in rows:
-                for var_name in fieldnames:
-                    if var_name not in row:
-                        row[var_name] = "none"
+                for var_id in fieldnames:
+                    if var_id not in row:
+                        row[var_id] = "none"
             localization_obj["variables"] = variables
             values_directory = os.path.join(definitions.DIRECTORY_OUTPUT, "values")
             rel_output_filename = f"{localized_loc.replace('/', '#')}.csv"
