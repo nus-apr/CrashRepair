@@ -446,6 +446,11 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
 
                     row[var_name] = var_value
                 rows.append(row)
+            # Fill in missing values
+            for row in rows:
+                for var_name in fieldnames:
+                    if var_name not in row:
+                        row[var_name] = "none"
             localization_obj["variables"] = variables
             values_directory = os.path.join(definitions.DIRECTORY_OUTPUT, "values")
             rel_output_filename = f"{localized_loc.replace('/', '#')}.csv"
