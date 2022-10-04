@@ -1,5 +1,7 @@
 #include <crashrepairfix/Expr/Parser.h>
 
+#include <climits>
+
 #include <spdlog/spdlog.h>
 
 #include <tao/pegtl.hpp>
@@ -33,6 +35,10 @@ struct integer : plus<digit> {};
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
+struct int_max : string<'I', 'N', 'T', '_', 'M', 'A', 'X'> {};
+struct int_min : string<'I', 'N', 'T', '_', 'M', 'I', 'N'> {};
+struct constant : sor<int_max, int_min> {};
+
 struct less_than : pad<one<'<'>, space> {};
 struct lesser_or_equal : pad<string<'<', '='>, space> {};
 struct greater_than : pad<one<'>'>, space> {};
@@ -48,7 +54,7 @@ struct divide : pad<one<'/'>, space> {};
 
 struct expression;
 struct bracketed : seq<open_bracket, expression, close_bracket> {};
-struct value : sor<integer, result, variable, bracketed> {};
+struct value : sor<integer, result, variable, constant, bracketed> {};
 
 struct product : list<value, sor<multiply, divide>> {}; // 3
 struct sum : list<product, sor<plus, minus>> {}; // 4
@@ -194,6 +200,10 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
     return convertBinOpNode(BinOp::Opcode::AND, node);
   } else if (nodeType == "crashrepairfix::logical_or") {
     return convertBinOpNode(BinOp::Opcode::OR, node);
+  } else if (nodeType == "crashrepairfix::int_max") {
+    return IntConst::create(INT_MAX);
+  } else if (nodeType == "crashrepairfix::int_min") {
+    return IntConst::create(INT_MIN);
   } else if (nodeType == "crashrepairfix::variable") {
     return convertVarNode(node);
   } else if (nodeType == "crashrepairfix::integer") {
