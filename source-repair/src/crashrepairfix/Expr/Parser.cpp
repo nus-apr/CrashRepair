@@ -212,7 +212,7 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
     return convertResultNode(node);
   } else {
     spdlog::error("failed to convert parse node [{}]: {}", node->type, node->source);
-    abort();
+    return std::unique_ptr<Expr>(nullptr);
   }
 }
 
@@ -230,8 +230,8 @@ std::unique_ptr<Expr> parse(std::string const &code) {
     return convertParseTree(root.get());
   }
 
-  llvm::errs() << "FATAL ERROR: unable to parse constraint string: " << code << "\n";
-  abort();
+  llvm::errs() << "WARNING: unable to parse constraint string: " << code << "\n";
+  return std::unique_ptr<Expr>(nullptr);
 }
 
 }

@@ -35,7 +35,12 @@ public:
         continue;
       }
 
-      localization.add(FixLocation::fromJSON(entry, filename));
+      auto location = FixLocation::fromJSON(entry, filename);
+      if (location == nullptr) {
+        continue;
+      }
+
+      localization.add(std::move(location));
     }
     return localization;
   }

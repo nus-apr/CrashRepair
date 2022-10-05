@@ -81,6 +81,12 @@ void ProgramStates::loadValues() {
     for (int col = 0; col < numColumns; col++) {
       auto cellString = cells[col];
       strip_whitespace(cellString);
+
+      // skip columns that have no values
+      if (cellString == "none") {
+        continue;
+      }
+
       auto const *variable = columns[col];
       std::variant<double, long> value;
 

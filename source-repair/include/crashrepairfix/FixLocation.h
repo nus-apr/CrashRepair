@@ -29,12 +29,18 @@ public:
       states(std::move(states))
   {}
 
+  /** Returns a nullptr if unable to build fix location */
   static std::unique_ptr<FixLocation> fromJSON(
     nlohmann::json j,
     std::string const &localizationFilename
   ) {
     SourceLocation location = SourceLocation::fromString(j["location"]);
     auto expr = parse(j["constraint"]);
+
+    if (expr == nullptr) {
+      spdlog::warn("skipping fix location: unable to parse constraint: {}", j["constraint"]);
+      return std::unique_ptr<FixLocation>(nullptr);
+    }
 
     auto localizationFilepath = fs::path(localizationFilename);
     auto localizationDirectory = localizationFilepath.parent_path();
