@@ -5,7 +5,7 @@
   "name": "struct-field",
   "binary": "src/test",
   "crash": {
-    "command": "$POC",
+    "command": "$POC -17",
     "input": "./exploit",
     "extra-klee-flags": "",
     "expected-exit-code": 0
