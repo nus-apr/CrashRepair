@@ -54,7 +54,7 @@ def run_repair(test_dir):
     patch_count = 0
     if os.path.isdir(patch_dir):
         patch_count = len(os.listdir(patch_dir))
-    result = "SUCCCESS({})".format(patch_count)
+    result = "SUCCESS({})".format(patch_count)
     with open('repair.log', 'rb', 0) as f:
         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as s:
             if s.find(b'FATAL ERROR') != -1:
@@ -99,7 +99,6 @@ def run(args):
             print("Test:{0:100} ".format(test_dir), end="\t")
             total_test += 1
             analyze_result = run_analyze(test_dir)
-            repair_result = run_repair(test_dir)
             if analyze_result == "SUCCESS":
                 total_analyzed += 1
             repair_result = run_repair(test_dir)
