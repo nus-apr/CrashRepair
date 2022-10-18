@@ -438,8 +438,11 @@ def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
 
                     if var_meta_data not in variables:
                         variables.append(var_meta_data)
-
-                    var_id = var_name + " (" + var_type + ")"
+                    
+                    if var_type == "pointer":
+                        var_id = var_name
+                    else:
+                        var_id = "*" + var_name
 
                     if var_id not in fieldnames:
                         fieldnames.append(var_id)
