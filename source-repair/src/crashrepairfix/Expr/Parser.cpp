@@ -8,6 +8,7 @@
 #include <tao/pegtl/contrib/analyze.hpp>
 #include <tao/pegtl/contrib/parse_tree.hpp>
 #include <tao/pegtl/contrib/parse_tree_to_dot.hpp>
+#include <tao/pegtl/contrib/trace.hpp>
 
 using namespace tao::pegtl;
 
@@ -19,6 +20,8 @@ using namespace tao::pegtl;
 
 namespace crashrepairfix {
 
+struct dot : one<'.'> {};
+struct arrow : string<'-', '>'> {};
 struct comma : seq<star<space>, one<','>, star<space>> {};
 struct open_bracket : seq<one<'('>, star<space>> {};
 struct close_bracket : seq<star<space>, one<')'>> {};
@@ -28,9 +31,7 @@ struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
 struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
 struct type_name : sor<type_int, type_float, type_pointer> {};
 
-// TODO what's legal?
-struct var_name : identifier {};
-
+struct var_name : seq<identifier_first, star<sor<identifier_other, dot, arrow>>> {};
 struct integer : plus<digit> {};
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
@@ -225,6 +226,9 @@ std::unique_ptr<Expr> parse(std::string const &code) {
   memory_input input(code, "");
 
   [[maybe_unused]] const std::size_t issues = tao::pegtl::analyze<grammar>();
+
+  // TODO debugging
+  // tao::pegtl::standard_trace<grammar>(input);
 
   if (const auto root = parse_tree::parse<grammar, selector>(input)) {
     return convertParseTree(root.get());
