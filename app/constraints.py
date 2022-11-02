@@ -1,11 +1,11 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-
+from sympy import sympify
 import os
 import typing as t
 
-from app import emitter, utilities, converter, values
+from app import emitter, utilities, converter, extractor
 
 SymbolType = {
     "INT_CONST": "",
@@ -525,7 +525,28 @@ def generate_memset_constraint(call_node):
     constraint_expr = make_binary_expression(logical_and_op, first_constraint_expr, second_constraint_expr)
     return constraint_expr
 
-
+## Incomplete lifting of constraint from StringLiteral
+def generate_assertion_constraint(call_node, func_node, src_file):
+    assertion_str_node = call_node["inner"][1]
+    assertion_str = converter.convert_node_to_str(assertion_str_node)
+    assertion_expr = sympify(assertion_str)
+    var_list = extractor.extract_var_list(func_node, src_file)
+    var_name_list = [x[0] for x in var_list]
+    str_tokens = assertion_expr.split(" ")
+    constraint_expr = None
+    if len(str_tokens) == 3:
+        comp_op_str = str_tokens[1]
+        comp_op = build_op_symbol(comp_op_str)
+        left_node_str = str_tokens[0]
+        right_node_str = str_tokens[2]
+        left_node = make_constraint_symbol(left_node_str, "INT_VAR" if left_node_str in var_name_list else "INT_CONST")
+        left_expr = make_symbolic_expression(left_node)
+        right_node = make_constraint_symbol(right_node_str, "INT_VAR" if right_node_str in var_name_list else "INT_CONST")
+        right_expr = make_symbolic_expression(right_node)
+        constraint_expr = make_binary_expression(comp_op, left_expr, right_expr)
+    else:
+        utilities.error_exit("Not implemented: handling more than 3 tokens in assertion constraint")
+    return constraint_expr
 
 def generate_memcpy_constraint(call_node):
     source_ptr_node = call_node["inner"][1]

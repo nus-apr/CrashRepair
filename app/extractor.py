@@ -2,7 +2,7 @@ import re
 from six.moves import cStringIO
 from pysmt.shortcuts import And
 import os
-import json
+from sympy import sympify
 from app import emitter, utilities, reader, values, converter, generator, \
     definitions, constraints, oracle
 from pathlib import Path
@@ -162,10 +162,9 @@ def extract_ast_json(source_file_path):
                 diff_command += " -I{} ".format(path)
     diff_command += " -Xclang -ast-dump=json -fsyntax-only"
     ast_file_path = source_file_path + ".ast"
-    if not os.path.isfile(ast_file_path):
-        generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, diff_command, source_file_path,
-                                                                           ast_file_path)
-        utilities.execute_command(generate_ast_command)
+    generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, diff_command, source_file_path,
+                                                                       ast_file_path)
+    utilities.execute_command(generate_ast_command)
     ast_tree = reader.read_ast_tree(ast_file_path)
     return ast_tree
 
@@ -542,6 +541,28 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_call_ast, src_file)
         cfc = constraints.generate_memset_constraint(crash_call_ast)
+    elif crash_type == definitions.CRASH_TYPE_ASSERTION_ERROR:
+        call_node_list = extract_call_node_list(func_ast, None, ["__assert_fail"])
+        crash_call_ast = None
+        for call_ast in call_node_list:
+            if oracle.is_loc_in_range(crash_loc, call_ast["range"]):
+                crash_call_ast = call_ast
+                break
+        if crash_call_ast is None:
+            emitter.error("\t[error] unable to find binary operator for memset error")
+            utilities.error_exit("Unable to generate crash free constraint")
+        func_var_list = extract_var_ref_list(func_ast, src_file)
+        cfc = constraints.generate_assertion_constraint(crash_call_ast, func_ast, src_file)
+        cfc_var_list = cfc.get_symbol_list()
+        assertion_var_list = dict()
+        for var in func_var_list:
+            name, row, col, _, _ = var
+            _, c_line, c_col = crash_loc
+            if name in cfc_var_list:
+                if c_line >= row and name not in assertion_var_list:
+                    assertion_var_list[name] = var
+        var_list = assertion_var_list.values()
+
     else:
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
