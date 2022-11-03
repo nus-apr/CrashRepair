@@ -153,6 +153,11 @@ def extract_child_expressions(patch_tree):
     return child_list
 
 def extract_ast_json(source_file_path):
+    ast_file_path = source_file_path + ".ast"
+    if values.DEFAULT_USE_CACHE:
+        if os.path.isfile(ast_file_path):
+            ast_tree = reader.read_ast_tree(ast_file_path)
+            return ast_tree
     source_dir = "/".join(source_file_path.split("/")[:-1])
     diff_command = "clang-10 "
     if values.COMPILE_COMMANDS:
@@ -161,7 +166,7 @@ def extract_ast_json(source_file_path):
             for path in include_dir_list:
                 diff_command += " -I{} ".format(path)
     diff_command += " -Xclang -ast-dump=json -fsyntax-only"
-    ast_file_path = source_file_path + ".ast"
+
     generate_ast_command = "cd {} && {}  {} > {}".format(source_dir, diff_command, source_file_path,
                                                                        ast_file_path)
     utilities.execute_command(generate_ast_command)
@@ -1006,3 +1011,13 @@ def extract_expression_string_list(ast_node, src_file):
         expression_index = (expression_loc[1], expression_loc[2])
         expression_list[expression_index] = expression_str
     return expression_list
+
+def extract_data_type(ast_node):
+    data_type = "None"
+    if "type" in ast_node:
+        type_node = ast_node["type"]
+        if "desugaredQualType" in type_node:
+            data_type = type_node["desugaredQualType"]
+        elif "qualType" in type_node:
+            data_type = type_node["qualType"]
+    return data_type

@@ -4,14 +4,12 @@
 
 import sys
 import os
-from app import utilities
+from app import utilities, extractor
 
 
 def convert_cast_expr(ast_node, only_string=False):
     var_list = list()
-    data_type = "None"
-    if "type" in ast_node:
-        data_type = str(ast_node["type"]["qualType"])
+    data_type = extractor.extract_data_type(ast_node)
     param_node = ast_node["inner"][0]
     param_node_type = param_node["kind"]
     var_name = "(" + data_type + ") " + get_node_value(param_node)
@@ -159,12 +157,10 @@ def convert_array_iterator(iterator_node, only_string=False):
     if iterator_node_type == "ImplicitCastExpr":
         iterator_node = iterator_node["inner"][0]
         iterator_node_type = str(iterator_node["kind"])
-    var_type = iterator_node["type"]["qualType"]
+    var_type = extractor.extract_data_type(iterator_node)
     if iterator_node_type in ["VarDecl", "ParmVarDecl"]:
         iterator_name = str(iterator_node['identifier'])
-        iterator_data_type = None
-        if "data-type" in iterator_node:
-            iterator_data_type = str(iterator_node["type"]["qualType"])
+        iterator_data_type = extractor.extract_data_type(iterator_node)
         var_list.append((iterator_name, iterator_data_type))
         var_name = "[" + iterator_name + "]"
     elif iterator_node_type in ["Macro"]:
@@ -172,9 +168,7 @@ def convert_array_iterator(iterator_node, only_string=False):
         var_name = "[" + iterator_value + "]"
     elif iterator_node_type == "DeclRefExpr":
         iterator_name = str(iterator_node['referencedDecl']['name'])
-        iterator_data_type = None
-        if "data-type" in iterator_node:
-            iterator_data_type = str(iterator_node["type"]["qualType"])
+        iterator_data_type = extractor.extract_data_type(iterator_node)
         var_list.append((iterator_name, iterator_data_type))
         var_name = "[" + iterator_name + "]"
     elif iterator_node_type in ["IntegerLiteral", "FloatingLiteral"]:
@@ -212,7 +206,7 @@ def convert_array_iterator(iterator_node, only_string=False):
 def convert_array_subscript(ast_node, only_string=False):
     var_list = list()
     var_name = ""
-    var_data_type = str(ast_node["type"]["qualType"])
+    var_data_type = extractor.extract_data_type(ast_node)
     # print(ast_node)
     array_node = ast_node["inner"][0]
     array_type = str(array_node["kind"])
@@ -222,9 +216,7 @@ def convert_array_subscript(ast_node, only_string=False):
 
     if array_type == "DeclRefExpr":
         array_name = str(array_node['referencedDecl']['name'])
-        array_data_type = None
-        if "type" in array_node.keys():
-            array_data_type = str(array_node["type"]["qualType"])
+        array_data_type = extractor.extract_data_type(array_node)
         if array_data_type is None:
             var_data_type = "unknown"
         else:
@@ -235,8 +227,8 @@ def convert_array_subscript(ast_node, only_string=False):
     elif array_type == "MemberExpr":
         # array_name = str(array_node['referencedDecl']['name'])
         # array_data_type = None
-        if "type" in array_node.keys():
-            array_data_type = str(array_node["type"]["qualType"])
+        # if "type" in array_node.keys():
+        #     array_data_type = str(array_node["type"]["qualType"])
         if len(ast_node["inner"]) > 1:
             iterator_node = ast_node["inner"][1]
             array_name = convert_member_expr(array_node, True)
@@ -244,9 +236,7 @@ def convert_array_subscript(ast_node, only_string=False):
             var_name = array_name + iterator_name
     elif array_type == "ParenExpr":
         array_name = convert_paren_node_to_expr(array_node, True)
-        var_data_type = None
-        if "type" in array_node.keys():
-            var_data_type = str(array_node["type"]["qualType"])
+        var_data_type = extractor.extract_data_type(ast_node)
         iterator_node = ast_node["inner"][1]
         iterator_name, iterator_type, _ = convert_array_iterator(iterator_node)
         var_name = array_name + iterator_name
@@ -346,7 +336,7 @@ def convert_member_expr(ast_node, only_string=False):
         node_value = ast_node['name']
         var_name = str(node_value.split(":")[-1])
         # print(var_name)
-        var_data_type = str(ast_node["type"]["qualType"])
+        var_data_type = extractor.extract_data_type(ast_node)
         if "isArrow" in ast_node.keys():
             if ast_node["isArrow"] is False:
                 var_name = "." + var_name
