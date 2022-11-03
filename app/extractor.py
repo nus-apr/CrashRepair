@@ -407,7 +407,8 @@ def extract_var_ref_list(ast_node, file_path):
     if child_count:
         for child_node in ast_node['inner']:
             var_list = var_list + list(set(extract_var_ref_list(child_node, file_path)))
-    return list(set(var_list))
+    sorted_var_list = sorted(list(set(var_list)), key=lambda x:x[1], reverse=True)
+    return sorted_var_list
 
 
 def extract_var_list(ast_node, file_path):
@@ -419,7 +420,8 @@ def extract_var_list(ast_node, file_path):
             child_var_dec_list = extract_var_dec_list(child_node, file_path)
             child_var_ref_list = extract_var_ref_list(child_node, file_path)
             variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
-    return list(set(variable_list))
+    sorted_var_list = sorted(list(set(variable_list)), key=lambda x: x[1], reverse=True)
+    return sorted_var_list
 
 
 def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
