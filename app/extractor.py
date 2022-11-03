@@ -277,9 +277,7 @@ def extract_var_dec_list(ast_node, file_path):
     node_type = ast_node["kind"]
     if node_type in ["ParmVarDecl"]:
         var_name = str(ast_node["name"])
-        var_type = None
-        if "type" in ast_node:
-            var_type = str(ast_node['type']['qualType'])
+        var_type = extract_data_type(ast_node)
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, column_number = begin_loc
         var_list.append((var_name, line_number, column_number, var_type, "dec"))
@@ -287,9 +285,7 @@ def extract_var_dec_list(ast_node, file_path):
 
     if node_type in ["VarDecl"]:
         var_name = str(ast_node["name"])
-        var_type = None
-        if "type" in ast_node:
-            var_type = str(ast_node['type']['qualType'])
+        var_type = extract_data_type(ast_node)
         begin_loc = extract_loc(file_path, ast_node["loc"])
         _, line_number, column_number = begin_loc
         var_list.append((var_name, line_number, column_number, var_type, "dec"))
@@ -326,7 +322,7 @@ def extract_var_ref_list(ast_node, file_path):
         op_code = ast_node['opcode']
         if op_code in ["=", "+=", "-=", "*=", "/="]:
             begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
-            data_type = left_side["type"]["qualType"]
+            data_type = extract_data_type(left_side)
             _, line_number, col_number = begin_loc
             if file_path not in values.SOURCE_LINE_MAP:
                 with open(file_path, "r") as s_file:
@@ -768,8 +764,8 @@ def extract_global_var_node_list(ast_tree):
 def extract_data_type_list(ast_node):
     data_type_list = list()
     node_type = str(ast_node["kind"])
-    if "type" in ast_node.keys():
-        data_type = str(ast_node['type']['qualType'])
+    data_type = extract_data_type(ast_node)
+    if data_type != "None":
         data_type_list.append(data_type)
     if len(ast_node['inner']) > 0:
         for child_node in ast_node['inner']:
@@ -946,9 +942,9 @@ def extract_expression_list(ast_node, src_file):
     unary_op_list = extract_unaryop_node_list(ast_node, src_file)
     for subscript_node in array_access_list:
         index_node = subscript_node["inner"][1]
-        expression_str = converter.convert_node_to_str(index_node)
+        # expression_str = converter.convert_node_to_str(index_node)
         expression_loc = extract_loc(src_file, index_node["range"]["begin"])
-        data_type = index_node["type"]["qualType"]
+        # data_type = index_node["type"]["qualType"]
         if expression_loc is None:
             continue
         # expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
@@ -966,7 +962,7 @@ def extract_expression_list(ast_node, src_file):
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
             data_type = "bool"
         else:
-            data_type = op_node["type"]["qualType"]
+            data_type = extract_data_type(op_node)
         expression_str = converter.convert_node_to_str(op_node)
         expression_loc = extract_loc(src_file, op_node["range"]["begin"], op_code)
         if expression_loc is None:
@@ -982,9 +978,9 @@ def extract_expression_string_list(ast_node, src_file):
     unary_op_list = extract_unaryop_node_list(ast_node)
     for subscript_node in array_access_list:
         index_node = subscript_node["inner"][1]
-        expression_str = converter.convert_node_to_str(index_node)
+        # expression_str = converter.convert_node_to_str(index_node)
         expression_loc = extract_loc(src_file, index_node["range"]["begin"])
-        data_type = index_node["type"]["qualType"]
+        # data_type = index_node["type"]["qualType"]
         if expression_loc is None:
             continue
         expression_index = (expression_loc[1], expression_loc[2])

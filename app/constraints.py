@@ -342,7 +342,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         return constraint_expr
     elif node_type in ["DeclRefExpr"]:
         symbol_str = str(ast_node["referencedDecl"]["name"])
-        data_type = ast_node["type"]["qualType"]
+        data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
@@ -371,7 +371,7 @@ def generate_div_zero_constraint(divisor_node):
 
 
 def generate_type_underflow_constraint(ast_node):
-    result_data_type = ast_node["type"]["qualType"]
+    result_data_type = extractor.extract_data_type(ast_node)
     type_min, type_max = get_type_limits(result_data_type)
     min_val_symbol = make_constraint_symbol(type_min, "INT_CONST")
     min_val_expr = make_symbolic_expression(min_val_symbol)
@@ -404,7 +404,7 @@ def generate_type_underflow_constraint(ast_node):
 
 
 def generate_type_overflow_constraint(ast_node):
-    result_data_type = ast_node["type"]["qualType"]
+    result_data_type = extractor.extract_data_type(ast_node)
     type_min, type_max = get_type_limits(result_data_type)
     max_val_symbol = make_constraint_symbol(type_max, "INT_CONST")
     max_val_expr = make_symbolic_expression(max_val_symbol)
@@ -470,7 +470,7 @@ def generate_shift_overflow_constraint(shift_node):
     # first generate the expressions for the two operands
     binary_left_expr = generate_expr_for_ast(binary_left_ast)
     binary_right_expr = generate_expr_for_ast(binary_right_ast)
-    result_data_type = binary_left_ast["type"]["qualType"]
+    result_data_type = extractor.extract_data_type(binary_left_ast)
     type_min, type_max = get_type_limits(result_data_type)
     max_val_symbol = make_constraint_symbol(type_max, "INT_CONST")
     max_val_expr = make_symbolic_expression(max_val_symbol)
