@@ -100,6 +100,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
     expr_info_list = extractor.extract_expression_list(function_ast, src_file)
     expr_taint_list = collections.OrderedDict()
     logger.track_localization("generating candidate map for function {} in {}".format(function_name, src_file))
+    logger.track_localization("CFC VAR LIST: {}".format(cfc_var_info_list))
     logger.track_localization("VAR LIST: {}".format(var_info_list))
     logger.track_localization("EXPR LIST: {}".format(expr_info_list))
 
