@@ -1,3 +1,14 @@
+add_library(crashrepairlib
+  Expr/ClangToExprConverter.cpp
+  Expr/ExprGenerator.cpp
+  Expr/ExprToZ3Converter.cpp
+  Expr/Parser.cpp
+  DiffGenerator.cpp
+  ProgramMutator.cpp
+  ProgramStates.cpp
+  Utils.cpp
+)
+
 add_executable(crashrepairfix
   crashrepairfix.cpp
   Expr/ClangToExprConverter.cpp
@@ -24,6 +35,34 @@ add_executable(_crepairparse
 
 llvm_map_components_to_libnames(CRASHREPAIRFIX_LLVM_LIBS
   Demangle
+)
+
+set_target_properties(crashrepairlib
+  PROPERTIES
+    CXX_STANDARD 17
+    CMAKE_CXX_STANDARD_REQUIRED ON
+)
+target_link_libraries(crashrepairlib PRIVATE
+  ${Z3_LIBRARY}
+  ${CRASHREPAIRFIX_LLVM_LIBS}
+  ${CLANG_LIBS}
+  taocpp::pegtl
+  nlohmann_json::nlohmann_json
+  spdlog::spdlog
+)
+target_compile_options(crashrepairlib PRIVATE
+  -Wall -Werror -Wno-error=comment -fno-rtti
+)
+target_include_directories(crashrepairlib
+  PUBLIC
+    ${CLANG_INCLUDE_DIRS}
+    ${LLVM_INCLUDE_DIRS}
+    ${Z3_INCLUDE_DIRS}
+    taocpp::pegtl
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+    ../../include
+    ../../extern/dtl/include
 )
 
 set_target_properties(_crepairparse
