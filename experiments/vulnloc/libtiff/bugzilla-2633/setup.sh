@@ -24,8 +24,8 @@ cp *.patch $dir_name/dev-patch/fix.patch
 ./autogen.sh
 
 cd $dir_name/src
-sed -i 's/fabs/fabs_trident/g' libtiff/tif_luv.c
-sed -i 's/fabs/fabs_trident/g' tools/tiff2ps.c
+sed -i 's/fabs/fabs_crepair/g' libtiff/tif_luv.c
+sed -i 's/fabs/fabs_crepair/g' tools/tiff2ps.c
 git add  libtiff/tif_luv.c tools/tiff2ps.c
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
