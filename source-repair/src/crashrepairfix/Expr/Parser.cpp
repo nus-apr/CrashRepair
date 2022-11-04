@@ -38,6 +38,9 @@ struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, typ
 
 struct int_max : string<'I', 'N', 'T', '_', 'M', 'A', 'X'> {};
 struct int_min : string<'I', 'N', 'T', '_', 'M', 'I', 'N'> {};
+// struct long_max : string<'L', 'O', 'N', 'G', '_', 'M', 'A', 'X'> {};
+// struct long_min : string<'L', 'O', 'N', 'G', '_', 'M', 'I', 'N'> {};
+// struct constant : sor<int_max, int_min, long_max, long_min> {};
 struct constant : sor<int_max, int_min> {};
 
 struct less_than : pad<one<'<'>, space> {};
@@ -112,6 +115,8 @@ using selector = parse_tree::selector<
   >,
   parse_tree::remove_content::on<
     result,
+    int_max,
+    int_min,
     plus,
     minus,
     multiply,
@@ -205,6 +210,10 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
     return IntConst::create(INT_MAX);
   } else if (nodeType == "crashrepairfix::int_min") {
     return IntConst::create(INT_MIN);
+  } else if (nodeType == "crashrepairfix::long_max") {
+    return IntConst::create(LONG_MAX);
+  } else if (nodeType == "crashrepairfix::long_min") {
+    return IntConst::create(LONG_MIN);
   } else if (nodeType == "crashrepairfix::variable") {
     return convertVarNode(node);
   } else if (nodeType == "crashrepairfix::integer") {
@@ -223,6 +232,7 @@ std::unique_ptr<Expr> convertParseTree(tao::pegtl::parse_tree::node *root) {
 }
 
 std::unique_ptr<Expr> parse(std::string const &code) {
+  spdlog::info("parsing expression: {}", code);
   memory_input input(code, "");
 
   [[maybe_unused]] const std::size_t issues = tao::pegtl::analyze<grammar>();
@@ -231,6 +241,7 @@ std::unique_ptr<Expr> parse(std::string const &code) {
   // tao::pegtl::standard_trace<grammar>(input);
 
   if (const auto root = parse_tree::parse<grammar, selector>(input)) {
+    spdlog::info("converting parse tree to expression...");
     return convertParseTree(root.get());
   }
 

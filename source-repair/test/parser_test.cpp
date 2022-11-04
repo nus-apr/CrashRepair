@@ -17,3 +17,7 @@ TEST(ParserTest, BracketedVarLessEqConstant) {
 TEST(ParserTest, VarLessEqVar) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= @var(integer, cmptparm->prec)"), nullptr);
 }
+
+TEST(ParserTest, VarLessEqIntMax) {
+  ASSERT_NE(parse("@var(integer, compinfo->height) <= INT_MAX"), nullptr);
+}
