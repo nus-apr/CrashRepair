@@ -33,3 +33,7 @@ TEST(ParserTest, VarLessEqLongMax) {
 TEST(ParserTest, VarLessEqLongMin) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= LONG_MIN"), nullptr);
 }
+
+TEST(ParserTest, Issue16) {
+  ASSERT_NE(parse("((@var(integer, compinfo->width) * @var(integer, compinfo->height)) <= (LONG_MAX / (@var(integer, cmptparm->prec) + 7)))"), nullptr);
+}
