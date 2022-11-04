@@ -184,7 +184,7 @@ clang::SourceRange getRangeWithTokenEnd(
   // find the trailing semi-colon token, if any
   // https://lists.llvm.org/pipermail/cfe-dev/2014-July/038339.html
   // https://clang.llvm.org/doxygen/namespaceclang_1_1arcmt_1_1trans.html
-  auto semiLocation = findSemiAfterLocation(expandedEnd, const_cast<clang::ASTContext&>(context));
+  // auto semiLocation = findSemiAfterLocation(expandedEnd, const_cast<clang::ASTContext&>(context));
   // if (semiLocation.isValid()) {
   //   expandedEnd = semiLocation;
   // }
@@ -250,7 +250,7 @@ bool containsVarDecl(clang::Stmt const *stmt, clang::ASTContext const &context) 
 bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context) {
   for (auto const parent : context.getParents(node)) {
     std::string nodeKind = parent.getNodeKind().asStringRef().str();
-    if (nodeKind == "WhileStmt" || nodeKind == "ForStmt") { 
+    if (nodeKind == "WhileStmt" || nodeKind == "ForStmt") {
       return true;
     }
     if (isInsideLoop(parent, context)) {
