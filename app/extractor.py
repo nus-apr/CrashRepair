@@ -74,6 +74,12 @@ def extract_func_ast(src_path, line_number):
             c_func_name = func_name
             # if c_func_name:
             #     emitter.warning("\t\t[warning] two functions were found for same line number")
+    if not function_node_list:
+        utilities.error_exit("Could not generate function list for AST of {}".format(src_path))
+    if c_func_name is None:
+        utilities.error_exit("A function could not be found for line {} in file {}".format(src_path, line_number))
+    if c_func_name not in  function_node_list:
+        utilities.error_exit("Function {} could not be found in file {}".format(c_func_name, line_number))
     crash_func_ast = function_node_list[c_func_name]
     return c_func_name, crash_func_ast
 
