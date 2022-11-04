@@ -21,3 +21,15 @@ TEST(ParserTest, VarLessEqVar) {
 TEST(ParserTest, VarLessEqIntMax) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= INT_MAX"), nullptr);
 }
+
+TEST(ParserTest, VarLessEqIntMin) {
+  ASSERT_NE(parse("@var(integer, compinfo->height) <= INT_MIN"), nullptr);
+}
+
+TEST(ParserTest, VarLessEqLongMax) {
+  ASSERT_NE(parse("@var(integer, compinfo->height) <= LONG_MAX"), nullptr);
+}
+
+TEST(ParserTest, VarLessEqLongMin) {
+  ASSERT_NE(parse("@var(integer, compinfo->height) <= LONG_MIN"), nullptr);
+}

@@ -38,10 +38,9 @@ struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, typ
 
 struct int_max : string<'I', 'N', 'T', '_', 'M', 'A', 'X'> {};
 struct int_min : string<'I', 'N', 'T', '_', 'M', 'I', 'N'> {};
-// struct long_max : string<'L', 'O', 'N', 'G', '_', 'M', 'A', 'X'> {};
-// struct long_min : string<'L', 'O', 'N', 'G', '_', 'M', 'I', 'N'> {};
-// struct constant : sor<int_max, int_min, long_max, long_min> {};
-struct constant : sor<int_max, int_min> {};
+struct long_max : string<'L', 'O', 'N', 'G', '_', 'M', 'A', 'X'> {};
+struct long_min : string<'L', 'O', 'N', 'G', '_', 'M', 'I', 'N'> {};
+struct constant : sor<int_max, int_min, long_max, long_min> {};
 
 struct less_than : pad<one<'<'>, space> {};
 struct lesser_or_equal : pad<string<'<', '='>, space> {};
@@ -117,6 +116,8 @@ using selector = parse_tree::selector<
     result,
     int_max,
     int_min,
+    long_max,
+    long_min,
     plus,
     minus,
     multiply,
