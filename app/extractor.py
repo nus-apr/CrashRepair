@@ -224,8 +224,14 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
         c_details = "integer addition overflow"
     elif c_type == definitions.CRASH_TYPE_INT_SUB_OVERFLOW:
         c_details = "integer subtraction overflow"
+    elif c_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
+        c_details = "overflow on shift operation"
     elif c_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
         c_details = "memory overflow"
+    elif c_type == definitions.CRASH_TYPE_MEMSET_ERROR:
+        c_details = "memset error"
+    elif c_type == definitions.CRASH_TYPE_ASSERTION_ERROR:
+        c_details = "assertion error"
     else:
         c_details = "unknown"
     emitter.highlight("\t\t[info] crash type: {}".format(c_details))
