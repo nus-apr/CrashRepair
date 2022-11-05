@@ -236,6 +236,8 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
         c_details = "memory overflow"
     elif c_type == definitions.CRASH_TYPE_MEMSET_ERROR:
         c_details = "memset error"
+    elif c_type == definitions.CRASH_TYPE_MEMCPY_ERROR:
+        c_details = "memcpy error"
     elif c_type == definitions.CRASH_TYPE_ASSERTION_ERROR:
         c_details = "assertion error"
     else:
