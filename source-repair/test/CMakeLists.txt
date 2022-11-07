@@ -6,6 +6,7 @@ add_executable(parser_test
 target_link_libraries(parser_test
   crashrepairlib
   GTest::gtest_main
+  nlohmann_json::nlohmann_json
   spdlog::spdlog
 )
 

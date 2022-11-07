@@ -1,6 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <filesystem>
+
+#include <crashrepairfix/StmtFinder.h>
 #include <crashrepairfix/Expr/Parser.h>
+
+#include <clang/Tooling/Tooling.h>
+
+namespace fs = std::filesystem;
 
 std::unique_ptr<crashrepairfix::Expr> parse(std::string const &code) {
   return crashrepairfix::parse(code);
@@ -36,4 +43,28 @@ TEST(ParserTest, VarLessEqLongMin) {
 
 TEST(ParserTest, Issue16) {
   ASSERT_NE(parse("((@var(integer, compinfo->width) * @var(integer, compinfo->height)) <= (LONG_MAX / (@var(integer, cmptparm->prec) + 7)))"), nullptr);
+}
+
+// https://stackoverflow.com/questions/37276015/how-do-i-generate-an-ast-from-a-string-of-c-using-clang
+TEST(UtilsTest, ForLoopTopLevelStmt) {
+  auto filename = fs::absolute("test.cpp").string();
+
+  std::string code = R""""(
+int main(int argc, const char **argv) {
+  int x = 0;
+  for (int i = 0; i < 10; i++) {
+    x += i;
+  }
+}
+  )"""";
+  std::unique_ptr<clang::ASTUnit> ast(clang::tooling::buildASTFromCode(code, filename));
+  auto &astContext = ast->getASTContext();
+
+  auto initExprLocation = crashrepairfix::SourceLocation(filename, 4, 21);
+
+  // loop guard: i < 10
+  auto stmt = crashrepairfix::StmtFinder::find(astContext, initExprLocation);
+  ASSERT_NE(stmt, nullptr);
+
+  ASSERT_FALSE(crashrepairfix::isTopLevelStmt(stmt, astContext));
 }
