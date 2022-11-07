@@ -1,5 +1,7 @@
 #include <crashrepairfix/Utils.h>
 
+#include <crashrepairfix/DescendantChecker.h>
+
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -209,6 +211,10 @@ clang::SourceRange getRangeWithTokenEnd(
   return clang::SourceRange(range.getBegin(), expandedEnd);
 }
 
+bool stmtBelongsToSubtree(clang::Stmt const *stmt, clang::Stmt const *subtree, clang::ASTContext &context) {
+  return DescendantChecker::subtreeContainsStmt(context, subtree, stmt);
+}
+
 bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context) {
   for (auto const parent : context.getParents(node)) {
     std::string nodeKind = parent.getNodeKind().asStringRef().str();
@@ -216,7 +222,11 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
        || nodeKind == "ForStmt"
        || nodeKind == "CompoundStmt"
     ) {
+      // must not be contained within the loop condition
+      // belongsToSubtree(node, parent.get<clang::WhileStmt>().getCond()));
+
       return true;
+
     }
   }
   return false;
