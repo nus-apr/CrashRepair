@@ -26,7 +26,10 @@ class PatchCandidate:
         """Loads a set of patch candidates from disk."""
         with open(filename, "r") as fh:
             jsn = json.load(fh)
-        return [cls.from_dict(candidate_dict) for candidate_dict in jsn]
+        candidates = [cls.from_dict(candidate_dict) for candidate_dict in jsn]
+        # exclude any patches with an empty diff (workaround to #15)
+        candidates = [candidate for candidate in candidates if candidate.diff]
+        return candidates
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, t.Any]) -> PatchCandidate:
