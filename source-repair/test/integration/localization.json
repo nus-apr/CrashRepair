@@ -1,0 +1,6 @@
+[
+  {
+    "location": "test.cpp:788:22",
+    "constraint": "(@result(int) > 0) && (@result(int) < @var(int, bytes_per_sample))"
+  }
+]

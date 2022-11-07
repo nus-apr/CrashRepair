@@ -9,9 +9,7 @@
 
 namespace fs = std::filesystem;
 
-std::unique_ptr<crashrepairfix::Expr> parse(std::string const &code) {
-  return crashrepairfix::parse(code);
-}
+using namespace crashrepairfix;
 
 TEST(ParserTest, VarLessEqConstant) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= 7"), nullptr);
@@ -61,9 +59,12 @@ int main(int argc, const char **argv) {
   auto &astContext = ast->getASTContext();
 
   // loop guard: i < 10
-  auto initExprLocation = crashrepairfix::SourceLocation(filename, 4, 21);
-  auto stmt = crashrepairfix::StmtFinder::find(astContext, initExprLocation);
+  auto stmt = StmtFinder::find(astContext, SourceLocation(filename, 4, 21));
   ASSERT_NE(stmt, nullptr);
+  ASSERT_FALSE(isTopLevelStmt(stmt, astContext));
 
-  ASSERT_FALSE(crashrepairfix::isTopLevelStmt(stmt, astContext));
+  // x += i;
+  stmt = StmtFinder::find(astContext, SourceLocation(filename, 5, 7));
+  ASSERT_NE(stmt, nullptr);
+  ASSERT_TRUE(isTopLevelStmt(stmt, astContext));
 }
