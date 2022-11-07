@@ -60,9 +60,8 @@ int main(int argc, const char **argv) {
   std::unique_ptr<clang::ASTUnit> ast(clang::tooling::buildASTFromCode(code, filename));
   auto &astContext = ast->getASTContext();
 
-  auto initExprLocation = crashrepairfix::SourceLocation(filename, 4, 21);
-
   // loop guard: i < 10
+  auto initExprLocation = crashrepairfix::SourceLocation(filename, 4, 21);
   auto stmt = crashrepairfix::StmtFinder::find(astContext, initExprLocation);
   ASSERT_NE(stmt, nullptr);
 

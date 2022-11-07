@@ -216,17 +216,15 @@ bool stmtBelongsToSubtree(clang::Stmt const *stmt, clang::Stmt const *subtree, c
 }
 
 bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context) {
+  auto stmt = node.get<clang::Stmt>();
   for (auto const parent : context.getParents(node)) {
     std::string nodeKind = parent.getNodeKind().asStringRef().str();
-    if (  nodeKind == "WhileStmt"
-       || nodeKind == "ForStmt"
-       || nodeKind == "CompoundStmt"
-    ) {
-      // must not be contained within the loop condition
-      // belongsToSubtree(node, parent.get<clang::WhileStmt>().getCond()));
-
+    if (nodeKind == "WhileStmt") {
+      return stmtBelongsToSubtree(stmt, parent.get<clang::WhileStmt>()->getBody(), context);
+    } else if (nodeKind == "ForStmt") {
+      return stmtBelongsToSubtree(stmt, parent.get<clang::ForStmt>()->getBody(), context);
+    } else if (nodeKind == "CompoundStmt") {
       return true;
-
     }
   }
   return false;
