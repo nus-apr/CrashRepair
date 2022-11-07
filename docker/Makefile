@@ -43,9 +43,9 @@ crepair: builder klee llvm-11 orchestrator sourcerepair
 orchestrator:
 	docker build -t crepair:orchestrator ../orchestrator
 
-install: crepair
+install: experiments
 
 experiments: crepair
 	docker build -t crepair:experiments -f Dockerfile.vulnloc .
 
-.PHONY: builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install
+.PHONY: builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install experiments
