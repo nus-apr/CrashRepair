@@ -506,13 +506,22 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
                 array_access_node = reference_ast
 
+        pointer_node = None
+        ref_node_list = extract_reference_node_list(func_ast)
+        for ref_node in ref_node_list:
+            var_type = extract_data_type(ref_node)
+            if "*" in var_type:
+                if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
+                    pointer_node = ref_node
+
         if array_access_node:
             target_ast = array_access_node
         elif assign_op_ast:
             target_ast = assign_op_ast["inner"][0]
         elif deref_op_ast:
             target_ast = deref_op_ast
-
+        elif pointer_node:
+            target_ast = pointer_node
 
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
