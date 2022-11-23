@@ -331,12 +331,19 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         return constraint_expr
     elif node_type == "Macro":
         utilities.error_exit("Unhandled node type for Expression: {}".format(node_type))
-    elif node_type in ["ParenExpr", "ImplicitCastExpr", "CStyleCastExpr"]:
+    elif node_type in ["ParenExpr", "ImplicitCastExpr"]:
         child_node = ast_node["inner"][0]
         return generate_expr_for_ast(child_node)
     elif node_type == "IntegerLiteral":
         symbol_str = str(ast_node["value"])
         op_type = "INT_CONST"
+        constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+        return constraint_expr
+    elif node_type in ["CStyleCastExpr"]:
+        symbol_str = converter.convert_node_to_str(ast_node)
+        data_type = extractor.extract_data_type(ast_node)
+        op_type = "INT_VAR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
