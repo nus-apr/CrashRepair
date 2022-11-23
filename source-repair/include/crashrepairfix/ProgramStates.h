@@ -44,14 +44,14 @@ public:
       std::string const &valuesFilename
     );
 
-    Values(std::unordered_map<Variable const *, std::variant<double, long>> values) : values(values) {}
+    Values(std::unordered_map<Variable const *, std::variant<double, long, unsigned long>> values) : values(values) {}
 
     z3::expr toZ3(z3::context &z3c) const;
 
   private:
     std::unordered_map<
       Variable const *,
-      std::variant<double, long>
+      std::variant<double, long, unsigned long>
     > values;
   };
 

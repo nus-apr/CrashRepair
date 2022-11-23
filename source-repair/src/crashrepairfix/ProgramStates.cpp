@@ -77,7 +77,7 @@ void ProgramStates::loadValues() {
       abort();
     }
 
-    std::unordered_map<Variable const *, std::variant<double, long>> row;
+    std::unordered_map<Variable const *, std::variant<double, long, unsigned long>> row;
     for (int col = 0; col < numColumns; col++) {
       auto cellString = cells[col];
       strip_whitespace(cellString);
@@ -88,12 +88,14 @@ void ProgramStates::loadValues() {
       }
 
       auto const *variable = columns[col];
-      std::variant<double, long> value;
+      std::variant<double, long, unsigned long> value;
 
       switch (variable->getResultType()) {
         case ResultType::Int:
-        case ResultType::Pointer:
           value = std::stol(cellString);
+          break;
+        case ResultType::Pointer:
+          value = std::stoul(cellString);
           break;
         case ResultType::Float:
           value = std::stod(cellString);
@@ -161,11 +163,20 @@ z3::expr ProgramStates::Values::toZ3(z3::context &z3c) const {
     operands.push_back(lhs == rhs);
   };
 
+  auto pointerToVar = [&z3c, &operands](Variable const *variable, unsigned long value) {
+    auto lhs = z3c.int_const(variable->name.c_str());
+    auto rhs = z3c.int_val(value);
+    operands.push_back(lhs == rhs);
+  };
+
   for (auto const & [variable, value] : values) {
     switch (variable->type) {
       case ResultType::Int:
+        pointerToVar(variable, std::get<long>(value));
+        break;
+
       case ResultType::Pointer:
-        intToVar(variable, std::get<long>(value));
+        intToVar(variable, std::get<unsigned long>(value));
         break;
 
       case ResultType::Float:

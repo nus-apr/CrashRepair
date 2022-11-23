@@ -78,7 +78,7 @@ private:
     auto locColumn = sourceManager.getSpellingColumnNumber(location);
 
     if (locLine == sourceLocation.line) {
-      spdlog::debug("checking location: {}:{}:{}", locFilename, locLine, locColumn);
+      spdlog::info("checking location: {}:{}:{}", locFilename, locLine, locColumn);
     }
 
     return locColumn == sourceLocation.column && locLine == sourceLocation.line;
