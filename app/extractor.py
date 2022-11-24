@@ -164,7 +164,7 @@ def extract_ast_json(source_file_path):
         if os.path.isfile(ast_file_path):
             ast_tree = reader.read_ast_tree(ast_file_path)
             return ast_tree
-    source_dir = "/".join(source_file_path.split("/")[:-1])
+    source_dir = values.CONF_DIR_SRC
     diff_command = "clang-10 "
     if values.COMPILE_COMMANDS:
         if source_file_path in values.COMPILE_COMMANDS:
