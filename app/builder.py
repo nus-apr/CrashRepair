@@ -378,8 +378,9 @@ def clean_project(project_path, binary_path):
         clean_command = "cd " + project_path
         clean_command += "; make clean"
         clean_command += "; rm compile_commands.json"
-        clean_command += "; rm CMakeCache.txt"
-        clean_command += "; rm -rf CMakeFiles"
+        if values.CONF_COMMAND_CONFIG and values.CONF_COMMAND_CONFIG != "skip":
+            clean_command += "; rm CMakeCache.txt"
+            clean_command += "; rm -rf CMakeFiles"
         execute_command(clean_command)
     clean_residues = "cd " + binary_dir_path + ";" + "rm -rf ./patches/*;" + "rm -rf ./klee*"
     execute_command(clean_residues)
