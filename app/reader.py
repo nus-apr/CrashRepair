@@ -502,7 +502,11 @@ def read_taint_values(taint_log_path):
     current_src_loc = -1
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
-            for line in taint_file:
+            line_number = 0
+            for line in reversed(list(taint_file)):
+                line_number = line_number + 1
+                if line_number >= values.DEFAULT_MAX_TAINT_VALUES:
+                    break
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_str = line.split(": ")
@@ -537,8 +541,8 @@ def read_taint_values(taint_log_path):
                 if current_src_loc not in taint_values:
                     taint_values[current_src_loc] = list()
                 taint_values[current_src_loc].append(values_loc.copy()) 
-
-    return taint_values
+    ordered_taint_values = OrderedDict(reversed(taint_values.items()))
+    return ordered_taint_values
 
 def read_compile_commands(database_path):
     command_list = read_json(database_path)
