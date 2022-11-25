@@ -487,41 +487,31 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
     elif crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
-        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&="])
-        assign_op_ast = None
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&=", "+=", "*=", "-="])
         for binary_op_ast in binaryop_list:
-            if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
-                assign_op_ast = binary_op_ast
+            if oracle.is_loc_match(crash_loc, binary_op_ast["range"]):
+                target_ast = binary_op_ast
                 break
-        deref_op_ast = None
-        if not assign_op_ast:
+        if target_ast is None:
             unaryop_list = extract_unaryop_node_list(func_ast, ["*"])
             for unary_op_ast in unaryop_list:
                 if oracle.is_loc_in_range(crash_loc, unary_op_ast["range"]):
-                    deref_op_ast = unary_op_ast
+                    target_ast = unary_op_ast
                     break
-        array_access_node = None
-        array_access_list = extract_array_subscript_node_list(func_ast)
-        for reference_ast in array_access_list:
-            if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
-                array_access_node = reference_ast
+        if target_ast is None:
+            array_access_list = extract_array_subscript_node_list(func_ast)
+            for reference_ast in array_access_list:
+                if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
+                    target_ast = reference_ast
 
-        pointer_node = None
-        ref_node_list = extract_reference_node_list(func_ast)
-        for ref_node in ref_node_list:
-            var_type = extract_data_type(ref_node)
-            if "*" in var_type:
-                if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
-                    pointer_node = ref_node
+        if target_ast is None:
+            ref_node_list = extract_reference_node_list(func_ast)
+            for ref_node in ref_node_list:
+                var_type = extract_data_type(ref_node)
+                if "*" in var_type:
+                    if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
+                        target_ast = ref_node
 
-        if array_access_node:
-            target_ast = array_access_node
-        elif assign_op_ast:
-            target_ast = assign_op_ast["inner"][0]
-        elif deref_op_ast:
-            target_ast = deref_op_ast
-        elif pointer_node:
-            target_ast = pointer_node
 
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
