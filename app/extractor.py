@@ -664,7 +664,7 @@ def extract_function_node_list(ast_node):
             loc_info = child_node["loc"]
             if "includedFrom" in loc_info:
                 continue
-            if "spellingLoc" in loc_info:
+            if "spellingLoc" in loc_info and "expansionLoc" not in loc_info:
                 continue
             if "storageClass" in child_node:
                 if child_node["storageClass"] == "extern":
