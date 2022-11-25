@@ -34,6 +34,18 @@ SymbolType = {
     "OP_ARITH_DIVIDE": "/",
     "OP_ARITH_MUL": "*",
 
+    "OP_ADD_ASSIGN": "+=",
+    "OP_SUB_ASSIGN": "-=",
+    "OP_MUL_ASSIGN": "*=",
+    "OP_DIV_ASSIGN": "/=",
+    "OP_AND_ASSIGN": "&=",
+    "OP_OR_ASSIGN": "|=",
+
+    "OP_BIT_AND": "&",
+    "OP_BIT_OR": "|",
+    "OP_BIT_NOT": "~",
+    "OP_BIT_XOR": "^",
+
     "OP_SHIFT_RIGHT": ">>",
     "OP_SHIFT_LEFT": "<<",
 
@@ -77,26 +89,7 @@ class ConstraintSymbol:
         self._m_symbol = new_symbol_str
 
     def is_operator(self) -> bool:
-        operator_type_list = [
-            "OP_LT",
-            "OP_LTE",
-            "OP_GT",
-            "OP_GTE",
-            "OP_EQ",
-            "OP_NEQ",
-            "OP_AND",
-            "OP_OR",
-            "OP_NOT",
-            "OP_ASSIGN",
-            "OP_ARITH_MINUS",
-            "OP_ARITH_PLUS",
-            "OP_ARITH_DIVIDE",
-            "OP_ARITH_MUL",
-            "OP_INCREMENT",
-            "OP_DECREMENT",
-            "OP_SHIFT_RIGHT",
-            "OP_SHIFT_LEFT"
-        ]
+        operator_type_list = [x for x in SymbolType.keys() if "OP" in x]
         return self._m_cons_type in operator_type_list
 
     def is_int_var(self):

@@ -489,7 +489,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         target_ast = None
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&=", "+=", "*=", "-="])
         for binary_op_ast in binaryop_list:
-            if oracle.is_loc_match(crash_loc, binary_op_ast["range"]):
+            if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
                 target_ast = binary_op_ast
                 break
         if target_ast is None:
