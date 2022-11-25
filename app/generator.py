@@ -1094,7 +1094,7 @@ def generate_offset_to_line(src_file_path):
             # FIXME does this need to be more robust?
             if char == "\n":
                 line += 1
-            offset_to_line[offset] = line
+            offset_to_line[offset + 1] = line
     return offset_to_line
 
 def generate_taint_sources(taint_expr_list, taint_loc):
