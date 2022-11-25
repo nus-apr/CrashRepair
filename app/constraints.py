@@ -582,12 +582,20 @@ def generate_memcpy_constraint(call_node):
 def get_type_limits(data_type):
     if data_type == "int":
         return "INT_MIN", "INT_MAX"
+    elif data_type == "char":
+        return "CHAR_MIN", "CHAR_MAX"
     elif data_type == "short":
         return "SHRT_MIN", "SHRT_MAX"
     elif data_type == "long":
         return  "LONG_MIN", "LONG_MAX"
+    elif data_type in ["unsigned char"]:
+        return "0", "UCHAR_MAX"
+    elif data_type in ["unsigned short"]:
+        return "0", "USHORT_MAX"
     elif data_type in ["unsigned int", "size_t"]:
         return "0", "UINT_MAX"
+    elif data_type in ["unsigned long"]:
+        return "0", "ULONG_MAX"
     else:
         utilities.error_exit("Unknown data type for limit constraints: {}".format(data_type))
 
