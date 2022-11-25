@@ -1088,13 +1088,15 @@ def generate_offset_to_line(src_file_path):
     line = 1
     with open(src_file_path, "r") as src_file:
         contents = src_file.read()
+        offset = 0
         for offset, char in enumerate(contents):
             # note that we map each line to the newline character that begins the line
             # this allows us to simply add a one-indexed column number to find an offset
             # FIXME does this need to be more robust?
             if char == "\n":
                 line += 1
-            offset_to_line[offset + 1] = line
+            offset_to_line[offset] = line
+        offset_to_line[offset+1] = line
     return offset_to_line
 
 def generate_taint_sources(taint_expr_list, taint_loc):
