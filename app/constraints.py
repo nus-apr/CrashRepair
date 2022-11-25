@@ -353,6 +353,12 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
+    elif node_type in ["ArraySubscriptExpr"]:
+        symbol_str = converter.convert_array_subscript(ast_node, True)
+        op_type = "INT_VAR"
+        constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+        return constraint_expr
     else:
         print(ast_node)
         utilities.error_exit("Unknown AST node type for Expression: {}".format(node_type))
