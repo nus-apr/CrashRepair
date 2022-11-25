@@ -487,7 +487,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
     elif crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
-        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["="])
+        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&="])
         assign_op_ast = None
         for binary_op_ast in binaryop_list:
             if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
@@ -831,7 +831,7 @@ def extract_binaryop_node_list(ast_node, file_path, white_list=None, black_list=
     if not ast_node:
         return binaryop_node_list
     node_type = str(ast_node["kind"])
-    if node_type in ["BinaryOperator"]:
+    if node_type in ["BinaryOperator", "CompoundAssignOperator"]:
         identifier = str(ast_node['opcode'])
         if white_list:
             if identifier in white_list:
