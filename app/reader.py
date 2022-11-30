@@ -267,7 +267,10 @@ def collect_klee_crash_info(trace_file_path):
     elif "overflow on subtraction" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
     elif "out of bound pointer" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_MEMORY_OVERFLOW
+        if "memory read error" in crash_reason:
+            crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
+        else:
+            crash_type = definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW
     elif "overflow on shift operation" in crash_reason:
         crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
     elif "memset error" in crash_reason:
@@ -325,7 +328,7 @@ def collect_exploit_output(log_file_path):
     elif "overflow on multiplication" in crash_type:
         crash_id = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
     elif "buffer-overflow" in crash_type:
-        crash_id = definitions.CRASH_TYPE_MEMORY_OVERFLOW
+        crash_id = definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW
     return crash_loc, crash_id, crash_address, crash_function
 
 

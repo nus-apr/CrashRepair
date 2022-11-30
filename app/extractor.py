@@ -232,8 +232,10 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
         c_details = "integer subtraction overflow"
     elif c_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
         c_details = "overflow on shift operation"
-    elif c_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
-        c_details = "memory overflow"
+    elif c_type == definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW:
+        c_details = "memory read overflow"
+    elif c_type == definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW:
+        c_details = "memory write overflow"
     elif c_type == definitions.CRASH_TYPE_MEMSET_ERROR:
         c_details = "memset error"
     elif c_type == definitions.CRASH_TYPE_MEMCPY_ERROR:
@@ -484,33 +486,34 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_underflow_constraint(crash_op_ast)
-    elif crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
+    elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW, definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
-        binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&=", "+=", "*=", "-="])
-        for binary_op_ast in binaryop_list:
-            if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
-                target_ast = binary_op_ast
-                break
-        if target_ast is None:
+        if crash_type == definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW:
+            binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&=", "+=", "*=", "-="])
+            for binary_op_ast in binaryop_list:
+                if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
+                    target_ast = binary_op_ast["inner"][0]
+                    break
+        else:
             unaryop_list = extract_unaryop_node_list(func_ast, ["*"])
             for unary_op_ast in unaryop_list:
                 if oracle.is_loc_in_range(crash_loc, unary_op_ast["range"]):
                     target_ast = unary_op_ast
                     break
-        if target_ast is None:
-            array_access_list = extract_array_subscript_node_list(func_ast)
-            for reference_ast in array_access_list:
-                if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
-                    target_ast = reference_ast
+            if target_ast is None:
+                array_access_list = extract_array_subscript_node_list(func_ast)
+                for reference_ast in array_access_list:
+                    if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
+                        target_ast = reference_ast
 
-        if target_ast is None:
-            ref_node_list = extract_reference_node_list(func_ast)
-            for ref_node in ref_node_list:
-                var_type = extract_data_type(ref_node)
-                if "*" in var_type:
-                    if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
-                        target_ast = ref_node
+            if target_ast is None:
+                ref_node_list = extract_reference_node_list(func_ast)
+                for ref_node in ref_node_list:
+                    var_type = extract_data_type(ref_node)
+                    if "*" in var_type:
+                        if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
+                            target_ast = ref_node
 
 
         if target_ast is None:
