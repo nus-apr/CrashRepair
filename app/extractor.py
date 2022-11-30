@@ -502,6 +502,43 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             if "[" in var_node[0]:
                 var_list.remove(var_node)
         cfc = constraints.generate_memory_overflow_constraint(target_ast)
+    elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
+        # check for memory write nodes if not found check for memory access nodes
+        target_ast = None
+        if crash_type == definitions.CRASH_TYPE_MEMORY_WRITE_NULL:
+            binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["=", "&=", "+=", "*=", "-="])
+            for binary_op_ast in binaryop_list:
+                if oracle.is_loc_in_range(crash_loc, binary_op_ast["range"]):
+                    target_ast = binary_op_ast["inner"][0]
+                    break
+        else:
+            unaryop_list = extract_unaryop_node_list(func_ast, ["*"])
+            for unary_op_ast in unaryop_list:
+                if oracle.is_loc_in_range(crash_loc, unary_op_ast["range"]):
+                    target_ast = unary_op_ast
+                    break
+            if target_ast is None:
+                array_access_list = extract_array_subscript_node_list(func_ast)
+                for reference_ast in array_access_list:
+                    if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
+                        target_ast = reference_ast
+
+            if target_ast is None:
+                ref_node_list = extract_reference_node_list(func_ast)
+                for ref_node in ref_node_list:
+                    var_type = extract_data_type(ref_node)
+                    if "*" in var_type:
+                        if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
+                            target_ast = ref_node
+
+        if target_ast is None:
+            emitter.error("\t[error] unable to find memory access operator")
+            utilities.error_exit("Unable to generate crash free constraint")
+        var_list = extract_var_list(target_ast, src_file)
+        for var_node in var_list:
+            if "[" in var_node[0]:
+                var_list.remove(var_node)
+        cfc = constraints.generate_memory_null_constraint(target_ast)
     elif crash_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["<<", ">>"])
         crash_op_ast = None
@@ -1029,6 +1066,11 @@ def extract_crash_type(crash_reason):
             crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
         else:
             crash_type = definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW
+    elif "null pointer" in crash_reason:
+        if "memory read error" in crash_reason:
+            crash_type = definitions.CRASH_TYPE_MEMORY_READ_NULL
+        else:
+            crash_type = definitions.CRASH_TYPE_MEMORY_WRITE_NULL
     elif "overflow on shift operation" in crash_reason:
         crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
     elif "memset error" in crash_reason:

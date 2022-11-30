@@ -160,6 +160,9 @@ CRASH_TYPE_MEMSET_ERROR = 7
 CRASH_TYPE_MEMCPY_ERROR = 8
 CRASH_TYPE_ASSERTION_ERROR = 9
 CRASH_TYPE_MEMORY_WRITE_OVERFLOW = 10
+CRASH_TYPE_MEMORY_READ_NULL = 11
+CRASH_TYPE_MEMORY_WRITE_NULL = 12
+
 
 CRASH_TYPE_MESSAGE = {
     CRASH_TYPE_DIV_ZERO: "division by zero",
@@ -171,7 +174,9 @@ CRASH_TYPE_MESSAGE = {
     CRASH_TYPE_MEMORY_WRITE_OVERFLOW: "memory write overflow",
     CRASH_TYPE_MEMSET_ERROR: "memset error",
     CRASH_TYPE_MEMCPY_ERROR: "memcpy error",
-    CRASH_TYPE_ASSERTION_ERROR: "assertion error"
+    CRASH_TYPE_ASSERTION_ERROR: "assertion error",
+    CRASH_TYPE_MEMORY_READ_NULL: "memory read from null pointer",
+    CRASH_TYPE_MEMORY_WRITE_NULL: "memory write to null pointer",
 }
 
 INTEGER_TYPES = ["int", "short", "long", "size_t", "unsigned long", "unsigned int",

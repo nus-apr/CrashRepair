@@ -468,6 +468,19 @@ def generate_memory_overflow_constraint(reference_node):
     return constraint_expr
 
 
+def generate_memory_null_constraint(reference_node):
+    left_expr = generate_expr_for_ast(reference_node)
+    constraint_op_str = "!="
+    constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
+    constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
+    constraint_val_str = "0"
+    constraint_val_type = "INT_CONST"
+    constraint_val = make_constraint_symbol(constraint_val_str, constraint_val_type)
+    right_expr = make_symbolic_expression(constraint_val)
+    constraint_expr = make_binary_expression(constraint_op, left_expr, right_expr)
+    return constraint_expr
+
+
 def generate_shift_overflow_constraint(shift_node):
     binary_left_ast = shift_node["inner"][0]
     binary_right_ast = shift_node["inner"][1]
