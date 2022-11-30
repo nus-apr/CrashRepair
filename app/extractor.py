@@ -565,7 +565,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 crash_call_ast = call_ast
                 break
         if crash_call_ast is None:
-            emitter.error("\t[error] unable to find binary operator for memset error")
+            emitter.error("\t[error] unable to find call for assertion")
             utilities.error_exit("Unable to generate crash free constraint")
         func_var_list = extract_var_ref_list(func_ast, src_file)
         cfc = constraints.generate_assertion_constraint(crash_call_ast, func_ast, src_file)
