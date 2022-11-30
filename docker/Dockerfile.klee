@@ -12,7 +12,7 @@ RUN git clone https://github.com/klee/klee-uclibc.git . && \
     make -j32
 ENV KLEE_VERSION=2.0
 WORKDIR /klee
-ARG KLEE_REVISION=a6aeb83
+ARG KLEE_REVISION=15df4cb910
 RUN git clone https://github.com/rshariffdeen/klee.git source \
  && cd source \
  && git checkout "${KLEE_REVISION}"
