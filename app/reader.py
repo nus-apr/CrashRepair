@@ -254,6 +254,8 @@ def collect_klee_crash_info(trace_file_path):
                         crash_reason = "memcpy error"
                     elif "assertion" in read_line.lower():
                         crash_reason = "assertion error"
+                    elif "out of bound" in read_line.lower():
+                        crash_reason = ": ".join(read_line.split(": ")[-2:])
                     break
     crash_type = extractor.extract_crash_type(crash_reason)
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
