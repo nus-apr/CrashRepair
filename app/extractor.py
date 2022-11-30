@@ -221,29 +221,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     c_loc = ":".join([c_file, c_line, c_column])
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
     var_name_list = sorted([x[0] for x in var_list])
-    c_details = ""
-    if c_type == definitions.CRASH_TYPE_DIV_ZERO:
-        c_details = "division by zero"
-    elif c_type == definitions.CRASH_TYPE_INT_MUL_OVERFLOW:
-        c_details = "integer multiplication overflow"
-    elif c_type == definitions.CRASH_TYPE_INT_ADD_OVERFLOW:
-        c_details = "integer addition overflow"
-    elif c_type == definitions.CRASH_TYPE_INT_SUB_OVERFLOW:
-        c_details = "integer subtraction overflow"
-    elif c_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
-        c_details = "overflow on shift operation"
-    elif c_type == definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW:
-        c_details = "memory read overflow"
-    elif c_type == definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW:
-        c_details = "memory write overflow"
-    elif c_type == definitions.CRASH_TYPE_MEMSET_ERROR:
-        c_details = "memset error"
-    elif c_type == definitions.CRASH_TYPE_MEMCPY_ERROR:
-        c_details = "memcpy error"
-    elif c_type == definitions.CRASH_TYPE_ASSERTION_ERROR:
-        c_details = "assertion error"
-    else:
-        c_details = "unknown"
+    c_details = extract_crash_type(c_type)
     emitter.highlight("\t\t[info] crash type: {}".format(c_details))
     emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))
@@ -1034,3 +1012,32 @@ def extract_data_type(ast_node):
         elif "qualType" in type_node:
             data_type = type_node["qualType"]
     return data_type
+
+
+def extract_crash_type(crash_reason):
+    crash_type = None
+    if "overflow on division or remainder" in crash_reason or "divide by zero" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_DIV_ZERO
+    elif "overflow on multiplication" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
+    elif "overflow on addition" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_INT_ADD_OVERFLOW
+    elif "overflow on subtraction" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
+    elif "out of bound pointer" in crash_reason:
+        if "memory read error" in crash_reason:
+            crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
+        else:
+            crash_type = definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW
+    elif "overflow on shift operation" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
+    elif "memset error" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_MEMSET_ERROR
+    elif "memcpy error" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_MEMCPY_ERROR
+    elif "assertion error" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_ASSERTION_ERROR
+    else:
+        emitter.error("Unknown Crash Reason: {}".format(crash_reason))
+        utilities.error_exit("Unable to determine crash type")
+    return crash_type

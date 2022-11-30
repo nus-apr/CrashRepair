@@ -82,9 +82,8 @@ def analyze():
                 values.CONF_LOC_LIST_CRASH.append(latest_crash_loc)
         sanitizer_end = time.time()
         values.TIME_SANITIZER_RUN = format((sanitizer_end - sanitizer_start) / 60, '.3f')
-        if crash_type == definitions.CRASH_TYPE_DIV_ZERO:
-            emitter.information("\t\t\t[info] identified crash type: divide by zero")
-
+        crash_type_msg = definitions.CRASH_TYPE_MESSAGE[crash_type]
+        emitter.information("\t\t\t[info] identified crash type: {}".format(crash_type_msg))
         emitter.sub_sub_title("Running Concolic Analysis")
 
         if not values.DEFAULT_USE_CACHE:
@@ -137,8 +136,9 @@ def analyze():
             updated_var_info[var_name] = var_info[var_name]
             if var_type == "pointer":
                 if len(sym_expr_list) > 1:
-                    emitter.warning("More than one value for pointer")
-                if crash_type == definitions.CRASH_TYPE_MEMORY_OVERFLOW:
+                    emitter.warning("\t[warning] more than one value for pointer")
+                if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
+                                  definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
                     symbolic_ptr = sym_expr_list[0].split(" ")[1]
                     sizeof_expr_list = None
                     if symbolic_ptr in values.MEMORY_TRACK:

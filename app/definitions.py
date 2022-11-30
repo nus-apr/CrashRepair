@@ -161,6 +161,19 @@ CRASH_TYPE_MEMCPY_ERROR = 8
 CRASH_TYPE_ASSERTION_ERROR = 9
 CRASH_TYPE_MEMORY_WRITE_OVERFLOW = 10
 
+CRASH_TYPE_MESSAGE = {
+    CRASH_TYPE_DIV_ZERO: "division by zero",
+    CRASH_TYPE_INT_MUL_OVERFLOW: "integer multiplication overflow",
+    CRASH_TYPE_INT_ADD_OVERFLOW:  "integer addition overflow",
+    CRASH_TYPE_INT_SUB_OVERFLOW: "integer subtraction overflow",
+    CRASH_TYPE_SHIFT_OVERFLOW: "overflow on shift operation",
+    CRASH_TYPE_MEMORY_READ_OVERFLOW: "memory read overflow",
+    CRASH_TYPE_MEMORY_WRITE_OVERFLOW: "memory write overflow",
+    CRASH_TYPE_MEMSET_ERROR: "memset error",
+    CRASH_TYPE_MEMCPY_ERROR: "memcpy error",
+    CRASH_TYPE_ASSERTION_ERROR: "assertion error"
+}
+
 INTEGER_TYPES = ["int", "short", "long", "size_t", "unsigned long", "unsigned int",
                  "uint_fast8_t", "uint_fast8_t","uint_fast32_t", "uint_fast16_t",
                  "uint8", "uint16", "uint32", "UI8", "UI16"]

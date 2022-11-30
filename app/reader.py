@@ -1,7 +1,7 @@
 import json
 import pickle
 import re
-from app import emitter, definitions, values
+from app import emitter, definitions, values, extractor
 from six.moves import cStringIO
 import os
 import io
@@ -224,10 +224,7 @@ def collect_crash_point(trace_file_path):
                     crash_location = src_file + ":" + line
                     crash_reason = read_line.split(": ")[-1]
                     break
-    if "divide by zero" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_DIV_ZERO
-    elif "out of bound pointer" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_MEMORY_OVERFLOW
+    crash_type = extractor.extract_crash_type(crash_reason)
     return crash_location, crash_type
 
 
@@ -258,27 +255,7 @@ def collect_klee_crash_info(trace_file_path):
                     elif "assertion" in read_line.lower():
                         crash_reason = "assertion error"
                     break
-    if "overflow on division or remainder" in crash_reason or "divide by zero" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_DIV_ZERO
-    elif "overflow on multiplication" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_INT_MUL_OVERFLOW
-    elif "overflow on addition" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_INT_ADD_OVERFLOW
-    elif "overflow on subtraction" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
-    elif "out of bound pointer" in crash_reason:
-        if "memory read error" in crash_reason:
-            crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
-        else:
-            crash_type = definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW
-    elif "overflow on shift operation" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
-    elif "memset error" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_MEMSET_ERROR
-    elif "memcpy error" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_MEMCPY_ERROR
-    elif "assertion error" in crash_reason:
-        crash_type = definitions.CRASH_TYPE_ASSERTION_ERROR
+    crash_type = extractor.extract_crash_type(crash_reason)
     return crash_type, crash_src_file, crash_line, crash_column, crash_inst_address
 
 
