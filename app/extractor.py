@@ -947,10 +947,11 @@ def extract_loc(file_path, ast_loc_info, op_code = None):
         col_number = source_line.index(op_code, col_number-1) + 1
     return file_path, line_number, col_number
 
+
 def extract_expression_list(ast_node, src_file):
     expression_list = list()
     array_access_list = extract_array_subscript_node_list(ast_node)
-    binary_op_list = extract_binaryop_node_list(ast_node, src_file)
+    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/"])
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node, src_file)
     for subscript_node in array_access_list:
@@ -985,7 +986,7 @@ def extract_expression_list(ast_node, src_file):
 
 def extract_expression_string_list(ast_node, src_file):
     expression_list = dict()
-    binary_op_list = extract_binaryop_node_list(ast_node, src_file)
+    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/"])
     array_access_list = extract_array_subscript_node_list(ast_node)
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node)
