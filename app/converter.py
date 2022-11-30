@@ -290,7 +290,9 @@ def convert_call_expr(ast_node, only_string=False):
 
         for i in range(1, operand_count):
             operand_node = ast_node["inner"][i]
-            operand_node_type = str(operand_node["kind"])
+            operand_node_type = None
+            if "kind" in operand_node:
+                operand_node_type = str(operand_node["kind"])
             if operand_node_type == "CallExpr":
                 operand_var_name = convert_call_expr(operand_node, True)
                 operand_list.append(operand_var_name)
