@@ -481,11 +481,8 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                     break
             if target_ast is None:
                 array_access_list = extract_array_subscript_node_list(func_ast)
-                is_arrow = False
                 for reference_ast in array_access_list:
-                    if "isArrow" in reference_ast:
-                        is_arrow = reference_ast["isArrow"] == "True"
-                    if oracle.is_loc_in_range(crash_loc, reference_ast["range"], is_arrow):
+                    if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
                         target_ast = reference_ast
 
             if target_ast is None:
@@ -493,7 +490,10 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 for ref_node in ref_node_list:
                     var_type = extract_data_type(ref_node)
                     if "*" in var_type:
-                        if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
+                        is_arrow = False
+                        if "isArrow" in ref_node:
+                            is_arrow = ref_node["isArrow"]
+                        if oracle.is_loc_in_range(crash_loc, ref_node["range"], is_arrow):
                             target_ast = ref_node
 
 
@@ -531,7 +531,10 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 for ref_node in ref_node_list:
                     var_type = extract_data_type(ref_node)
                     if "*" in var_type:
-                        if oracle.is_loc_in_range(crash_loc, ref_node["range"]):
+                        is_arrow = False
+                        if "isArrow" in ref_node:
+                            is_arrow = ref_node["isArrow"]
+                        if oracle.is_loc_in_range(crash_loc, ref_node["range"], is_arrow):
                             target_ast = ref_node
 
         if target_ast is None:
@@ -956,7 +959,7 @@ def extract_col_range(ast_loc_info):
 def extract_loc(file_path, ast_loc_info, op_code = None):
     if "expansionLoc" in ast_loc_info:
         ast_loc_info = ast_loc_info["expansionLoc"]
-    col_number = ast_loc_info["col"]
+    col_number = ast_loc_info["col"] + int(ast_loc_info["tokLen"])
     line_number = extract_line(file_path, ast_loc_info)
     if op_code:
         if file_path not in values.SOURCE_LINE_MAP:
