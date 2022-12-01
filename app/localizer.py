@@ -164,7 +164,15 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, expr_str)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
-                        if oracle.is_expr_list_match(crash_var_expr_list, var_expr_list):
+                        if crash_var_type == "pointer" and e_type == "pointer":
+                            if var_expr in crash_var_expr_list:
+                                if crash_var_name not in candidate_mapping:
+                                    candidate_mapping[crash_var_name] = set()
+                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                                logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
+                                candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
+                        elif oracle.is_expr_list_match(crash_var_expr_list, var_expr_list):
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
                             logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
