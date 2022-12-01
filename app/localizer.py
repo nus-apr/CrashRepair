@@ -17,11 +17,11 @@ comparison_op = ["==", "!=", ">", ">=", "<", "<="]
 symbol_op = arithmetic_op + comparison_op
 
 
-def generate_fix_locations(marked_byte_list, taint_symbolic, cfc_info):
+def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, cfc_info):
     emitter.sub_title("Generating Fix Locations")
     logger.track_localization("generating fix locations\n")
     fix_locations = dict()
-    is_taint_influenced = len(marked_byte_list) > 0
+    is_taint_influenced = len(marked_byte_list) > 0 or len(taint_memory_list) > 0
     loc_to_byte_map, source_mapping = parallel.generate_loc_to_bytes(taint_symbolic,
                                                                      is_taint_influenced)
     logger.track_localization("found {} source files".format(len(source_mapping)))
@@ -398,9 +398,9 @@ def localize_state_info(fix_loc, taint_concrete):
     return state_info_list_values
 
 
-def fix_localization(taint_byte_list, taint_symbolic, cfc_info, taint_concrete):
+def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_info, taint_concrete):
     emitter.title("Fix Localization")
-    tainted_fix_locations = generate_fix_locations(taint_byte_list, taint_symbolic, cfc_info)
+    tainted_fix_locations = generate_fix_locations(taint_byte_list, taint_memory_list, taint_symbolic, cfc_info)
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     localization_list = list()
     localized_loc_list = list()

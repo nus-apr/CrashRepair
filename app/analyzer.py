@@ -170,6 +170,7 @@ def analyze():
         memory_track_log = klee_taint_out_dir + "/memory.log"
         values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
         taint_byte_list = []
+        taint_memory_list = []
         updated_var_info = collections.OrderedDict()
         concolic_end = time.time()
 
@@ -198,21 +199,32 @@ def analyze():
                         }
 
         for var_name in updated_var_info:
-            byte_list = []
             sym_expr_list = updated_var_info[var_name]["expr_list"]
             var_type = var_info[var_name]["data_type"]
-            for sym_expr in sym_expr_list:
-                var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-                byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
-                # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
-                #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
-                #     break
-            byte_list = list(set(byte_list))
-            taint_byte_list = taint_byte_list + byte_list
-            tainted_bytes = sorted([str(i) for i in byte_list])
-            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
+            if var_type == "integer":
+                byte_list = []
+                for sym_expr in sym_expr_list:
+                    var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
+                    byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+                    # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
+                    #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
+                    #     break
+                byte_list = list(set(byte_list))
+                taint_byte_list = taint_byte_list + byte_list
+                tainted_bytes = sorted([str(i) for i in byte_list])
+                emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
+            else:
+                memory_list = []
+                for sym_expr in sym_expr_list:
+                    memory_address = sym_expr.strip().split(" ")[1]
+                    memory_list.append(memory_address)
+                memory_list = list(set(memory_list))
+                taint_memory_list = taint_memory_list + memory_list
+                tainted_addresses = sorted([str(i) for i in memory_list])
+                emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_addresses)))
 
         taint_byte_list = list(set(taint_byte_list))
+        taint_memory_list = list(set(taint_memory_list))
         cfc_info["var-info"] = updated_var_info
 
-        return taint_byte_list, taint_map_symbolic, cfc_info, taint_values_concrete
+        return taint_byte_list, taint_memory_list, taint_map_symbolic, cfc_info, taint_values_concrete
