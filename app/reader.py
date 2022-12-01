@@ -231,6 +231,8 @@ def collect_crash_point(trace_file_path):
                         crash_reason = "assertion error"
                     elif "out of bound" in read_line.lower():
                         crash_reason = ": ".join(read_line.split(": ")[-2:])
+                    elif "null pointer" in read_line.lower():
+                        crash_reason = ": ".join(read_line.split(": ")[-2:])
                     break
     crash_type = extractor.extract_crash_type(crash_reason)
     return crash_location, crash_type
@@ -263,6 +265,8 @@ def collect_klee_crash_info(trace_file_path):
                     elif "assertion" in read_line.lower():
                         crash_reason = "assertion error"
                     elif "out of bound" in read_line.lower():
+                        crash_reason = ": ".join(read_line.split(": ")[-2:])
+                    elif "null pointer" in read_line.lower():
                         crash_reason = ": ".join(read_line.split(": ")[-2:])
                     break
     crash_type = extractor.extract_crash_type(crash_reason)
