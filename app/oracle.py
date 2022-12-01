@@ -286,7 +286,7 @@ def ndim_grid(start,stop):
 
 def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     file_path, c_line, c_col = check_loc
-    end_loc = extractor.extract_loc(file_path, ast_range["end"])
+    end_loc = extractor.extract_loc(file_path, ast_range["end"]) + int(ast_range["end"]["tokLen"])
     line_range = extractor.extract_line_range(file_path, ast_range)
     if c_line in line_range:
         if c_line == line_range.stop - 1:

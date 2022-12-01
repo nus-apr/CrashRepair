@@ -959,7 +959,7 @@ def extract_col_range(ast_loc_info):
 def extract_loc(file_path, ast_loc_info, op_code = None):
     if "expansionLoc" in ast_loc_info:
         ast_loc_info = ast_loc_info["expansionLoc"]
-    col_number = ast_loc_info["col"] + int(ast_loc_info["tokLen"])
+    col_number = ast_loc_info["col"]
     line_number = extract_line(file_path, ast_loc_info)
     if op_code:
         if file_path not in values.SOURCE_LINE_MAP:
