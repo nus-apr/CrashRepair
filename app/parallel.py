@@ -85,7 +85,10 @@ def generate_loc_to_sources(taint_symbolic, taint_memory_list, is_taint_influenc
     pool.join()
     for result in result_list:
         taint_loc, taint_source_list = result
-        loc_to_byte_map[taint_loc] = list(set(taint_source_list))
+        if taint_loc not in loc_to_byte_map:
+            loc_to_byte_map[taint_loc] = list()
+        if taint_source_list:
+            loc_to_byte_map[taint_loc] = list(set(loc_to_byte_map[taint_loc] + taint_source_list))
         logger.track_localization("Source Location:" + taint_loc)
         logger.track_localization("Taint Sources:{}".format(loc_to_byte_map[taint_loc]))
     return loc_to_byte_map, source_mapping

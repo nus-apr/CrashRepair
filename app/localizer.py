@@ -22,9 +22,9 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     logger.track_localization("generating fix locations\n")
     fix_locations = dict()
     is_taint_influenced = len(marked_byte_list) > 0 or len(taint_memory_list) > 0
-    loc_to_byte_map, source_mapping = parallel.generate_loc_to_bytes(taint_symbolic,
-                                                                     taint_memory_list,
-                                                                     is_taint_influenced)
+    loc_to_byte_map, source_mapping = parallel.generate_loc_to_sources(taint_symbolic,
+                                                                       taint_memory_list,
+                                                                       is_taint_influenced)
     logger.track_localization("found {} source files".format(len(source_mapping)))
     logger.track_localization("found {} source locations".format(len(taint_symbolic)))
     emitter.highlight("\t\t[info] found " + str(len(source_mapping)) + " source files")
@@ -166,7 +166,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
                         if crash_var_type == "pointer" and e_type == "pointer":
-                            if var_expr in crash_var_expr_list:
+                            if var_expr.split(" ")[1] in crash_var_expr_list:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
