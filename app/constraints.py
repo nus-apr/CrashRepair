@@ -68,6 +68,8 @@ class ConstraintSymbol:
             return "null"
         if self._m_cons_type == "INT_VAR":
             return f"@var(integer, {self._m_symbol})"
+        if self._m_cons_type == "PTR":
+            return f"@var(pointer, {self._m_symbol})"
         if self._m_cons_type == "REAL_VAR":
             return f"@var(float, {self._m_symbol})"
         if self._m_cons_type == "RESULT_INT":
@@ -221,7 +223,7 @@ class ConstraintExpression:
 
     def get_symbol_list(self):
         symbol_list = []
-        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var():
+        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
             return [self.to_string()]
@@ -248,7 +250,7 @@ class ConstraintExpression:
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
 
     def update_symbols(self, symbol_mapping):
-        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var():
+        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
             symbol_str = self.get_symbol()
             if symbol_str in symbol_mapping:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
@@ -341,6 +343,8 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         symbol_str = converter.convert_node_to_str(ast_node)
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
+        if "*" in data_type:
+            op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
@@ -348,18 +352,26 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         symbol_str = str(ast_node["referencedDecl"]["name"])
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
+        if "*" in data_type:
+            op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["MemberExpr"]:
         symbol_str = converter.convert_member_expr(ast_node, True)
+        data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
+        if "*" in data_type:
+            op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["ArraySubscriptExpr"]:
         symbol_str = converter.convert_array_subscript(ast_node, True)
+        data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
+        if "*" in data_type:
+            op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
