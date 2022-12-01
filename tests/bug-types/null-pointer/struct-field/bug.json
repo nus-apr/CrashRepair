@@ -1,0 +1,22 @@
+{
+  "project": {
+    "name": "null-pointer"
+  },
+  "name": "struct-field",
+  "binary": "src/test",
+  "crash": {
+    "command": "",
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "test",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean",
+      "build": "make CFLAGS='-g -O0 -fsanitize=undefined'"
+    }
+  }
+}
