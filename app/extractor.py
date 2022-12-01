@@ -501,7 +501,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         for var_node in var_list:
             if "[" in var_node[0]:
                 var_list.remove(var_node)
-        cfc = constraints.generate_memory_overflow_constraint(target_ast)
+        cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc)
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
