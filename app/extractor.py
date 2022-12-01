@@ -538,7 +538,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         for var_node in var_list:
             if "[" in var_node[0]:
                 var_list.remove(var_node)
-        cfc = constraints.generate_memory_null_constraint(target_ast)
+        cfc = constraints.generate_memory_null_constraint(target_ast, crash_loc)
     elif crash_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["<<", ">>"])
         crash_op_ast = None

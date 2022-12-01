@@ -9,6 +9,7 @@ from app import emitter, utilities, converter, extractor
 
 SymbolType = {
     "INT_CONST": "",
+    "PTR": "",
     "INT_VAR": "",
     "REAL_CONST": "",
     "REAL_VAR": "",
@@ -103,6 +104,9 @@ class ConstraintSymbol:
 
     def is_int_const(self):
         return self._m_cons_type == "INT_CONST"
+
+    def is_ptr(self):
+        return self._m_cons_type == "PTR"
 
     def is_real_const(self):
         return self._m_cons_type == "REAL_CONST"
@@ -442,9 +446,21 @@ def generate_type_overflow_constraint(ast_node):
     return constraint_expr
 
 
-def generate_memory_overflow_constraint(reference_node):
+def generate_memory_overflow_constraint(reference_node, crash_loc):
     ref_node_type = reference_node["kind"]
     if ref_node_type == "UnaryOperator":
+        ptr_node = reference_node["inner"][0]
+        # Generating a constraint of type ptr != 0
+        constraint_expr = generate_div_zero_constraint(ptr_node)
+    elif ref_node_type == "MemberExpr":
+        got_pointer = False
+        src_file, crash_l, crash_c = crash_loc
+        while not got_pointer:
+            node_end_loc = int(reference_node["range"]["end"]["col"]) + int(reference_node["range"]["end"]["tokLen"])
+            if node_end_loc >= crash_c:
+                reference_node = reference_node["inner"][0]
+            else:
+                got_pointer = True
         ptr_node = reference_node["inner"][0]
         # Generating a constraint of type ptr != 0
         constraint_expr = generate_div_zero_constraint(ptr_node)
@@ -468,13 +484,23 @@ def generate_memory_overflow_constraint(reference_node):
     return constraint_expr
 
 
-def generate_memory_null_constraint(reference_node):
+def generate_memory_null_constraint(reference_node, crash_loc):
+    ref_node_type = reference_node["kind"]
+    if ref_node_type == "MemberExpr":
+        got_pointer = False
+        src_file, crash_l, crash_c = crash_loc
+        while not got_pointer:
+            node_end_loc = int(reference_node["range"]["end"]["col"]) + int(reference_node["range"]["end"]["tokLen"])
+            if node_end_loc >= crash_c:
+                reference_node = reference_node["inner"][0]
+            else:
+                got_pointer = True
     left_expr = generate_expr_for_ast(reference_node)
     constraint_op_str = "!="
     constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
     constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
-    constraint_val_str = "0"
-    constraint_val_type = "INT_CONST"
+    constraint_val_str = "NULL"
+    constraint_val_type = "PTR"
     constraint_val = make_constraint_symbol(constraint_val_str, constraint_val_type)
     right_expr = make_symbolic_expression(constraint_val)
     constraint_expr = make_binary_expression(constraint_op, left_expr, right_expr)
