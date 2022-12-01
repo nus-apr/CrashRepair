@@ -284,7 +284,7 @@ def ndim_grid(start,stop):
     return np.hstack((np.meshgrid(*L))).swapaxes(0,1).reshape(ndims,-1).T
 
 
-def is_loc_in_range(check_loc, ast_range):
+def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     file_path, c_line, c_col = check_loc
     end_loc = extractor.extract_loc(file_path, ast_range["end"])
     line_range = extractor.extract_line_range(file_path, ast_range)
@@ -292,6 +292,9 @@ def is_loc_in_range(check_loc, ast_range):
         if c_line == line_range.stop - 1:
             if c_col <= end_loc[2]:
                 return True
+            elif is_arrow:
+                if c_col <= end_loc[2] + 2:
+                    return True
         else:
             return True
     return False

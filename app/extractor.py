@@ -481,8 +481,11 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                     break
             if target_ast is None:
                 array_access_list = extract_array_subscript_node_list(func_ast)
+                is_arrow = False
                 for reference_ast in array_access_list:
-                    if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
+                    if "isArrow" in reference_ast:
+                        is_arrow = reference_ast["isArrow"] == "True"
+                    if oracle.is_loc_in_range(crash_loc, reference_ast["range"], is_arrow):
                         target_ast = reference_ast
 
             if target_ast is None:
