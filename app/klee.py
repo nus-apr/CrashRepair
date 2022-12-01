@@ -92,6 +92,7 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
                     "--libc=uclibc " \
                     "--write-smt2s " \
                     "--log-taint" \
+                    "--allocate-determ " \
                     + "--external-calls=all " \
                     + "--link-llvm-lib={0} " .format(runtime_lib_path) \
                     + "--max-time={0} ".format(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC) \
@@ -221,6 +222,7 @@ def run_concrete_execution(program, argument_list, print_output=False, klee_out_
 
     klee_command += "--posix-runtime " \
                     "--libc=uclibc " \
+                    "--allocate-determ " \
                     "--search=dfs " \
                     "--write-smt2s " \
                     "--external-calls=all " \
