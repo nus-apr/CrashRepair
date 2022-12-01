@@ -223,6 +223,14 @@ def collect_crash_point(trace_file_path):
                     src_file, line, column, assembly_offset = crash_location_info.split(":")
                     crash_location = src_file + ":" + line
                     crash_reason = read_line.split(": ")[-1]
+                    if "memset" in read_line:
+                        crash_reason = "memset error"
+                    elif "memcpy" in read_line:
+                        crash_reason = "memcpy error"
+                    elif "assertion" in read_line.lower():
+                        crash_reason = "assertion error"
+                    elif "out of bound" in read_line.lower():
+                        crash_reason = ": ".join(read_line.split(": ")[-2:])
                     break
     crash_type = extractor.extract_crash_type(crash_reason)
     return crash_location, crash_type
