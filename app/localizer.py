@@ -23,6 +23,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     fix_locations = dict()
     is_taint_influenced = len(marked_byte_list) > 0 or len(taint_memory_list) > 0
     loc_to_byte_map, source_mapping = parallel.generate_loc_to_bytes(taint_symbolic,
+                                                                     taint_memory_list,
                                                                      is_taint_influenced)
     logger.track_localization("found {} source files".format(len(source_mapping)))
     logger.track_localization("found {} source locations".format(len(taint_symbolic)))

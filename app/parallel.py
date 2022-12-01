@@ -47,7 +47,7 @@ def abortable_worker(func, *args, **kwargs):
         return default_value, index
 
 
-def generate_loc_to_bytes(taint_symbolic, is_taint_influenced):
+def generate_loc_to_sources(taint_symbolic, taint_memory_list, is_taint_influenced):
     """
         This function will analyse the taint values along the trace and identify taint sources
         for each location along the trace
@@ -78,7 +78,7 @@ def generate_loc_to_bytes(taint_symbolic, is_taint_influenced):
         if is_taint_influenced:
             # result_list.append(generator.generate_taint_sources(taint_expr_list, taint_loc))
             pool.apply_async(generator.generate_taint_sources,
-                             args=(taint_expr_list, taint_loc),
+                             args=(taint_expr_list, taint_memory_list, taint_loc),
                              callback=collect_result)
     pool.close()
     emitter.normal("\t\twaiting for thread completion")
