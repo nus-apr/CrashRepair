@@ -148,7 +148,7 @@ def analyze():
                         if str(static_size).isnumeric():
                             sizeof_expr_list = { "width": 1, "size": var_info[var_name]["meta_data"] }
                     if sizeof_expr_list:
-                        sizeof_name = f"(sizeof  @var(integer, {var_name}))"
+                        sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
                         updated_var_info[sizeof_name] = {
                             "expr_list": sizeof_expr_list,
                             "data_type": "integer"

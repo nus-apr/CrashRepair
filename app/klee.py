@@ -91,6 +91,7 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
     klee_command += "--posix-runtime " \
                     "--libc=uclibc " \
                     "--write-smt2s " \
+                    "--log-taint" \
                     + "--external-calls=all " \
                     + "--link-llvm-lib={0} " .format(runtime_lib_path) \
                     + "--max-time={0} ".format(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC) \
