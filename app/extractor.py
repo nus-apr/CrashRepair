@@ -541,10 +541,13 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(target_ast, src_file)
-        for var_node in var_list:
-            if "[" in var_node[0]:
-                var_list.remove(var_node)
         cfc = constraints.generate_memory_null_constraint(target_ast, crash_loc)
+        cfc_symbol_list = cfc.get_symbol_list()
+        for var_node in var_list:
+            var_name = var_node[0]
+            if "[" in var_name or var_name not in cfc_symbol_list:
+                var_list.remove(var_node)
+
     elif crash_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["<<", ">>"])
         crash_op_ast = None
