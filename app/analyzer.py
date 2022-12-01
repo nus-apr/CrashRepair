@@ -84,13 +84,13 @@ def analyze():
         values.TIME_SANITIZER_RUN = format((sanitizer_end - sanitizer_start) / 60, '.3f')
         crash_type_msg = definitions.CRASH_TYPE_MESSAGE[crash_type]
         emitter.information("\t\t\t[info] identified crash type: {}".format(crash_type_msg))
-        emitter.sub_sub_title("Running Concolic Analysis")
+        # emitter.sub_sub_title("Running Concolic Analysis")
 
-        if not values.DEFAULT_USE_CACHE:
-            instrumentor.instrument_klee_var_expr(c_src_file, var_list)
-            builder.build_normal()
-            utilities.restore_file(c_src_file, c_src_file + ".bk")
-        klee_concolic_out_dir = output_dir_path + "/klee-out-concolic-" + str(test_case_id - 1)
+        # if not values.DEFAULT_USE_CACHE:
+        #     instrumentor.instrument_klee_var_expr(c_src_file, var_list)
+        #     builder.build_normal()
+        #     utilities.restore_file(c_src_file, c_src_file + ".bk")
+        # klee_concolic_out_dir = output_dir_path + "/klee-out-concolic-" + str(test_case_id - 1)
         generalized_arg_list = []
         poc_path = None
         for arg in argument_list:
@@ -116,60 +116,13 @@ def analyze():
         if not os.path.isfile(program_path + ".bc"):
             app.utilities.error_exit("Unable to generate bytecode for " + program_path)
 
-        concolic_start = time.time()
-        values.ARGUMENT_LIST = generalized_arg_list
-        _, second_var_list = generator.generate_angelic_val(klee_concrete_out_dir, generalized_arg_list, poc_path)
-        exit_code = klee.run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
-                                           klee_concolic_out_dir)
-        # assert exit_code == 0
-        expr_trace_log = klee_concolic_out_dir + "/expr.log"
-        var_info = reader.read_symbolic_expressions(expr_trace_log)
-        memory_track_log = klee_concolic_out_dir + "/memory.log"
-        values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
-        taint_byte_list = []
-        updated_var_info = collections.OrderedDict()
-        concolic_end = time.time()
-        values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
-        for var_name in var_info:
-            sym_expr_list = var_info[var_name]["expr_list"]
-            var_type = var_info[var_name]["data_type"]
-            updated_var_info[var_name] = var_info[var_name]
-            if var_type == "pointer":
-                if len(sym_expr_list) > 1:
-                    emitter.warning("\t[warning] more than one value for pointer")
-                if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
-                                  definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
-                    symbolic_ptr = sym_expr_list[0].split(" ")[1]
-                    sizeof_expr_list = None
-                    if symbolic_ptr in values.MEMORY_TRACK:
-                        sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
-                    else:
-                        static_size = var_info[var_name]["meta_data"]
-                        if str(static_size).isnumeric():
-                            sizeof_expr_list = { "width": 1, "size": var_info[var_name]["meta_data"] }
-                    if sizeof_expr_list:
-                        sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
-                        updated_var_info[sizeof_name] = {
-                            "expr_list": sizeof_expr_list,
-                            "data_type": "integer"
-                        }
-
-        for var_name in updated_var_info:
-            byte_list = []
-            sym_expr_list = updated_var_info[var_name]["expr_list"]
-            for sym_expr in sym_expr_list:
-                var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-                byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
-                # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
-                #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
-                #     break
-            byte_list = list(set(byte_list))
-            taint_byte_list = taint_byte_list + byte_list
-            tainted_bytes = sorted([str(i) for i in byte_list])
-            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
-
-        taint_byte_list = list(set(taint_byte_list))
-        cfc_info["var-info"] = updated_var_info
+        # concolic_start = time.time()
+        # values.ARGUMENT_LIST = generalized_arg_list
+        # _, second_var_list = generator.generate_angelic_val(klee_concrete_out_dir, generalized_arg_list, poc_path)
+        # exit_code = klee.run_concolic_execution(program_path + ".bc", generalized_arg_list, second_var_list, True,
+        #                                    klee_concolic_out_dir)
+        # # assert exit_code == 0
+        # expr_trace_log = klee_concolic_out_dir + "/expr.log"
         emitter.sub_sub_title("Running Taint Analysis")
         if not values.DEFAULT_USE_CACHE:
             builder.build_normal()
@@ -188,5 +141,78 @@ def analyze():
         values.TIME_TAINT_ANALYSIS = format((taint_end - taint_start) / 60, '.3f')
         # Retrieve symbolic expressions from taint.log of concolic run.
         taint_map_symbolic = reader.read_tainted_expressions(taint_log_path)
+
+        var_info = dict()
+        interested_loc = dict()
+        for v in var_list:
+            v_name, v_line, v_col, v_type, v_ref = v
+            v_info = dict()
+            v_info["data_type"] = "integer"
+            if "*" in v_type:
+                v_info["data_type"] = "pointer"
+            v_info["meta_data"] = v_type
+            v_info["expr_list"] = []
+            var_info[v_name] = v_info
+            v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
+            interested_loc[v_loc] = v_name
+        for taint_info in taint_map_symbolic:
+            c_file, line, col, inst_add = taint_info.split(":")
+            taint_expr_list = taint_map_symbolic[taint_info]
+            taint_loc = "{}:{}:{}".format(c_file, line, col)
+            if taint_loc in interested_loc:
+                var_name = interested_loc[taint_loc]
+                var_type = var_info[var_name]["data_type"]
+                for taint_expr in taint_expr_list:
+                    data_type, taint_expr = taint_expr.split(":")
+                    if data_type == var_type:
+                        var_info[var_name]["expr_list"].append(taint_expr)
+
+        memory_track_log = klee_taint_out_dir + "/memory.log"
+        values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
+        taint_byte_list = []
+        updated_var_info = collections.OrderedDict()
+        concolic_end = time.time()
+
+        for var_name in var_info:
+            sym_expr_list = var_info[var_name]["expr_list"]
+            var_type = var_info[var_name]["data_type"]
+            updated_var_info[var_name] = var_info[var_name]
+            if var_type == "pointer":
+                if len(sym_expr_list) > 1:
+                    emitter.warning("\t[warning] more than one value for pointer")
+                if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
+                                  definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
+                    symbolic_ptr = sym_expr_list[0].split(" ")[1]
+                    sizeof_expr_list = None
+                    if symbolic_ptr in values.MEMORY_TRACK:
+                        sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
+                    else:
+                        static_size = var_info[var_name]["meta_data"]
+                        if str(static_size).isnumeric():
+                            sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
+                    if sizeof_expr_list:
+                        sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
+                        updated_var_info[sizeof_name] = {
+                            "expr_list": sizeof_expr_list,
+                            "data_type": "integer"
+                        }
+
+        for var_name in updated_var_info:
+            byte_list = []
+            sym_expr_list = updated_var_info[var_name]["expr_list"]
+            var_type = var_info[var_name]["data_type"]
+            for sym_expr in sym_expr_list:
+                var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
+                byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+                # if not tainted_byte_list and not input_byte_list and len(sym_expr) > 16:
+                #     tainted_byte_list = [sym_expr.strip().split(" ")[1]]
+                #     break
+            byte_list = list(set(byte_list))
+            taint_byte_list = taint_byte_list + byte_list
+            tainted_bytes = sorted([str(i) for i in byte_list])
+            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
+
+        taint_byte_list = list(set(taint_byte_list))
+        cfc_info["var-info"] = updated_var_info
 
         return taint_byte_list, taint_map_symbolic, cfc_info, taint_values_concrete

@@ -130,7 +130,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                             continue
                         filtered_taint_list.append(taint_expr)
                     expr_taint_list[var_info_index] = {
-                        "expr_list":filtered_taint_list,
+                        "expr_list": filtered_taint_list,
                         "data_type": data_type,
                         "is_dec": dec_or_ref == "dec"
                     }
