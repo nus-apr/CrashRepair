@@ -8,7 +8,7 @@ struct  Struct_1 {
 struct  Struct_2 {
     short id;
     char *name;
-    Struct_1 *info;
+    struct Struct_1 *info;
 };
 
 
@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
   char **mv = argv;
   struct Struct_2 var_b;
   struct Struct_2 *ptr_b = &var_b;
-  char *p = *ptr_b->info->filepath;
+  char *p = ptr_b->info->filepath;
   FILE *fp = fopen(p, "r");
   fread(buffer, sizeof(int), 1, fp);
   fclose(fp);
