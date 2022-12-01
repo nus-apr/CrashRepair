@@ -326,7 +326,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
         child_ast = ast_node["inner"][0]
         child_expr = generate_expr_for_ast(child_ast)
-        if "*" == op_symbol_str:
+        if "*" == op_symbol_str and child_expr.get_type() == "PTR":
             return child_expr
         constraint_expr = make_unary_expression(constraint_symbol, child_expr)
         return constraint_expr
