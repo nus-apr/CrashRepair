@@ -192,16 +192,22 @@ def analyze():
                     emitter.warning("\t[warning] more than one value for pointer")
                 if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
                                   definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
-                    symbolic_ptr = sym_expr_list[0].split(" ")[1]
+                    symbolic_ptr = sym_expr_list[0].split(" ")[1].replace("bv", "")
                     sizeof_expr_list = None
-                    if symbolic_ptr in values.MEMORY_TRACK:
-                        sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
-                    else:
-                        static_size = var_info[var_name]["meta_data"]
-                        if "[" in static_size:
-                            static_size = static_size.split("[")[-1].split("]")[0]
-                        if str(static_size).isnumeric():
-                            sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
+                    static_size = var_info[var_name]["meta_data"]
+                    if "[" in static_size:
+                        static_size = static_size.split("[")[-1].split("]")[0]
+                    if str(static_size).isnumeric():
+                        sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
+
+                    if not sizeof_expr_list:
+                        for base_address in values.MEMORY_TRACK:
+                            alloc_info = values.MEMORY_TRACK[base_address]
+                            alloc_range = range(int(base_address), int(base_address) + int(alloc_info["size"]))
+                            if symbolic_ptr in alloc_range:
+                                sizeof_expr_list = alloc_info
+                                break
+
                     if sizeof_expr_list:
                         sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
                         updated_var_info[sizeof_name] = {
