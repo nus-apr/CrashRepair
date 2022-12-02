@@ -551,7 +551,9 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
 
     else:
         ptr_node = None
-        if ref_node_type == "UnaryOperator":
+        if ref_node_type == "DeclRefExpr":
+            ptr_node = reference_node
+        elif ref_node_type == "UnaryOperator":
             ptr_node = reference_node["inner"][0]
         elif ref_node_type == "MemberExpr":
             got_pointer = False
