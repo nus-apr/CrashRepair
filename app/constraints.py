@@ -52,7 +52,8 @@ SymbolType = {
     "OP_SHIFT_LEFT": "<<",
 
     "NULL_VAL": "null",
-    "OP_SIZE_OF": "sizeof "
+    "OP_SIZE_OF": "sizeof ",
+    "OP_BASE_OF": "baseof "
 }
 
 
@@ -125,6 +126,9 @@ class ConstraintSymbol:
     def is_sizeof(self):
         return self._m_cons_type == "OP_SIZE_OF"
 
+    def is_baseof(self):
+        return self._m_cons_type == "OP_BASE_OF"
+
     def is_null(self):
         return self._m_cons_type == "NULL_VAL"
 
@@ -132,6 +136,7 @@ class ConstraintSymbol:
 class ConstraintExpression:
     _m_symbol: ConstraintSymbol
     _m_sizeof_mapping: t.Optional[ConstraintExpression]
+    _m_baseof_mapping: t.Optional[ConstraintExpression]
     _m_lvalue: t.Optional[ConstraintExpression]
     _m_rvalue: t.Optional[ConstraintExpression]
 
@@ -145,6 +150,7 @@ class ConstraintExpression:
         self._m_lvalue = l_expr
         self._m_rvalue = r_expr
         self._m_sizeof_mapping = None
+        self._m_baseof_mapping = None
 
     def get_type(self) -> str:
         return self._m_symbol.get_type()
@@ -195,6 +201,13 @@ class ConstraintExpression:
             if resolved_expr is not None:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
+
+        if self._m_symbol.is_baseof():
+            resolved_expr = self.get_baseof()
+            if resolved_expr is not None:
+                return resolved_expr.to_string()
+            return f"({expr_str} {rhs_str})"
+
         if self._m_symbol.is_result_int() or self._m_symbol.is_result_ptr():
             return f"({expr_str})"
 
@@ -218,6 +231,14 @@ class ConstraintExpression:
             if resolved_expr is not None:
                 return resolved_expr.to_expression()
             return f"({expr_str} {rhs_str})"
+
+        if self._m_symbol.is_baseof():
+            resolved_expr = self.get_baseof()
+            if resolved_expr is not None:
+                return resolved_expr.to_expression()
+            return f"({expr_str} {rhs_str})"
+
+
         if self._m_symbol.is_result_int() or self._m_symbol.is_result_ptr():
             return f"({expr_str})"
 
@@ -233,6 +254,8 @@ class ConstraintExpression:
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
             return [self.to_string()]
+        elif self._m_symbol.is_baseof():
+            return [self.to_string()]
         if self._m_lvalue:
             symbol_list = symbol_list + self._m_lvalue.get_symbol_list()
         if self._m_rvalue:
@@ -241,6 +264,9 @@ class ConstraintExpression:
 
     def get_sizeof(self):
         return self._m_sizeof_mapping
+
+    def get_baseof(self):
+        return self._m_baseof_mapping
 
     def resolve_sizeof(self, symbolic_mapping):
         if self._m_symbol.is_sizeof():
@@ -255,6 +281,19 @@ class ConstraintExpression:
                     mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
 
+    def resolve_baseof(self, symbolic_mapping):
+        if self._m_symbol.is_baseof():
+            symbol_name = self.to_string()
+            if symbol_name in symbolic_mapping:
+                mapping = symbolic_mapping[symbol_name]
+                # assumption: mapping is either constant or variable, not an expression i.e. a+b
+                if str(mapping).isnumeric():
+                    mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
+                    self._m_baseof_mapping = make_symbolic_expression(mapped_symbol)
+                else:
+                    mapped_symbol = make_constraint_symbol(mapping, "PTR")
+                    self._m_baseof_mapping = make_symbolic_expression(mapped_symbol)
+
     def update_symbols(self, symbol_mapping):
         if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
             symbol_str = self.get_symbol()
@@ -262,6 +301,8 @@ class ConstraintExpression:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
         elif self._m_symbol.is_sizeof():
             self.resolve_sizeof(symbol_mapping)
+        elif self._m_symbol.is_baseof():
+            self.resolve_baseof(symbol_mapping)
 
         if self._m_lvalue:
             self._m_lvalue.update_symbols(symbol_mapping)
