@@ -14,6 +14,7 @@ SymbolType = {
     "REAL_CONST": "",
     "REAL_VAR": "",
     "RESULT_INT": "",
+    "RESULT_PTR": "",
 
     "OP_LT": "<",
     "OP_LTE": "<=",
@@ -74,6 +75,8 @@ class ConstraintSymbol:
             return f"@var(float, {self._m_symbol})"
         if self._m_cons_type == "RESULT_INT":
             return f"@result(integer)"
+        if self._m_cons_type == "RESULT_PTR":
+            return f"@result(pointer)"
 
         assert self._m_symbol
         return self._m_symbol
@@ -100,6 +103,9 @@ class ConstraintSymbol:
 
     def is_result_int(self):
         return self._m_cons_type == "RESULT_INT"
+
+    def is_result_ptr(self):
+        return self._m_cons_type == "RESULT_PTR"
 
     def is_real_var(self):
         return self._m_cons_type == "REAL_VAR"
@@ -189,7 +195,7 @@ class ConstraintExpression:
             if resolved_expr is not None:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
-        if self._m_symbol.is_result_int():
+        if self._m_symbol.is_result_int() or self._m_symbol.is_result_ptr():
             return f"({expr_str})"
 
         if lhs_str and rhs_str:
@@ -212,7 +218,7 @@ class ConstraintExpression:
             if resolved_expr is not None:
                 return resolved_expr.to_expression()
             return f"({expr_str} {rhs_str})"
-        if self._m_symbol.is_result_int():
+        if self._m_symbol.is_result_int() or self._m_symbol.is_result_ptr():
             return f"({expr_str})"
 
         if lhs_str and rhs_str:

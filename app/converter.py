@@ -283,9 +283,9 @@ def convert_call_expr(ast_node, only_string=False):
             function_name = str(call_function_node['referencedDecl']['name'])
         elif call_function_node_type == "DeclRefExpr" and call_function_node_ref_type == "VarDecl":
             function_name = str(call_function_node["type"]["qualType"])
-            operand = str(call_function_node['value'])
-            operand_list.append(operand)
-            operand_count = 0
+            # operand = str(call_function_node['value'])
+            # operand_list.append(operand)
+            # operand_count = 0
         else:
             print(ast_node)
             utilities.error_exit("unknown decl type in convert_call_expr")
