@@ -178,10 +178,11 @@ def analyze():
 
         memory_track_log = klee_taint_out_dir + "/memory.log"
         values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
+        pointer_track_log = klee_taint_out_dir + "/pointer.log"
+        values.POINTER_TRACK = reader.read_pointer_values(pointer_track_log)
         taint_byte_list = []
         taint_memory_list = []
         updated_var_info = collections.OrderedDict()
-        concolic_end = time.time()
 
         for var_name in var_info:
             sym_expr_list = var_info[var_name]["expr_list"]
@@ -192,22 +193,32 @@ def analyze():
                     emitter.warning("\t[warning] more than one value for pointer")
                 if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
                                   definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
-                    symbolic_ptr = int(sym_expr_list[-1].split(" ")[1].replace("bv", ""))
+                    symbolic_ptr = sym_expr_list[-1]
                     sizeof_expr_list = None
                     static_size = var_info[var_name]["meta_data"]
                     if "[" in static_size:
                         static_size = static_size.split("[")[-1].split("]")[0]
                     if str(static_size).isnumeric():
                         sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
-
+                    base_address = None
                     if not sizeof_expr_list:
-                        for base_address in values.MEMORY_TRACK:
-                            alloc_info = values.MEMORY_TRACK[base_address]
-                            alloc_range = range(int(base_address), int(base_address) + int(alloc_info["size"]))
-                            if symbolic_ptr in alloc_range:
-                                sizeof_expr_list = alloc_info
-                                break
+                        current_ptr = symbolic_ptr
+                        while base_address is None:
+                            pointer_info = values.POINTER_TRACK[current_ptr]
+                            b_address = pointer_info["base"]
+                            if b_address in values.MEMORY_TRACK:
+                                base_address = b_address
+                            else:
+                                current_ptr = b_address
 
+                        alloc_info = values.MEMORY_TRACK[base_address]
+                        sizeof_expr_list = alloc_info
+                    if base_address:
+                        base_address_name = f"(base  @var(pointer, {var_name}))"
+                        updated_var_info[base_address_name] = {
+                            "expr_list": [base_address],
+                            "data_type": "pointer"
+                        }
                     if sizeof_expr_list:
                         sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
                         updated_var_info[sizeof_name] = {

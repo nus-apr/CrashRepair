@@ -484,6 +484,25 @@ def read_memory_values(memory_log_path):
     return memory_map
 
 
+def read_pointer_values(pointer_log_path):
+    emitter.normal("\tcollecting pointer mapping")
+    pointer_map = OrderedDict()
+    pointer_stack = []
+    if os.path.exists(pointer_log_path):
+        with open(pointer_log_path, 'r') as track_file:
+            for line in track_file:
+                if 'KLEE: PointerTrack:' in line:
+                    line = line.replace("KLEE: PointerTrack:", "").strip()
+                    source_loc = line.split(" ")[3]
+                    pointer = line.split(" : ")[-1]
+                    if "BASE" in line:
+                        pointer_stack.append(pointer)
+                    else:
+                        pointer_map[pointer] = {"base": pointer_stack.pop(), "loc": source_loc}
+    return pointer_map
+
+
+
 def read_taint_values(taint_log_path):
     """
         Parses the taint.log file and extracts the concrete values at each source location.
