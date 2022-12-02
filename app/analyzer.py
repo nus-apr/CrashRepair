@@ -207,7 +207,10 @@ def analyze():
                     else:
                         ref_address = None
                         current_ptr = symbolic_ptr
+                        count_pointers = len(values.POINTER_TRACK)
+                        iteration = 0
                         while base_address is None:
+                            iteration = iteration + 1
                             if current_ptr not in values.POINTER_TRACK:
                                 break
                             pointer_info = values.POINTER_TRACK[current_ptr]
@@ -220,8 +223,8 @@ def analyze():
                                 base_address = ref_address
                             else:
                                 current_ptr = sym_address
-                            if current_ptr == list(values.POINTER_TRACK.keys())[0]:
-                                break
+                            if iteration == count_pointers:
+                               break
 
                         if not base_address and ref_address:
                             for address in values.MEMORY_TRACK:
