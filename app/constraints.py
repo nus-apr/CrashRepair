@@ -53,7 +53,7 @@ SymbolType = {
 
     "NULL_VAL": "null",
     "OP_SIZE_OF": "sizeof ",
-    "OP_BASE_OF": "baseof "
+    "OP_BASE": "base "
 }
 
 
@@ -126,8 +126,8 @@ class ConstraintSymbol:
     def is_sizeof(self):
         return self._m_cons_type == "OP_SIZE_OF"
 
-    def is_baseof(self):
-        return self._m_cons_type == "OP_BASE_OF"
+    def is_base(self):
+        return self._m_cons_type == "OP_BASE"
 
     def is_null(self):
         return self._m_cons_type == "NULL_VAL"
@@ -136,7 +136,7 @@ class ConstraintSymbol:
 class ConstraintExpression:
     _m_symbol: ConstraintSymbol
     _m_sizeof_mapping: t.Optional[ConstraintExpression]
-    _m_baseof_mapping: t.Optional[ConstraintExpression]
+    _m_base_mapping: t.Optional[ConstraintExpression]
     _m_lvalue: t.Optional[ConstraintExpression]
     _m_rvalue: t.Optional[ConstraintExpression]
 
@@ -150,7 +150,7 @@ class ConstraintExpression:
         self._m_lvalue = l_expr
         self._m_rvalue = r_expr
         self._m_sizeof_mapping = None
-        self._m_baseof_mapping = None
+        self._m_base_mapping = None
 
     def get_type(self) -> str:
         return self._m_symbol.get_type()
@@ -202,8 +202,8 @@ class ConstraintExpression:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
 
-        if self._m_symbol.is_baseof():
-            resolved_expr = self.get_baseof()
+        if self._m_symbol.is_base():
+            resolved_expr = self.get_base()
             if resolved_expr is not None:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
@@ -232,8 +232,8 @@ class ConstraintExpression:
                 return resolved_expr.to_expression()
             return f"({expr_str} {rhs_str})"
 
-        if self._m_symbol.is_baseof():
-            resolved_expr = self.get_baseof()
+        if self._m_symbol.is_base():
+            resolved_expr = self.get_base()
             if resolved_expr is not None:
                 return resolved_expr.to_expression()
             return f"({expr_str} {rhs_str})"
@@ -254,7 +254,7 @@ class ConstraintExpression:
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
             return [self.to_string()]
-        elif self._m_symbol.is_baseof():
+        elif self._m_symbol.is_base():
             return [self.to_string()]
         if self._m_lvalue:
             symbol_list = symbol_list + self._m_lvalue.get_symbol_list()
@@ -265,8 +265,8 @@ class ConstraintExpression:
     def get_sizeof(self):
         return self._m_sizeof_mapping
 
-    def get_baseof(self):
-        return self._m_baseof_mapping
+    def get_base(self):
+        return self._m_base_mapping
 
     def resolve_sizeof(self, symbolic_mapping):
         if self._m_symbol.is_sizeof():
@@ -281,18 +281,18 @@ class ConstraintExpression:
                     mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
 
-    def resolve_baseof(self, symbolic_mapping):
-        if self._m_symbol.is_baseof():
+    def resolve_base(self, symbolic_mapping):
+        if self._m_symbol.is_base():
             symbol_name = self.to_string()
             if symbol_name in symbolic_mapping:
                 mapping = symbolic_mapping[symbol_name]
                 # assumption: mapping is either constant or variable, not an expression i.e. a+b
                 if str(mapping).isnumeric():
                     mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
-                    self._m_baseof_mapping = make_symbolic_expression(mapped_symbol)
+                    self._m_base_mapping = make_symbolic_expression(mapped_symbol)
                 else:
                     mapped_symbol = make_constraint_symbol(mapping, "PTR")
-                    self._m_baseof_mapping = make_symbolic_expression(mapped_symbol)
+                    self._m_base_mapping = make_symbolic_expression(mapped_symbol)
 
     def update_symbols(self, symbol_mapping):
         if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
@@ -301,8 +301,8 @@ class ConstraintExpression:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
         elif self._m_symbol.is_sizeof():
             self.resolve_sizeof(symbol_mapping)
-        elif self._m_symbol.is_baseof():
-            self.resolve_baseof(symbol_mapping)
+        elif self._m_symbol.is_base():
+            self.resolve_base(symbol_mapping)
 
         if self._m_lvalue:
             self._m_lvalue.update_symbols(symbol_mapping)
@@ -525,24 +525,7 @@ def generate_type_overflow_constraint(ast_node):
 
 def generate_memory_overflow_constraint(reference_node, crash_loc):
     ref_node_type = reference_node["kind"]
-    if ref_node_type == "UnaryOperator":
-        ptr_node = reference_node["inner"][0]
-        # Generating a constraint of type ptr != 0
-        constraint_expr = generate_div_zero_constraint(ptr_node)
-    elif ref_node_type == "MemberExpr":
-        got_pointer = False
-        src_file, crash_l, crash_c = crash_loc
-        while not got_pointer:
-            node_end_loc = int(reference_node["range"]["end"]["col"]) + int(reference_node["range"]["end"]["tokLen"])
-            if node_end_loc >= crash_c:
-                reference_node = reference_node["inner"][0]
-            else:
-                got_pointer = True
-        ptr_node = reference_node["inner"][0]
-        # Generating a constraint of type ptr != 0
-        constraint_expr = generate_div_zero_constraint(ptr_node)
-
-    elif ref_node_type == "ArraySubscriptExpr":
+    if ref_node_type == "ArraySubscriptExpr":
         array_node = reference_node["inner"][0]
         iterator_node = reference_node["inner"][1]
 
@@ -556,11 +539,37 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
         # last generate the expression for array size
         sizeof_op = build_op_symbol("sizeof ")
         array_expr = generate_expr_for_ast(array_node)
-        constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
+        constraint_right_expr = make_unary_expression(sizeof_op, array_expr)
         constraint_expr = make_binary_expression(less_than_op, constraint_left_expr, constraint_right_expr)
     else:
-        print(reference_node)
-        utilities.error_exit("Unknown AST Type in function generate_memory_overflow_constraint")
+        ptr_node = None
+        if ref_node_type == "UnaryOperator":
+            ptr_node = reference_node["inner"][0]
+        elif ref_node_type == "MemberExpr":
+            got_pointer = False
+            src_file, crash_l, crash_c = crash_loc
+            while not got_pointer:
+                node_end_loc = int(reference_node["range"]["end"]["col"]) + int(reference_node["range"]["end"]["tokLen"])
+                if node_end_loc >= crash_c:
+                    reference_node = reference_node["inner"][0]
+                else:
+                    got_pointer = True
+            ptr_node = reference_node["inner"][0]
+        else:
+            print(reference_node)
+            utilities.error_exit("Unknown AST Type in function generate_memory_overflow_constraint")
+
+        sizeof_op = build_op_symbol("sizeof ")
+        ptr_expr = generate_expr_for_ast(ptr_node)
+        sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
+
+        base_op = build_op_symbol("base ")
+        base_expr = make_unary_expression(base_op, ptr_expr)
+        diff_op = build_op_symbol("-")
+        diff_expr = make_binary_expression(diff_op, ptr_expr, base_expr)
+        lte_op = build_op_symbol("<=")
+        constraint_expr = make_binary_expression(lte_op, diff_expr, sizeof_expr)
+
     return constraint_expr
 
 
