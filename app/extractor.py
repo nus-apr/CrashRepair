@@ -333,11 +333,22 @@ def extract_var_ref_list(ast_node, file_path):
     if node_type == "UnaryOperator":
         node_value = ast_node['opcode']
         child_node = ast_node['inner'][0]
+        begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
+        _, op_line_number, op_col_number = begin_loc
         child_var_list = extract_var_ref_list(child_node, file_path)
         for var_name, line_number, col_number, var_type, _ in child_var_list:
-            if node_value == "&":
-                var_name = "&" + str(var_name)
-            var_list.append((var_name, line_number, col_number, var_type, "ref"))
+            if node_value in ["++", "--"]:
+                if ast_node["isPostfix"]:
+                    var_name = node_value + str(var_name)
+                    var_list.append((var_name, op_line_number, op_col_number, var_type, "ref"))
+                else:
+                    var_name = str(var_name) + node_value
+                    var_list.append((var_name, line_number, col_number, var_type, "ref"))
+            elif node_value in ["&"]:
+                var_name = node_value + str(var_name)
+                var_list.append((var_name, op_line_number, op_col_number, var_type, "ref"))
+            else:
+                var_list.append((var_name, line_number, col_number, var_type, "ref"))
         return var_list
     if node_type == "DeclRefExpr":
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
@@ -450,6 +461,12 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_overflow_constraint(crash_op_ast)
+        symbol_list = cfc.get_symbol_list()
+        for var_node in var_list:
+            var_name = var_node[0]
+            if var_name not in symbol_list:
+                var_list.remove(var_node)
+
     elif crash_type in [definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["-"])
         unaryop_list = extract_unaryop_node_list(func_ast, ["--"])

@@ -324,13 +324,14 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         op_symbol_str = str(ast_node["opcode"])
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
         if op_symbol_str in ["++", "--"]:
+            child_ast = ast_node["inner"][0]
             is_prefix = True
             if "isPostfix" in ast_node:
                 is_prefix = not ast_node["isPostfix"]
             if is_prefix:
-                symbol_str = op_symbol_str + str(ast_node["referencedDecl"]["name"])
+                symbol_str = op_symbol_str + str(child_ast["referencedDecl"]["name"])
             else:
-                symbol_str = str(ast_node["referencedDecl"]["name"]) + op_symbol_str
+                symbol_str = str(child_ast["referencedDecl"]["name"]) + op_symbol_str
             data_type = extractor.extract_data_type(ast_node)
             op_type = "INT_VAR"
             if "*" in data_type or "[" in data_type:
@@ -463,10 +464,9 @@ def generate_type_overflow_constraint(ast_node):
         expr_a = generate_expr_for_ast(binary_left_ast)
         expr_b = generate_expr_for_ast(binary_right_ast)
     elif node_type == "UnaryOperator":
-        child_ast = ast_node["inner"][0]
         const_one_symbol = make_constraint_symbol("1", "INT_CONST")
         expr_b = make_symbolic_expression(const_one_symbol)
-        expr_a = generate_expr_for_ast(child_ast)
+        expr_a = generate_expr_for_ast(ast_node)
     else:
         utilities.error_exit("Unhandled node type {}  in generate_add_overflow_constraint".format(node_type))
 
