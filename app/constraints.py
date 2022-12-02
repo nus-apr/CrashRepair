@@ -479,10 +479,9 @@ def generate_type_underflow_constraint(ast_node):
         expr_a = generate_expr_for_ast(binary_left_ast)
         expr_b = generate_expr_for_ast(binary_right_ast)
     elif node_type == "UnaryOperator":
-        child_ast = ast_node["inner"][0]
         const_one_symbol = make_constraint_symbol("1", "INT_CONST")
         expr_b = make_symbolic_expression(const_one_symbol)
-        expr_a = generate_expr_for_ast(child_ast)
+        expr_a = generate_expr_for_ast(ast_node)
     else:
         utilities.error_exit("Unhandled node type {}  in generate_add_overflow_constraint".format(node_type))
 

@@ -476,6 +476,11 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_underflow_constraint(crash_op_ast)
+        symbol_list = cfc.get_symbol_list()
+        for var_node in var_list:
+            var_name = var_node[0]
+            if var_name not in symbol_list:
+                var_list.remove(var_node)
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW, definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
