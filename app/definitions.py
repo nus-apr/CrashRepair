@@ -179,7 +179,7 @@ CRASH_TYPE_MESSAGE = {
     CRASH_TYPE_MEMORY_WRITE_NULL: "memory write to null pointer",
 }
 
-INTEGER_TYPES = ["int", "short", "long", "size_t", "unsigned long", "unsigned int",
+INTEGER_TYPES = ["int", "short", "long", "size_t", "unsigned long", "unsigned int", "unsigned short",
                  "uint_fast8_t", "uint_fast8_t","uint_fast32_t", "uint_fast16_t",
                  "uint8", "uint16", "uint32", "UI8", "UI16"]
 
