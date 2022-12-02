@@ -35,4 +35,5 @@ build_command:make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O
 test_input_list:"-S\$(printf "\t\t\t")" a -m \$POC
 poc_list:$script_dir/tests/1.txt
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
+mask_arg:0,1,2
 EOF
