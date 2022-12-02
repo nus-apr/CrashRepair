@@ -194,22 +194,24 @@ def analyze():
                 if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
                                   definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
                     symbolic_ptr = sym_expr_list[-1]
+                    concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
                     sizeof_expr_list = None
                     static_size = var_info[var_name]["meta_data"]
                     if "[" in static_size:
                         static_size = static_size.split("[")[-1].split("]")[0]
                     if str(static_size).isnumeric():
                         sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
-                    if symbolic_ptr in values.MEMORY_TRACK:
-                        base_address = symbolic_ptr
+                    if concrete_ptr in values.MEMORY_TRACK:
+                        base_address = concrete_ptr
                     else:
                         base_address = None
                         current_ptr = symbolic_ptr
                         while base_address is None:
                             pointer_info = values.POINTER_TRACK[current_ptr]
                             b_address = pointer_info["base"]
-                            if b_address in values.MEMORY_TRACK:
-                                base_address = b_address
+                            b_concrete_address = b_address.split(" ")[1].replace("bv", "")
+                            if b_concrete_address in values.MEMORY_TRACK:
+                                base_address = b_concrete_address
                             else:
                                 current_ptr = b_address
                     if not sizeof_expr_list:
