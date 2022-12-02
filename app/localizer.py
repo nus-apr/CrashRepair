@@ -166,7 +166,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, src_file, function
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
                         if crash_var_type == "pointer" and e_type == "pointer":
-                            if var_expr in crash_var_expr_list:
+                            if var_expr.split(" ")[1] in crash_var_expr_list:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
