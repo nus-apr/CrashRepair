@@ -12,7 +12,8 @@ def convert_cast_expr(ast_node, only_string=False):
     data_type = extractor.extract_data_type(ast_node)
     param_node = ast_node["inner"][0]
     param_node_type = param_node["kind"]
-    var_name = "(" + data_type + ") " + get_node_value(param_node)
+    # var_name = "(" + data_type + ") " + get_node_value(param_node)
+    var_name = get_node_value(param_node)
     if only_string:
         return var_name
     return var_name, var_list
@@ -33,7 +34,8 @@ def convert_paren_node_to_expr(ast_node, only_string=False):
     # print(child_node)
     child_node_type = child_node["kind"]
     value = get_node_value(child_node)
-    var_name = "(" + value + ")"
+    # var_name = "(" + value + ")"
+    var_name = value
     # print(var_name)
     if only_string:
         return var_name
