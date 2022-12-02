@@ -345,7 +345,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         symbol_str = converter.convert_node_to_str(ast_node)
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
-        if "*" in data_type:
+        if "*" in data_type or "[" in data_type:
             op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
@@ -354,7 +354,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         symbol_str = str(ast_node["referencedDecl"]["name"])
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
-        if "*" in data_type:
+        if "*" in data_type or "[" in data_type:
             op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
@@ -363,7 +363,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         symbol_str = converter.convert_member_expr(ast_node, True)
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
-        if "*" in data_type:
+        if "*" in data_type or "[" in data_type:
             op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
@@ -372,7 +372,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         symbol_str = converter.convert_array_subscript(ast_node, True)
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
-        if "*" in data_type:
+        if "*" in data_type or "[" in data_type:
             op_type = "PTR"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
@@ -479,7 +479,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
         # Generating a constraint of type ptr != 0
         constraint_expr = generate_div_zero_constraint(ptr_node)
 
-    else:
+    elif ref_node_type == "ArraySubscriptExpr":
         array_node = reference_node["inner"][0]
         iterator_node = reference_node["inner"][1]
 
@@ -495,6 +495,9 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
         array_expr = generate_expr_for_ast(array_node)
         constraint_right_expr = make_unary_expression(sizeof_op,array_expr)
         constraint_expr = make_binary_expression(less_than_op, constraint_left_expr, constraint_right_expr)
+    else:
+        print(reference_node)
+        utilities.error_exit("Unknown AST Type in function generate_memory_overflow_constraint")
     return constraint_expr
 
 
