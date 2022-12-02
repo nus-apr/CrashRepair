@@ -323,6 +323,22 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
     elif node_type == "UnaryOperator":
         op_symbol_str = str(ast_node["opcode"])
         op_type = next(key for key, value in SymbolType.items() if value == op_symbol_str)
+        if op_symbol_str in ["++", "--"]:
+            is_prefix = True
+            if "isPostfix" in ast_node:
+                is_prefix = not ast_node["isPostfix"]
+            if is_prefix:
+                symbol_str = op_symbol_str + str(ast_node["referencedDecl"]["name"])
+            else:
+                symbol_str = str(ast_node["referencedDecl"]["name"]) + op_symbol_str
+            data_type = extractor.extract_data_type(ast_node)
+            op_type = "INT_VAR"
+            if "*" in data_type or "[" in data_type:
+                op_type = "PTR"
+            constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+            constraint_expr = make_symbolic_expression(constraint_symbol)
+            return constraint_expr
+
         constraint_symbol = make_constraint_symbol(op_symbol_str, op_type)
         child_ast = ast_node["inner"][0]
         child_expr = generate_expr_for_ast(child_ast)
