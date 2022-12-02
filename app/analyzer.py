@@ -220,7 +220,7 @@ def analyze():
                     if base_address:
                         base_address_name = f"(base  @var(pointer, {var_name}))"
                         updated_var_info[base_address_name] = {
-                            "expr_list": [base_address],
+                            "expr_list": [f"(_ bv{base_address} 64)"],
                             "data_type": "pointer"
                         }
                     if sizeof_expr_list:
