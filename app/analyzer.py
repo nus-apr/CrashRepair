@@ -201,21 +201,35 @@ def analyze():
                         static_size = static_size.split("[")[-1].split("]")[0]
                     if str(static_size).isnumeric():
                         sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
+                    base_address = None
                     if concrete_ptr in values.MEMORY_TRACK:
                         base_address = concrete_ptr
                     else:
-                        base_address = None
+                        ref_address = None
                         current_ptr = symbolic_ptr
-                        while base_address is None:
+                        while ref_address is None:
+                            if current_ptr not in values.POINTER_TRACK:
+                                break
                             pointer_info = values.POINTER_TRACK[current_ptr]
-                            b_address = pointer_info["base"]
-                            b_concrete_address = b_address.split(" ")[1].replace("bv", "")
-                            if b_concrete_address in values.MEMORY_TRACK:
-                                base_address = b_concrete_address
+                            sym_address = pointer_info["base"]
+                            if "A-data" in sym_address or "arg" in sym_address:
+                                concrete_address = sym_address.split(" ")[2].replace("bv", "")
                             else:
-                                current_ptr = b_address
+                                concrete_address = sym_address.split(" ")[1].replace("bv", "")
+                            if concrete_address in values.MEMORY_TRACK:
+                                ref_address = concrete_address
+                            else:
+                                current_ptr = sym_address
                             if current_ptr == list(values.POINTER_TRACK.keys())[0]:
                                 break
+
+                        if not base_address and ref_address:
+                            for address in values.MEMORY_TRACK:
+                                alloc_info = values.MEMORY_TRACK[address]
+                                alloc_range = range(int(address) , int(address) + int(alloc_info["size"]))
+                                if ref_address in alloc_range:
+                                    base_address = address
+
                     if not sizeof_expr_list:
                         alloc_info = values.MEMORY_TRACK[base_address]
                         sizeof_expr_list = alloc_info
