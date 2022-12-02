@@ -200,8 +200,10 @@ def analyze():
                         static_size = static_size.split("[")[-1].split("]")[0]
                     if str(static_size).isnumeric():
                         sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
-                    base_address = None
-                    if not sizeof_expr_list:
+                    if symbolic_ptr in values.MEMORY_TRACK:
+                        base_address = symbolic_ptr
+                    else:
+                        base_address = None
                         current_ptr = symbolic_ptr
                         while base_address is None:
                             pointer_info = values.POINTER_TRACK[current_ptr]
@@ -210,7 +212,7 @@ def analyze():
                                 base_address = b_address
                             else:
                                 current_ptr = b_address
-
+                    if not sizeof_expr_list:
                         alloc_info = values.MEMORY_TRACK[base_address]
                         sizeof_expr_list = alloc_info
                     if base_address:
