@@ -214,6 +214,8 @@ def analyze():
                                 base_address = b_concrete_address
                             else:
                                 current_ptr = b_address
+                            if current_ptr == list(values.POINTER_TRACK.keys())[0]:
+                                break
                     if not sizeof_expr_list:
                         alloc_info = values.MEMORY_TRACK[base_address]
                         sizeof_expr_list = alloc_info
