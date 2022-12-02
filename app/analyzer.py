@@ -248,6 +248,8 @@ def analyze():
             else:
                 memory_list = []
                 for sym_expr in sym_expr_list:
+                    if "A-data" in sym_expr or "arg" in sym_expr:
+                        continue
                     memory_address = sym_expr.strip().split(" ")[1]
                     memory_list.append(memory_address)
                 memory_list = list(set(memory_list))
