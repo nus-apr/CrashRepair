@@ -147,10 +147,19 @@ def analyze():
         for v in var_list:
             v_name, v_line, v_col, v_type, v_ref = v
             v_info = dict()
-            v_info["data_type"] = "integer"
-            if "*" in v_type:
-                v_info["data_type"] = "pointer"
-            v_info["meta_data"] = v_type
+            meta_data = None
+            if v_type in definitions.INTEGER_TYPES:
+                data_type = "integer"
+            elif "*" in v_type or "[" in v_type:
+                meta_data = v_type.split("[")[-1].split("]")[0]
+                data_type = "pointer"
+            elif v_type in ["double", "float"]:
+                data_type = "double"
+            else:
+                data_type = None
+
+            v_info["data_type"] = data_type
+            v_info["meta_data"] = meta_data
             v_info["expr_list"] = []
             var_info[v_name] = v_info
             v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
@@ -189,6 +198,8 @@ def analyze():
                         sizeof_expr_list = values.MEMORY_TRACK[symbolic_ptr]
                     else:
                         static_size = var_info[var_name]["meta_data"]
+                        if "[" in static_size:
+                            static_size = static_size.split("[")[-1].split("]")[0]
                         if str(static_size).isnumeric():
                             sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
                     if sizeof_expr_list:
@@ -200,7 +211,7 @@ def analyze():
 
         for var_name in updated_var_info:
             sym_expr_list = updated_var_info[var_name]["expr_list"]
-            var_type = var_info[var_name]["data_type"]
+            var_type = updated_var_info[var_name]["data_type"]
             if var_type == "integer":
                 byte_list = []
                 for sym_expr in sym_expr_list:

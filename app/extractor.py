@@ -359,8 +359,8 @@ def extract_var_ref_list(ast_node, file_path):
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, col_number = begin_loc
         var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
-        for aux_var_name, aux_var_type in auxilary_list:
-            var_list.append((str(aux_var_name), line_number, col_number, aux_var_type, "ref"))
+        # for aux_var_name, aux_var_type in auxilary_list:
+        #     var_list.append((str(aux_var_name), line_number, col_number, aux_var_type, "ref"))
         return var_list
     if node_type in ["MemberExpr"]:
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)

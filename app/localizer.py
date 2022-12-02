@@ -68,7 +68,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                 source_loc = source_path + ":" + ":".join(loc)
                 if not is_taint_influenced:
                     fix_locations[source_loc] = func_name
-                else:
+                elif source_loc in loc_to_byte_map:
                     observed_tainted_bytes.update(loc_to_byte_map[source_loc])
                     if not observed_tainted_bytes:
                         continue
