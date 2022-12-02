@@ -581,7 +581,9 @@ def generate_memset_constraint(call_node):
 
     # next generate the second constraint pointer != 0
     not_eq_op = build_op_symbol("!=")
-    second_constraint_expr = make_binary_expression(not_eq_op, zero_val_expr, pointer_expr)
+    null_symbol = make_constraint_symbol("NULL", "PTR")
+    null_expr = make_symbolic_expression(null_symbol)
+    second_constraint_expr = make_binary_expression(not_eq_op, null_expr, pointer_expr)
 
     # last, concatenate both constraints into one
     logical_and_op = build_op_symbol("&&")
