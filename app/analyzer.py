@@ -207,17 +207,17 @@ def analyze():
                     else:
                         ref_address = None
                         current_ptr = symbolic_ptr
-                        while ref_address is None:
+                        while base_address is None:
                             if current_ptr not in values.POINTER_TRACK:
                                 break
                             pointer_info = values.POINTER_TRACK[current_ptr]
                             sym_address = pointer_info["base"]
                             if "A-data" in sym_address or "arg" in sym_address:
-                                concrete_address = sym_address.split(" ")[2].replace("bv", "")
+                                ref_address = sym_address.split(" ")[3].replace("bv", "")
                             else:
-                                concrete_address = sym_address.split(" ")[1].replace("bv", "")
-                            if concrete_address in values.MEMORY_TRACK:
-                                ref_address = concrete_address
+                                ref_address = sym_address.split(" ")[1].replace("bv", "")
+                            if ref_address in values.MEMORY_TRACK:
+                                base_address = ref_address
                             else:
                                 current_ptr = sym_address
                             if current_ptr == list(values.POINTER_TRACK.keys())[0]:
@@ -227,7 +227,7 @@ def analyze():
                             for address in values.MEMORY_TRACK:
                                 alloc_info = values.MEMORY_TRACK[address]
                                 alloc_range = range(int(address) , int(address) + int(alloc_info["size"]))
-                                if ref_address in alloc_range:
+                                if int(ref_address) in alloc_range:
                                     base_address = address
 
                     if not sizeof_expr_list:
