@@ -358,11 +358,7 @@ def extract_var_ref_list(ast_node, file_path):
             if ref_type == "FunctionDecl":
                 return var_list
         var_name = str(ast_node['referencedDecl']['name'])
-        # print(ast_node)
-        if 'type' in ast_node.keys():
-            var_type = str(ast_node['type']['qualType'])
-        else:
-            var_type = "macro"
+        var_type = extract_data_type(ast_node)
         var_list.append((var_name, line_number, col_number, var_type, "ref"))
     if node_type == "ArraySubscriptExpr":
         var_name, var_type, auxilary_list = converter.convert_array_subscript(ast_node)

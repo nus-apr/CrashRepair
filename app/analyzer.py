@@ -238,7 +238,7 @@ def analyze():
                 memory_list = list(set(memory_list))
                 if "bv0" in memory_list:
                     memory_list = ["bv0"]
-                    updated_var_info[var_name]["expr_list"] = memory_list
+                updated_var_info[var_name]["expr_list"] = memory_list
                 taint_memory_list = taint_memory_list + memory_list
                 tainted_addresses = sorted([str(i) for i in memory_list])
                 emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_addresses)))
