@@ -72,7 +72,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                     observed_tainted_bytes.update(loc_to_byte_map[source_loc])
                     if not observed_tainted_bytes:
                         continue
-                    if set(marked_byte_list) <= set(observed_tainted_bytes):
+                    if set(marked_byte_list + taint_memory_list) <= set(observed_tainted_bytes):
                         fix_locations[source_loc] = func_name
     logger.track_localization("found {} fix locations".format(len(fix_locations)))
     logger.track_localization("sorting fix location based on trace")
