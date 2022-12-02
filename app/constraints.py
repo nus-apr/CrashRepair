@@ -530,7 +530,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
 
         # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
         # first generate the left-side expression
-        constraint_left_expr = generate_expr_for_ast(iterator_node)
+        iterator_expr = generate_expr_for_ast(iterator_node)
 
         # second generate the constraint logical-operator
         less_than_op = build_op_symbol("<")
@@ -538,8 +538,17 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
         # last generate the expression for array size
         sizeof_op = build_op_symbol("sizeof ")
         array_expr = generate_expr_for_ast(array_node)
-        constraint_right_expr = make_unary_expression(sizeof_op, array_expr)
-        constraint_expr = make_binary_expression(less_than_op, constraint_left_expr, constraint_right_expr)
+        size_expr = make_unary_expression(sizeof_op, array_expr)
+        upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
+
+        lte_op = build_op_symbol("<=")
+        zero_symbol = make_constraint_symbol("0", "INT_CONST")
+        zero_expr = make_symbolic_expression(zero_symbol)
+        lower_bound_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
+        logic_and_op = build_op_symbol("&&")
+        constraint_expr = make_binary_expression(logic_and_op, upper_bound_expr, lower_bound_expr)
+
+
     else:
         ptr_node = None
         if ref_node_type == "UnaryOperator":
