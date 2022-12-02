@@ -174,7 +174,10 @@ def analyze():
                 for taint_expr in taint_expr_list:
                     data_type, taint_expr = taint_expr.split(":")
                     if data_type == var_type:
-                        var_info[var_name]["expr_list"] = [taint_expr]
+                        if data_type == "integer":
+                            var_info[var_name]["expr_list"].append(taint_expr)
+                        else:
+                            var_info[var_name]["expr_list"] = [taint_expr]
 
         memory_track_log = klee_taint_out_dir + "/memory.log"
         values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
