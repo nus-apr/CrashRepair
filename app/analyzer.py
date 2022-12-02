@@ -192,7 +192,7 @@ def analyze():
                     emitter.warning("\t[warning] more than one value for pointer")
                 if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
                                   definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
-                    symbolic_ptr = sym_expr_list[0].split(" ")[1].replace("bv", "")
+                    symbolic_ptr = int(sym_expr_list[0].split(" ")[1].replace("bv", ""))
                     sizeof_expr_list = None
                     static_size = var_info[var_name]["meta_data"]
                     if "[" in static_size:

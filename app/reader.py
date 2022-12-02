@@ -459,8 +459,8 @@ def read_tainted_expressions(taint_log_path):
 def read_memory_values(memory_log_path):
     emitter.normal("\tcollecting memory allocations/de-allocations")
     memory_map = OrderedDict()
-    memory_map["bv0"] = {
-        "size": "bv0",
+    memory_map["0"] = {
+        "size": "0",
         "width": 1
     }
     if os.path.exists(memory_log_path):
@@ -470,7 +470,7 @@ def read_memory_values(memory_log_path):
                     line = line.replace("KLEE: MemoryTrack:", "").strip()
                     values = line.split(" ")
                     address = values[1].replace("bv", "")
-                    size = values[3]
+                    size = values[3].replace("bv", "")
                     ptr_width = int(values[4].split(")(")[-1].replace(")", "")) / 8
                     # size_in_bits = int(values[3].replace("bv", ""))
 
