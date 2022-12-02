@@ -251,13 +251,14 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic):
                                                    function_ast, cfc_var_info_list)
 
     cfc_tokens = cfc_expr.get_symbol_list()
+    logger.track_localization("CFC Tokens {}".format(cfc_tokens))
     cfc_token_mappings = []
     for c_t_lookup in cfc_tokens:
         if c_t_lookup in candidate_mapping:
             cfc_token_mappings.append((c_t_lookup, len(candidate_mapping[c_t_lookup])))
     sorted_cfc_tokens = sorted(cfc_token_mappings, key=lambda x:x[1])
     sorted_cfc_tokens = [x[0] for x in sorted_cfc_tokens]
-    logger.track_localization("CFC Tokens {}".format(sorted_cfc_tokens))
+    logger.track_localization("Sorted CFC Tokens {}".format(sorted_cfc_tokens))
     logger.track_localization("Candidate Map {}".format(candidate_mapping))
     for c_t_lookup in sorted_cfc_tokens:
         if c_t_lookup in candidate_mapping:
