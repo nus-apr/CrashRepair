@@ -212,8 +212,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
                 err_file = filename
                 break
         source_loc = extract_source_loc_from_stack(os.path.join(klee_out_dir, err_file))
-        c_file, c_line = source_loc.split(":")
-        c_column = "-1"
+        c_file, c_line, c_column = source_loc.split(":")
         c_address = "-1"
     # ast_tree = extract_ast_json(c_file)
     # function_node_list = extract_function_node_list(ast_tree)
