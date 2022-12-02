@@ -91,7 +91,9 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
     klee_command += "--posix-runtime " \
                     "--libc=uclibc " \
                     "--write-smt2s " \
-                    "--log-taint --log-memory " \
+                    "--log-taint " \
+                    "--log-memory " \
+                    "--log-pointer " \
                     "--allocate-determ " \
                     + "--external-calls=all " \
                     + "--link-llvm-lib={0} " .format(runtime_lib_path) \
@@ -138,52 +140,6 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
         values.NEGATED_PPC_FORMULA = None
     return return_code
 
-#
-# def run_symbolic_execution(program, argument_list, print_output=False):
-#     """
-#     This function will execute the program in symbolic mode using the initial test case
-#         program: the absolute path of the bitcode of the program
-#         argument_list : a list containing each argument in the order that should be fed to the program
-#     """
-#     logger.info("running symbolic execution")
-#
-#     global File_Log_Path
-#     current_dir = os.getcwd()
-#     directory_path = "/".join(str(program).split("/")[:-1])
-#     emitter.debug("changing directory:" + directory_path)
-#     project_path = values.CONF_PATH_PROJECT
-#     os.chdir(directory_path)
-#     binary_name = str(program).split("/")[-1]
-#     emitter.normal("\texecuting klee in concolic mode")
-#     runtime_lib_path = definitions.DIRECTORY_LIB + "/libcrepair_runtime.bca"
-#     input_argument = ""
-#     for argument in argument_list:
-#         if "$POC" in argument:
-#             argument = values.CONF_PATH_POC
-#         input_argument += " " + str(argument)
-#
-#     klee_command = "/klee/build-origin/bin/klee " \
-#                    "--posix-runtime " \
-#                    "--libc=uclibc " \
-#                    "--write-smt2s " \
-#                    "--search=dfs " \
-#                    "-no-exit-on-error " \
-#                    + "--external-calls=all " \
-#                    + "--link-llvm-lib={0} " .format(runtime_lib_path) \
-#                    + "--max-time={0} ".format(values.DEFAULT_TIMEOUT_KLEE_CEGIS) \
-#                    + "--max-forks {0} ".format(values.DEFAULT_MAX_FORK_CEGIS) \
-#                    + values.CONF_KLEE_FLAGS + " " \
-#                    + "{0} ".format(binary_name) \
-#                    + input_argument
-#
-#     if not print_output:
-#         klee_command += " > " + File_Log_Path + " 2>&1 "
-#     return_code = utilities.execute_command(klee_command)
-#     emitter.debug("changing directory:" + current_dir)
-#     os.chdir(current_dir)
-#     return return_code
-
-
 def run_concrete_execution(program, argument_list, print_output=False, klee_out_dir=None):
     """
     This function will execute the program in concrete mode using the concrete inputs
@@ -222,7 +178,9 @@ def run_concrete_execution(program, argument_list, print_output=False, klee_out_
 
     klee_command += "--posix-runtime " \
                     "--libc=uclibc " \
-                    "--log-taint --log-memory " \
+                    "--log-taint " \
+                    "--log-memory " \
+                    "--log-pointer " \
                     "--allocate-determ " \
                     "--search=dfs " \
                     "--write-smt2s " \
