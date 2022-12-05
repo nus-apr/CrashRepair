@@ -63,6 +63,9 @@ def analyze():
         # Retrieve concrete values from the taint.log file.
         taint_values_concrete = reader.read_taint_values(taint_log_path)
 
+        memory_track_log = klee_concrete_out_dir + "/memory.log"
+        values.MEMORY_TRACK_CONCRETE = reader.read_memory_values(memory_track_log)
+
         c_src_file, var_list, \
         cfc, c_func_name = extractor.extract_crash_information(program_path,
                                                                argument_list,
@@ -180,7 +183,7 @@ def analyze():
                             var_info[var_name]["expr_list"] = [taint_expr]
 
         memory_track_log = klee_taint_out_dir + "/memory.log"
-        values.MEMORY_TRACK = reader.read_memory_values(memory_track_log)
+        values.MEMORY_TRACK_SYMBOLIC = reader.read_memory_values(memory_track_log)
         pointer_track_log = klee_taint_out_dir + "/pointer.log"
         values.POINTER_TRACK = reader.read_pointer_values(pointer_track_log)
         taint_byte_list = []
@@ -205,7 +208,7 @@ def analyze():
                     if str(static_size).isnumeric():
                         sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
                     base_address = None
-                    if concrete_ptr in values.MEMORY_TRACK:
+                    if concrete_ptr in values.MEMORY_TRACK_CONCRETE:
                         base_address = concrete_ptr
                     else:
                         ref_address = None
@@ -222,7 +225,7 @@ def analyze():
                                 ref_address = sym_address.split(" ")[3].replace("bv", "")
                             else:
                                 ref_address = sym_address.split(" ")[1].replace("bv", "")
-                            if ref_address in values.MEMORY_TRACK:
+                            if ref_address in values.MEMORY_TRACK_CONCRETE:
                                 base_address = ref_address
                             else:
                                 current_ptr = sym_address
@@ -230,15 +233,18 @@ def analyze():
                                break
 
                         if not base_address and ref_address:
-                            for address in values.MEMORY_TRACK:
-                                alloc_info = values.MEMORY_TRACK[address]
-                                alloc_range = range(int(address) , int(address) + int(alloc_info["size"]) + 1)
+                            for address in values.MEMORY_TRACK_CONCRETE:
+                                alloc_info = values.MEMORY_TRACK_CONCRETE[address]
+                                alloc_range = range(int(address), int(address) + int(alloc_info["size"]) + 1)
                                 if int(ref_address) in alloc_range:
                                     base_address = address
 
-                    if not sizeof_expr_list:
-                        alloc_info = values.MEMORY_TRACK[base_address]
-                        sizeof_expr_list = alloc_info
+                    if base_address in values.MEMORY_TRACK_SYMBOLIC:
+                        alloc_info = values.MEMORY_TRACK_SYMBOLIC[base_address]
+                        if str(alloc_info["size"]).isnumeric():
+                            sizeof_expr_list = alloc_info
+                        else:
+                            sizeof_expr_list = [alloc_info["size"]]
                     if base_address:
                         base_address_name = f"(base  @var(pointer, {var_name}))"
                         updated_var_info[base_address_name] = {

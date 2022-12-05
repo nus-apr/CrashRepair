@@ -277,6 +277,10 @@ class ConstraintExpression:
                 if str(mapping).isnumeric():
                     mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
+                elif isinstance(mapping, dict):
+                    constant = str(int(mapping["size"]/ int(mapping["width"])))
+                    mapped_symbol = make_constraint_symbol(constant, "INT_CONST")
+                    self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
                 else:
                     mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
