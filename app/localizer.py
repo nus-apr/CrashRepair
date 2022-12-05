@@ -141,8 +141,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
     for crash_var_name in cfc_var_info_list:
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
-        if "sizeof " in crash_var_name:
-            crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["con_size"])]
+        # if "sizeof " in crash_var_name:
+        #     crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["con_size"])]
         for crash_var_expr in crash_var_expr_list:
             found_mapping = False
             subset_var_list = list()
