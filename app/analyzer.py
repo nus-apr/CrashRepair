@@ -232,7 +232,7 @@ def analyze():
                         if not base_address and ref_address:
                             for address in values.MEMORY_TRACK:
                                 alloc_info = values.MEMORY_TRACK[address]
-                                alloc_range = range(int(address) , int(address) + int(alloc_info["size"]))
+                                alloc_range = range(int(address) , int(address) + int(alloc_info["size"]) + 1)
                                 if int(ref_address) in alloc_range:
                                     base_address = address
 
