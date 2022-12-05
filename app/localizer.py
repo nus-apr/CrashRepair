@@ -142,7 +142,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
         if "sizeof " in crash_var_name:
-            crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["size"])]
+            crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["con_size"])]
         for crash_var_expr in crash_var_expr_list:
             found_mapping = False
             subset_var_list = list()
@@ -183,7 +183,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                         else:
                             crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
                             if "width" in crash_var_expr_list:
-                                crash_size_bits = int(crash_var_expr_list["size"].replace("bv", ""))
+                                crash_size_bits = int(crash_var_expr_list["con_size"].replace("bv", ""))
                                 crash_size_width = int(crash_var_expr_list["width"])
                                 crash_size_bytes = int(crash_size_bits / 4)
                                 if crash_size_width > 0:

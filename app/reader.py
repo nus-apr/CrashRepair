@@ -463,7 +463,8 @@ def read_memory_values(memory_log_path):
     emitter.normal("\tcollecting memory allocations/de-allocations")
     memory_map = OrderedDict()
     memory_map["0"] = {
-        "size": "0",
+        "con_size": "0",
+        "sym_size": "0",
         "width": 1
     }
     if os.path.exists(memory_log_path):
@@ -471,11 +472,11 @@ def read_memory_values(memory_log_path):
             for line in track_file:
                 if 'KLEE: MemoryTrack:' in line:
                     line = line.replace("KLEE: MemoryTrack:", "").strip()
-                    values = line.split(" ")
-                    address = values[1].replace("bv", "")
-                    sym_size = values[3].replace("bv", "")
-                    con_size = values[5].replace("bv", "")
-                    ptr_width = int(values[6].split(")(")[-1].replace(")", "")) / 8
+                    values = line.split(":")
+                    address = values[0].split(" ")[1].replace("bv", "")
+                    sym_size = values[1].split(" ")[1].replace("bv", "")
+                    con_size = values[2].split(" ")[1].replace("bv", "")
+                    ptr_width = int(values[3].replace("(", "").replace(")", "")) / 8
                     # size_in_bits = int(values[3].replace("bv", ""))
 
                     # size_in_bytes = 0
