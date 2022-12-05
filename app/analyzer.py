@@ -33,12 +33,13 @@ def get_concrete_values(argument_list, output_dir_path, test_case_id, program_pa
     taint_log_path = klee_concrete_out_dir + "/taint.log"
 
     # Retrieve concrete values from the taint.log file.
-    taint_values_concrete = reader.read_taint_values(taint_log_path)
+    taint_values_concrete = reader.read_tainted_expressions(taint_log_path)
+    state_value_map = reader.read_state_values(taint_log_path)
     memory_track_log = klee_concrete_out_dir + "/memory.log"
     values.MEMORY_TRACK_CONCRETE = reader.read_memory_values(memory_track_log)
     pointer_track_log = klee_concrete_out_dir + "/pointer.log"
     values.POINTER_TRACK_CONCRETE = reader.read_pointer_values(pointer_track_log)
-    return taint_values_concrete
+    return taint_values_concrete, state_value_map
 
 
 def get_tainted_values(argument_list, program_path, output_dir_path, test_case_id):
@@ -141,37 +142,42 @@ def extract_value_list(value_map, crash_info):
     var_info = crash_info["var-info"]
     value_info = dict()
     for loc_info in value_map:
-        c_file, line, col, inst_add = loc_info.split(":")
-        taint_expr_list = value_map[loc_info]
+        c_file, line, col, adr = loc_info.split(":")
+        expr_list = value_map[loc_info]
         loc = "{}:{}:{}".format(c_file, line, col)
         if loc in var_loc_map:
             var_name = var_loc_map[loc]
             var_type = var_info[var_name]["data_type"]
-            value_info[var_name] = list()
-            for taint_expr in taint_expr_list:
-                data_type, taint_expr = taint_expr.split(":")
+            value_info[var_name] = {
+                        "expr_list": [],
+                        "loc": loc_info,
+                        "data_type": var_type,
+                        "meta_data": var_info[var_name]["meta_data"]
+                    }
+            for expr in expr_list:
+                data_type, expr = expr.split(":")
                 if data_type == var_type:
                     if data_type == "integer":
-                        value_info[var_name].append(taint_expr)
+                        value_info[var_name]["expr_list"].append(expr)
                     else:
-                        value_info[var_name] = [taint_expr]
+                        value_info[var_name]["expr_list"] = [expr]
     return value_info
 
 
-def pointer_analysis(var_info, value_map, crash_type, memory_track, pointer_track):
+def pointer_analysis(var_info, crash_type, memory_track, pointer_track):
     updated_var_info = dict()
-    count_pointers = 0
+    count_ptrs = 0
     count_size_of = 0
     count_base = 0
     for var_name in var_info:
-        value_list = value_map[var_name]
+        var_loc = var_info[var_name]["loc"]
+        value_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         updated_var_info[var_name] = var_info[var_name]
         if var_type == "pointer":
-            count_pointers = count_pointers + 1
+            count_ptrs = count_ptrs + 1
             if len(value_list) > 1:
                 emitter.warning("\t[warning] more than one value for pointer")
-
             memory_list = []
             for expr in value_list:
                 if "A-data" in expr or "arg" in expr:
@@ -247,7 +253,7 @@ def pointer_analysis(var_info, value_map, crash_type, memory_track, pointer_trac
                         "data_type": "integer"
                     }
 
-    return updated_var_info, (count_pointers, count_base, count_size_of)
+    return updated_var_info, (count_ptrs, count_base, count_size_of)
 
 
 def identify_sources(var_info):
@@ -306,25 +312,30 @@ def analyze():
         else:
             program_path = values.CONF_PATH_PROGRAM
 
-        taint_values_concrete = get_concrete_values(argument_list, output_dir_path, test_case_id, program_path)
+        taint_values_concrete, state_values = get_concrete_values(argument_list,
+                                                                  output_dir_path,
+                                                                  test_case_id,
+                                                                  program_path)
         crash_info = get_crash_values(argument_list, program_path)
-        taint_values_symbolic = get_tainted_values(argument_list, program_path, output_dir_path, test_case_id)
-
-        crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
-        crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
-
         crash_type = crash_info["type"]
-        sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
-                                                        taint_values_symbolic,
-                                                        crash_type,
-                                                        values.MEMORY_TRACK_SYMBOLIC,
-                                                        values.POINTER_TRACK_SYMBOLIC)
-
+        crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
         con_var_info, con_count_info = pointer_analysis(crash_var_concrete_info,
-                                                        taint_values_concrete,
                                                         crash_type,
                                                         values.MEMORY_TRACK_CONCRETE,
                                                         values.POINTER_TRACK_CONCRETE)
 
+        taint_values_symbolic = get_tainted_values(argument_list, program_path, output_dir_path, test_case_id)
+        crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
+        sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
+                                                        crash_type,
+                                                        values.MEMORY_TRACK_SYMBOLIC,
+                                                        values.POINTER_TRACK_SYMBOLIC)
+
+        var_info = con_var_info
+        value_map = taint_values_concrete
+        if sym_count_info[0] == sym_count_info[1] == sym_count_info[2]:
+            var_info = sym_var_info
+            value_map = taint_values_symbolic
+        crash_info["var-info"] = var_info
         byte_source_list, memory_source_list = identify_sources(sym_var_info)
-        return byte_source_list, memory_source_list, taint_values_symbolic, crash_info, taint_values_concrete
+        return byte_source_list, memory_source_list, value_map, crash_info, state_values
