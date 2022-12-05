@@ -221,7 +221,7 @@ def collect_crash_point(trace_file_path):
                     read_line = read_line.replace("KLEE: ERROR: ", "")
                     crash_location_info = read_line.split(": ")[0]
                     src_file, line, column, assembly_offset = crash_location_info.split(":")
-                    crash_location = src_file + ":" + line
+                    crash_location = ":".join([src_file, line, column])
                     crash_reason = read_line.split(": ")[-1]
                     if "memset" in read_line:
                         crash_reason = "memset error"
