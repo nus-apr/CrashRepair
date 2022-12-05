@@ -471,8 +471,8 @@ def read_memory_values(memory_log_path):
                     values = line.split(" ")
                     address = values[1].replace("bv", "")
                     sym_size = values[3].replace("bv", "")
-                    con_size = values[4].replace("bv", "")
-                    ptr_width = int(values[5].split(")(")[-1].replace(")", "")) / 8
+                    con_size = values[5].replace("bv", "")
+                    ptr_width = int(values[6].split(")(")[-1].replace(")", "")) / 8
                     # size_in_bits = int(values[3].replace("bv", ""))
 
                     # size_in_bytes = 0
