@@ -158,10 +158,11 @@ def extract_value_list(value_map, crash_info):
             for expr in expr_list:
                 data_type, expr = expr.split(":")
                 if data_type == var_type:
-                    if data_type == "integer":
-                        value_info[var_name]["expr_list"].append(expr)
-                    else:
-                        value_info[var_name]["expr_list"] = [expr]
+                    value_info[var_name]["expr_list"] = [expr]
+                    # if data_type == "integer":
+                    #     value_info[var_name]["expr_list"].append(expr)
+                    # else:
+                    #     value_info[var_name]["expr_list"] = [expr]
     return value_info
 
 
