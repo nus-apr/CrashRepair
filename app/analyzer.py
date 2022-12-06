@@ -321,7 +321,7 @@ def analyze():
                                                                   program_path)
 
         c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
-        concrete_crash = ":".join([c_type, c_file, c_line, c_column])
+        concrete_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
         crash_info = get_crash_values(argument_list, program_path)
         crash_type = crash_info["type"]
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
@@ -332,7 +332,9 @@ def analyze():
 
         taint_values_symbolic = get_tainted_values(argument_list, program_path, output_dir_path, test_case_id)
         c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
-        concolic_crash = ":".join([c_type, c_file, c_line, c_column])
+        concolic_crash = None
+        if c_type is not None:
+            concolic_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
         crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
         sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
                                                         crash_type,

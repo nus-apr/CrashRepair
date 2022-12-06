@@ -1106,8 +1106,7 @@ def extract_crash_type(crash_reason):
     elif "assertion error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_ASSERTION_ERROR
     else:
-        emitter.error("Unknown Crash Reason: {}".format(crash_reason))
-        utilities.error_exit("Unable to determine crash type")
+        emitter.warning("\t[warning] Unknown Crash Reason: {}".format(crash_reason))
     return crash_type
 
 
