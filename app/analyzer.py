@@ -319,6 +319,9 @@ def analyze():
                                                                   output_dir_path,
                                                                   test_case_id,
                                                                   program_path)
+
+        c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
+        concrete_crash = ":".join([c_type, c_file, c_line, c_column])
         crash_info = get_crash_values(argument_list, program_path)
         crash_type = crash_info["type"]
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
@@ -328,6 +331,8 @@ def analyze():
                                                         values.POINTER_TRACK_CONCRETE)
 
         taint_values_symbolic = get_tainted_values(argument_list, program_path, output_dir_path, test_case_id)
+        c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
+        concolic_crash = ":".join([c_type, c_file, c_line, c_column])
         crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
         sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
                                                         crash_type,
@@ -336,9 +341,11 @@ def analyze():
 
         var_info = con_var_info
         value_map = taint_values_concrete
-        if sym_count_info[0] == sym_count_info[1] == sym_count_info[2]:
+        if concolic_crash == concrete_crash:
             var_info = sym_var_info
             value_map = taint_values_symbolic
+        else:
+            emitter.warning("\t[warning] taint analysis failed, using concrete values")
         crash_info["var-info"] = var_info
         byte_source_list, memory_source_list = identify_sources(var_info)
         return byte_source_list, memory_source_list, value_map, crash_info, state_values
