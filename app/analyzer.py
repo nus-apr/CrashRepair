@@ -178,17 +178,6 @@ def pointer_analysis(var_info, crash_type, memory_track, pointer_track):
             count_ptrs = count_ptrs + 1
             if len(value_list) > 1:
                 emitter.warning("\t[warning] more than one value for pointer")
-            memory_list = []
-            for expr in value_list:
-                if "A-data" in expr or "arg" in expr:
-                    memory_address = expr.strip().split(" ")[3]
-                else:
-                    memory_address = expr.strip().split(" ")[1]
-                memory_list.append(memory_address)
-            memory_list = list(set(memory_list))
-            if "bv0" in memory_list:
-                memory_list = ["bv0"]
-            updated_var_info[var_name]["expr_list"] = memory_list
 
             if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
                               definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
@@ -273,7 +262,15 @@ def identify_sources(var_info):
             tainted_bytes = sorted([str(i) for i in byte_list])
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
         else:
-            memory_list = var_info[var_name]["expr_list"]
+            memory_list = []
+            value_list = var_info[var_name]["expr_list"]
+            for expr in value_list:
+                if "A-data" in expr or "arg" in expr:
+                    memory_address = expr.strip().split(" ")[3]
+                else:
+                    memory_address = expr.strip().split(" ")[1]
+                memory_list.append(memory_address)
+            memory_list = list(set(memory_list))
             taint_memory_list = taint_memory_list + memory_list
             tainted_addresses = sorted([str(i) for i in memory_list])
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_addresses)))
