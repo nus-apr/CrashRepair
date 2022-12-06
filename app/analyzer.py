@@ -94,15 +94,15 @@ def get_crash_values(argument_list, program_path):
     crash_info = dict()
     var_info = dict()
     var_loc_map = dict()
-    c_src_file, var_list, cfc, c_func_name = extractor.extract_crash_information(program_path,
-                                                                                 argument_list,
-                                                                                 values.get_file_message_log())
+    c_src_file, var_list, cfc, \
+        c_func_name, c_loc, c_type = extractor.extract_crash_information(program_path,
+                                                                         argument_list,
+                                                                         values.get_file_message_log())
     crash_info["file"] = c_src_file
     crash_info["var-list"] = var_list
     crash_info["expr"] = cfc
-    latest_crash_loc, crash_type = reader.collect_crash_point(values.get_file_message_log())
-    crash_info["loc"] = latest_crash_loc
-    crash_info["type"] = crash_type
+    crash_info["loc"] = c_loc
+    crash_info["type"] = c_type
     crash_info["function"] = c_func_name
 
     for v in var_list:
@@ -127,12 +127,7 @@ def get_crash_values(argument_list, program_path):
 
     crash_info["var-info"] = var_info
     crash_info["var-loc"] = var_loc_map
-
-    if latest_crash_loc:
-        values.IS_CRASH = True
-        if latest_crash_loc not in values.CONF_LOC_LIST_CRASH:
-            values.CONF_LOC_LIST_CRASH.append(latest_crash_loc)
-    crash_type_msg = definitions.CRASH_TYPE_MESSAGE[crash_type]
+    crash_type_msg = definitions.CRASH_TYPE_MESSAGE[c_type]
     emitter.information("\t\t\t[info] identified crash type: {}".format(crash_type_msg))
     return crash_info
 
