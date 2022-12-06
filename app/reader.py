@@ -477,11 +477,9 @@ def read_memory_values(memory_log_path):
                     sym_size = values[1]
                     con_size = values[2].split(" ")[1].replace("bv", "")
                     ptr_width = int(values[3].replace("(", "").replace(")", "")) / 8
-                    # size_in_bits = int(values[3].replace("bv", ""))
+                    if ptr_width > 0:
+                        con_size = con_size / ptr_width
 
-                    # size_in_bytes = 0
-                    # if ptr_width > 0:
-                    #     size_in_bytes = size_in_bits / ptr_width
                     memory_map[address] = {
                         "width": int(ptr_width),
                         "sym_size": sym_size,
