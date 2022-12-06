@@ -189,7 +189,7 @@ def pointer_analysis(var_info, crash_type, memory_track, pointer_track):
                 if "[" in static_size:
                     static_size = static_size.split("[")[-1].split("]")[0]
                 if str(static_size).isnumeric():
-                    sizeof_expr_list = {"width": 1, "size": var_info[var_name]["meta_data"]}
+                    sizeof_expr_list = {"width": 1, "con_size": var_info[var_name]["meta_data"]}
                 base_address = None
                 if concrete_ptr in memory_track:
                     base_address = concrete_ptr
@@ -224,10 +224,13 @@ def pointer_analysis(var_info, crash_type, memory_track, pointer_track):
 
                 if base_address in memory_track:
                     alloc_info = memory_track[base_address]
-                    if str(alloc_info["sym_size"]).isnumeric():
-                        sizeof_expr_list = alloc_info
+                    sym_size_expr = alloc_info["sym_size"]
+                    if "A-data" in sym_size_expr or "arg" in sym_size_expr:
+                        sizeof_expr_list = [sym_size_expr]
                     else:
-                        sizeof_expr_list = [alloc_info["sym_size"]]
+                        sym_size_val = sym_size_expr.split(" ")[1].replace("bv", "")
+                        sizeof_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
+
                 if base_address:
                     count_base = count_base + 1
                     base_address_name = f"(base  @var(pointer, {var_name}))"
