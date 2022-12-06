@@ -219,10 +219,10 @@ def convert_array_subscript(ast_node, only_string=False):
     if array_type == "DeclRefExpr":
         array_name = str(array_node['referencedDecl']['name'])
         array_data_type = extractor.extract_data_type(array_node)
-        if array_data_type is None:
-            var_data_type = "unknown"
-        else:
-            var_data_type = array_data_type.split("[")[0]
+        # if array_data_type is None:
+        #     var_data_type = "unknown"
+        # else:
+        #     var_data_type = array_data_type.split("[")[0]
         iterator_node = ast_node["inner"][1]
         iterator_name, iterator_type, _ = convert_array_iterator(iterator_node)
         var_name = array_name + iterator_name
