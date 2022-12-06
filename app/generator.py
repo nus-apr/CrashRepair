@@ -1099,16 +1099,3 @@ def generate_offset_to_line(src_file_path):
         offset_to_line[offset+1] = line
     return offset_to_line
 
-
-def generate_taint_sources(taint_expr_list, taint_memory_list, taint_loc):
-    taint_source_list = set()
-    for taint_expr in taint_expr_list:
-        taint_expr_code = generate_z3_code_for_var(taint_expr, "TAINT")
-        taint_source = extractor.extract_input_bytes_used(taint_expr_code)
-        if not taint_source and "bv" in taint_expr:
-            taint_value = taint_expr.split(" ")[1]
-            if taint_value in taint_memory_list:
-                taint_source = [taint_value]
-        if taint_source:
-            taint_source_list.update(taint_source)
-    return taint_loc, list(taint_source_list)

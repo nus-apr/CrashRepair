@@ -1109,3 +1109,17 @@ def extract_crash_type(crash_reason):
         emitter.error("Unknown Crash Reason: {}".format(crash_reason))
         utilities.error_exit("Unable to determine crash type")
     return crash_type
+
+
+def extract_taint_sources(taint_expr_list, taint_memory_list, taint_loc):
+    taint_source_list = set()
+    for taint_expr in taint_expr_list:
+        taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
+        taint_source = extract_input_bytes_used(taint_expr_code)
+        if not taint_source and "bv" in taint_expr:
+            taint_value = taint_expr.split(" ")[1]
+            if taint_value in taint_memory_list:
+                taint_source = [taint_value]
+        if taint_source:
+            taint_source_list.update(taint_source)
+    return taint_loc, list(taint_source_list)

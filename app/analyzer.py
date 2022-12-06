@@ -339,5 +339,5 @@ def analyze():
             var_info = sym_var_info
             value_map = taint_values_symbolic
         crash_info["var-info"] = var_info
-        byte_source_list, memory_source_list = identify_sources(sym_var_info)
+        byte_source_list, memory_source_list = identify_sources(var_info)
         return byte_source_list, memory_source_list, value_map, crash_info, state_values

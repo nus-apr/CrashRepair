@@ -22,17 +22,17 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     logger.track_localization("generating fix locations\n")
     fix_locations = dict()
     is_taint_influenced = len(marked_byte_list) > 0 or len(taint_memory_list) > 0
-    loc_to_byte_map, source_mapping = parallel.generate_loc_to_sources(taint_symbolic,
-                                                                       taint_memory_list,
-                                                                       is_taint_influenced)
-    logger.track_localization("found {} source files".format(len(source_mapping)))
+    taint_source_loc_map, taint_sink_loc_list = parallel.generate_taint_sink_info(taint_symbolic,
+                                                                                  taint_memory_list,
+                                                                                  is_taint_influenced)
+    logger.track_localization("found {} source files".format(len(taint_sink_loc_list)))
     logger.track_localization("found {} source locations".format(len(taint_symbolic)))
-    emitter.highlight("\t\t[info] found " + str(len(source_mapping)) + " source files")
+    emitter.highlight("\t\t[info] found " + str(len(taint_sink_loc_list)) + " source files")
     logger.track_localization("generating tainted function list")
     tainted_function_list = collections.OrderedDict()
     func_count = 0
-    for source_path in source_mapping:
-        tainted_loc_list = source_mapping[source_path]
+    for source_path in taint_sink_loc_list:
+        tainted_loc_list = taint_sink_loc_list[source_path]
         source_dir = values.CONF_DIR_EXPERIMENT + "/src/"
         source_dir = source_dir.replace("//", "/")
         if source_dir not in source_path:
@@ -68,8 +68,8 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                 source_loc = source_path + ":" + ":".join(loc)
                 if not is_taint_influenced:
                     fix_locations[source_loc] = func_name
-                elif source_loc in loc_to_byte_map:
-                    observed_tainted_bytes.update(loc_to_byte_map[source_loc])
+                elif source_loc in taint_source_loc_map:
+                    observed_tainted_bytes.update(taint_source_loc_map[source_loc])
                     if not observed_tainted_bytes:
                         continue
                     if set(marked_byte_list + taint_memory_list) <= set(observed_tainted_bytes):

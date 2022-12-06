@@ -47,7 +47,7 @@ def abortable_worker(func, *args, **kwargs):
         return default_value, index
 
 
-def generate_loc_to_sources(taint_symbolic, taint_memory_list, is_taint_influenced):
+def generate_taint_sink_info(taint_symbolic, taint_memory_list, is_taint_influenced):
     """
         This function will analyse the taint values along the trace and identify taint sources
         for each location along the trace
@@ -55,8 +55,8 @@ def generate_loc_to_sources(taint_symbolic, taint_memory_list, is_taint_influenc
                returns a map for each source location their observed taint sources
      """
     global result_list
-    loc_to_byte_map = collections.OrderedDict()
-    source_mapping = collections.OrderedDict()
+    taint_source_loc_map = collections.OrderedDict()
+    taint_sink_loc_list = collections.OrderedDict()
 
     emitter.normal("\tgenerating taint map")
     logger.track_localization("generating taint map\n")
@@ -72,12 +72,12 @@ def generate_loc_to_sources(taint_symbolic, taint_memory_list, is_taint_influenc
         taint_loc = ":".join([source_path, line_number, col_number])
         taint_expr_list = taint_symbolic[taint_info]
         logger.track_localization("Analysing Loc:" + taint_loc)
-        if source_path not in source_mapping:
-            source_mapping[source_path] = set()
-        source_mapping[source_path].add((line_number, col_number))
+        if source_path not in taint_sink_loc_list:
+            taint_sink_loc_list[source_path] = set()
+        taint_sink_loc_list[source_path].add((line_number, col_number))
         if is_taint_influenced:
-            # result_list.append(generator.generate_taint_sources(taint_expr_list, taint_loc))
-            pool.apply_async(generator.generate_taint_sources,
+            # result_list.append(extractor.extract_taint_sources(taint_expr_list, taint_memory_list, taint_loc))
+            pool.apply_async(extractor.extract_taint_sources,
                              args=(taint_expr_list, taint_memory_list, taint_loc),
                              callback=collect_result)
     pool.close()
@@ -85,10 +85,10 @@ def generate_loc_to_sources(taint_symbolic, taint_memory_list, is_taint_influenc
     pool.join()
     for result in result_list:
         taint_loc, taint_source_list = result
-        if taint_loc not in loc_to_byte_map:
-            loc_to_byte_map[taint_loc] = list()
+        if taint_loc not in taint_source_loc_map:
+            taint_source_loc_map[taint_loc] = list()
         if taint_source_list:
-            loc_to_byte_map[taint_loc] = list(set(loc_to_byte_map[taint_loc] + taint_source_list))
+            taint_source_loc_map[taint_loc] = list(set(taint_source_loc_map[taint_loc] + taint_source_list))
         logger.track_localization("Source Location:" + taint_loc)
-        logger.track_localization("Taint Sources:{}".format(loc_to_byte_map[taint_loc]))
-    return loc_to_byte_map, source_mapping
+        logger.track_localization("Taint Sources:{}".format(taint_source_loc_map[taint_loc]))
+    return taint_source_loc_map, taint_sink_loc_list
