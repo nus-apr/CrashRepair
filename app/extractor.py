@@ -365,8 +365,9 @@ def extract_var_ref_list(ast_node, file_path):
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, col_number = begin_loc
         var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
-        # for aux_var_name, aux_var_type in auxilary_list:
-        #     var_list.append((str(aux_var_name), line_number, col_number, aux_var_type, "ref"))
+        for aux_var_name, aux_var_type in auxilary_list:
+            if aux_var_type == node_type:
+                var_list.append((str(aux_var_name), line_number, col_number, aux_var_type, "ref"))
         return var_list
     if node_type in ["MemberExpr"]:
         var_name, var_type, auxilary_list = converter.convert_member_expr(ast_node)
@@ -501,6 +502,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 for reference_ast in array_access_list:
                     if oracle.is_loc_in_range(crash_loc, reference_ast["range"]):
                         target_ast = reference_ast
+                        break
 
             if target_ast is None:
                 ref_node_list = extract_reference_node_list(func_ast)
@@ -518,10 +520,13 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(target_ast, src_file)
-        for var_node in var_list:
-            if "[" in var_node[0]:
-                var_list.remove(var_node)
         cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc)
+        cfc_symbol_list = cfc.get_symbol_list()
+        for var_node in var_list:
+            var_name = var_node[0]
+            if var_name not in cfc_symbol_list:
+                var_list.remove(var_node)
+
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
