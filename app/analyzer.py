@@ -239,7 +239,8 @@ def pointer_analysis(var_info, crash_type, memory_track, pointer_track):
                     sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
                     updated_var_info[sizeof_name] = {
                         "expr_list": sizeof_expr_list,
-                        "data_type": "integer"
+                        "data_type": "integer",
+                        "concrete_value": alloc_info["con_size"]
                     }
 
     return updated_var_info, (count_ptrs, count_base, count_size_of)

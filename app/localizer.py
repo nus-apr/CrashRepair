@@ -314,7 +314,8 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
                             used_candidates.append(selected_expr)
             else:
                 if "sizeof" in c_t_lookup:
-                    localized_tokens[c_t_lookup] = cfc_var_info_list[c_t_lookup]["expr_list"]
+                    concrete_value = cfc_var_info_list[c_t_lookup]["concrete_value"]
+                    localized_tokens[c_t_lookup] = concrete_value
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
         if len(localized_tokens.keys()) == len(sorted_cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
