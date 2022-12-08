@@ -16,6 +16,7 @@ bug_commit_id=68c5eec
 cd $dir_name
 git clone $project_url src
 cd src
+git checkout $bug_commit_id
 touch src/a
 
 ./bootstrap
