@@ -413,7 +413,7 @@ def extract_var_ref_list(ast_node, file_path):
     return sorted_var_list
 
 
-def extract_var_list(ast_node, file_path):
+def extract_ast_var_list(ast_node, file_path):
     var_dec_list = extract_var_dec_list(ast_node, file_path)
     var_ref_list = extract_var_ref_list(ast_node, file_path)
     variable_list = list(set(var_ref_list + var_dec_list))
@@ -442,8 +442,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             emitter.error("\t[error] unable to find division operator")
             utilities.error_exit("Unable to generate crash free constraint")
         divisor_ast = div_op_ast["inner"][1]
-        var_list = extract_var_list(divisor_ast, src_file)
+        ast_var_list = extract_ast_var_list(divisor_ast, src_file)
         cfc = constraints.generate_div_zero_constraint(divisor_ast)
+        var_list = get_var_list(ast_var_list, cfc)
     elif crash_type in [definitions.CRASH_TYPE_INT_MUL_OVERFLOW,
                         definitions.CRASH_TYPE_INT_ADD_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["*", "+"])
@@ -456,13 +457,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if crash_op_ast is None:
             emitter.error("\t[error] unable to find binary operator for overflow")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(crash_op_ast, src_file)
+        ast_var_list = extract_ast_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_overflow_constraint(crash_op_ast)
-        symbol_list = cfc.get_symbol_list()
-        for var_node in var_list:
-            var_name = var_node[0]
-            if var_name not in symbol_list:
-                var_list.remove(var_node)
+        var_list = get_var_list(ast_var_list, cfc)
 
     elif crash_type in [definitions.CRASH_TYPE_INT_SUB_OVERFLOW]:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["-"])
@@ -475,13 +472,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if crash_op_ast is None:
             emitter.error("\t[error] unable to find binary operator for underflow")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(crash_op_ast, src_file)
+        ast_var_list = extract_ast_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_underflow_constraint(crash_op_ast)
-        symbol_list = cfc.get_symbol_list()
-        for var_node in var_list:
-            var_name = var_node[0]
-            if var_name not in symbol_list:
-                var_list.remove(var_node)
+        var_list = get_var_list(ast_var_list, cfc)
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW, definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
@@ -519,13 +512,10 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(target_ast, src_file)
+        ast_var_list = extract_ast_var_list(target_ast, src_file)
         cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc)
-        cfc_symbol_list = cfc.get_symbol_list()
-        for var_node in var_list:
-            var_name = var_node[0]
-            if var_name not in cfc_symbol_list:
-                var_list.remove(var_node)
+        var_list = get_var_list(ast_var_list, cfc)
+
 
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
         # check for memory write nodes if not found check for memory access nodes
@@ -562,13 +552,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(target_ast, src_file)
+        ast_var_list = extract_ast_var_list(target_ast, src_file)
         cfc = constraints.generate_memory_null_constraint(target_ast, crash_loc)
-        cfc_symbol_list = cfc.get_symbol_list()
-        for var_node in var_list:
-            var_name = var_node[0]
-            if "[" in var_name or var_name not in cfc_symbol_list:
-                var_list.remove(var_node)
+        var_list = get_var_list(ast_var_list, cfc)
 
     elif crash_type == definitions.CRASH_TYPE_SHIFT_OVERFLOW:
         binaryop_list = extract_binaryop_node_list(func_ast, src_file, ["<<", ">>"])
@@ -580,8 +566,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if crash_op_ast is None:
             emitter.error("\t[error] unable to find binary operator for shift overflow")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(crash_op_ast, src_file)
+        ast_var_list = extract_ast_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_shift_overflow_constraint(crash_op_ast)
+        var_list = get_var_list(ast_var_list, cfc)
     elif crash_type == definitions.CRASH_TYPE_MEMCPY_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memcpy"])
         crash_call_ast = None
@@ -592,8 +579,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if crash_call_ast is None:
             emitter.error("\t[error] unable to find call operator for memcpy error")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(crash_call_ast, src_file)
+        ast_var_list = extract_ast_var_list(crash_call_ast, src_file)
         cfc = constraints.generate_memcpy_constraint(crash_call_ast)
+        var_list = get_var_list(ast_var_list, cfc)
     elif crash_type == definitions.CRASH_TYPE_MEMMOVE_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memmove"])
         crash_call_ast = None
@@ -604,8 +592,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if crash_call_ast is None:
             emitter.error("\t[error] unable to find call operator for memmove error")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(crash_call_ast, src_file)
+        ast_var_list = extract_ast_var_list(crash_call_ast, src_file)
         cfc = constraints.generate_memmove_constraint(crash_call_ast)
+        var_list = get_var_list(ast_var_list, cfc)
     elif crash_type == definitions.CRASH_TYPE_MEMSET_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memset"])
         crash_call_ast = None
@@ -616,8 +605,9 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         if crash_call_ast is None:
             emitter.error("\t[error] unable to find binary operator for memset error")
             utilities.error_exit("Unable to generate crash free constraint")
-        var_list = extract_var_list(crash_call_ast, src_file)
+        ast_var_list = extract_ast_var_list(crash_call_ast, src_file)
         cfc = constraints.generate_memset_constraint(crash_call_ast)
+        var_list = get_var_list(ast_var_list, cfc)
     elif crash_type == definitions.CRASH_TYPE_ASSERTION_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["__assert_fail"])
         crash_call_ast = None
@@ -1141,3 +1131,12 @@ def extract_taint_sources(taint_expr_list, taint_memory_list, taint_loc):
         if taint_source:
             taint_source_list.update(taint_source)
     return taint_loc, list(taint_source_list)
+
+def get_var_list(ast_var_list, cfc):
+    cfc_symbol_list = cfc.get_symbol_list()
+    var_list = []
+    for var_node in ast_var_list:
+        var_name = var_node[0]
+        if var_name not in cfc_symbol_list:
+            var_list.append(var_node)
+    return var_list

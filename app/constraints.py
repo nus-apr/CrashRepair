@@ -681,7 +681,7 @@ def generate_assertion_constraint(call_node, func_node, src_file):
     assertion_str_node = call_node["inner"][1]
     assertion_str = converter.convert_node_to_str(assertion_str_node)
     assertion_expr = sympify(assertion_str)
-    var_list = extractor.extract_var_list(func_node, src_file)
+    var_list = extractor.extract_ast_var_list(func_node, src_file)
     var_name_list = [x[0] for x in var_list]
     str_tokens = assertion_expr.split(" ")
     constraint_expr = None

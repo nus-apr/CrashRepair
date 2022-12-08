@@ -97,7 +97,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
     function_range = function_ast["range"]
     func_line_range = extractor.extract_line_range(src_file, function_range)
 
-    var_info_list = extractor.extract_var_list(function_ast, src_file)
+    var_info_list = extractor.extract_ast_var_list(function_ast, src_file)
     expr_info_list = extractor.extract_expression_list(function_ast, src_file)
     expr_taint_list = collections.OrderedDict()
     logger.track_localization("generating candidate map for function {} in {}".format(function_name, src_file))
@@ -384,7 +384,7 @@ def localize_state_info(fix_loc, taint_concrete):
     src_file, fix_line, fix_col = fix_loc.split(":")
     func_name, function_ast = extractor.extract_func_ast(src_file, fix_line)
     func_line_range = extractor.extract_line_range(src_file, function_ast["range"])
-    var_info_list = extractor.extract_var_list(function_ast, src_file)
+    var_info_list = extractor.extract_ast_var_list(function_ast, src_file)
     state_info_list_values = dict()
     taint_info_listed_occurences = taint_concrete[fix_loc]
     for occurence in range(len(taint_info_listed_occurences)):
