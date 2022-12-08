@@ -330,15 +330,15 @@ def analyze():
         concolic_crash = None
         if c_type is not None:
             concolic_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
-        crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
-        sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
-                                                        crash_type,
-                                                        values.MEMORY_TRACK_SYMBOLIC,
-                                                        values.POINTER_TRACK_SYMBOLIC)
 
         var_info = con_var_info
         value_map = taint_values_concrete
         if concolic_crash == concrete_crash:
+            crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
+            sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
+                                                            crash_type,
+                                                            values.MEMORY_TRACK_SYMBOLIC,
+                                                            values.POINTER_TRACK_SYMBOLIC)
             var_info = sym_var_info
             value_map = taint_values_symbolic
         else:
