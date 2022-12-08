@@ -253,7 +253,7 @@ class ConstraintExpression:
         if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
-            return [self.to_string()] + self._m_rvalue.get_symbol_list()
+            return [self.to_string()]
         elif self._m_symbol.is_base():
             return [self.to_string()]
         if self._m_lvalue:
