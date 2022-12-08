@@ -46,7 +46,7 @@ def run_analyze(test_dir):
 
 def run_repair(test_dir):
     os.chdir(test_dir)
-    repair_command = "git clean -f; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
+    repair_command = "git clean -f; rm -rf analysis; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
     process = subprocess.Popen(repair_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     process.wait()
     ret_code = process.returncode
