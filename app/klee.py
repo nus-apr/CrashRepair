@@ -94,7 +94,6 @@ def run_concolic_execution(program, argument_list, second_var_list, print_output
                     "--log-taint " \
                     "--log-memory " \
                     "--log-pointer " \
-                    "--allocate-determ " \
                     + "--external-calls=all " \
                     + "--link-llvm-lib={0} " .format(runtime_lib_path) \
                     + "--max-time={0} ".format(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC) \
@@ -181,7 +180,6 @@ def run_concrete_execution(program, argument_list, print_output=False, klee_out_
                     "--log-taint " \
                     "--log-memory " \
                     "--log-pointer " \
-                    "--allocate-determ " \
                     "--search=dfs " \
                     "--write-smt2s " \
                     "--external-calls=all " \
