@@ -1135,14 +1135,17 @@ def extract_taint_sources(taint_expr_list, taint_memory_list, taint_loc):
 def get_var_list(ast_var_list, cfc, crash_loc):
     cfc_symbol_list = cfc.get_symbol_list()
     var_list = []
-    for var_node in ast_var_list:
-        var_name = var_node[0]
-        if var_name in cfc_symbol_list:
-            var_list.append(var_node)
+
     for symbol in cfc_symbol_list:
         if "sizeof " in symbol or "base " in symbol:
-            data_type = "int"
-            if "base " in symbol:
-                data_type = "int*"
-            var_list.append((symbol, crash_loc[1], crash_loc[2], data_type, "logical"))
+            symbol_ptr = symbol.split(" ")[3].replace(")", "")
+            for var_node in ast_var_list:
+                var_name = var_node[0]
+                if var_name == symbol_ptr:
+                    var_list.append((symbol, var_node[1], var_node[2], var_node[3], "logical"))
+        else:
+            for var_node in ast_var_list:
+                var_name = var_node[0]
+                if var_name == symbol:
+                    var_list.append(var_node)
     return var_list
