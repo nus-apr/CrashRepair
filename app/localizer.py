@@ -144,9 +144,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
         # if "sizeof " in crash_var_name:
         #     crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["con_size"])]
         crash_var_input_byte_list = []
+        subset_expr_list = list()
         for crash_var_expr in crash_var_expr_list:
             found_mapping = False
-            subset_expr_list = list()
             crash_var_sym_expr_code = generator.generate_z3_code_for_var(crash_var_expr, crash_var_name)
             crash_var_input_byte_list = extractor.extract_input_bytes_used(crash_var_sym_expr_code)
             for expr_taint_info in expr_taint_list:

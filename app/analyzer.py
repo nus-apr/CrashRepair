@@ -144,8 +144,9 @@ def extract_value_list(value_map, crash_info):
         loc = "{}:{}:{}".format(c_file, line, col)
         if loc in var_loc_map:
             var_name = var_loc_map[loc]
-            var_type = var_info[var_name]["data_type"]
-            if var_name not in value_info:
+            var_type = None
+            if var_name in var_info and var_name not in value_info:
+                var_type = var_info[var_name]["data_type"]
                 value_info[var_name] = {
                             "expr_list": [],
                             "loc": loc_info,
@@ -155,7 +156,7 @@ def extract_value_list(value_map, crash_info):
 
             for expr in expr_list:
                 data_type, expr = expr.split(":")
-                if data_type == var_type:
+                if data_type == var_type and var_name in var_info:
                     value_info[var_name]["expr_list"] = [expr]
                 if data_type == "pointer":
                     sizeof_expr = "(sizeof  @var(pointer, {}))".format(var_name)
