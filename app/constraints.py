@@ -722,6 +722,37 @@ def generate_memcpy_constraint(call_node):
     constraint_expr = make_binary_expression(less_than_op, left_hand_expr, size_expr)
     return constraint_expr
 
+
+def generate_memmove_constraint(call_node):
+    source_ptr_node = call_node["inner"][1]
+    target_ptr_node = call_node["inner"][2]
+    size_node = call_node["inner"][3]
+
+    # Generating first constraint of type
+    # target - source < size
+    # first generate the expressions for the arithmetic expression
+    source_expr = generate_expr_for_ast(source_ptr_node)
+    target_expr = generate_expr_for_ast(target_ptr_node)
+    arithmetic_op = build_op_symbol("-")
+    diff_expr = make_binary_expression(arithmetic_op, target_expr, source_expr)
+    size_expr = generate_expr_for_ast(size_node)
+
+    # last, concatenate both constraints into one
+    less_than_op = build_op_symbol("<")
+    first_constraint = make_binary_expression(less_than_op, diff_expr, size_expr)
+
+    # Generating second constraint of type
+    # 0 < size
+    zero_symbol = make_constraint_symbol("0", "INT_CONST")
+    zero_expr = make_symbolic_expression(zero_symbol)
+    second_constraint = make_binary_expression(less_than_op, zero_expr, size_expr)
+
+    # Final constraint is a concatenation
+    logical_and_op = build_op_symbol("&&")
+    constraint_expr = make_binary_expression(logical_and_op, second_constraint, first_constraint)
+
+    return constraint_expr
+
 def get_type_limits(data_type):
     if data_type == "int":
         return "INT_MIN", "INT_MAX"

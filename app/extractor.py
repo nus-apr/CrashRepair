@@ -590,10 +590,22 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                 crash_call_ast = call_ast
                 break
         if crash_call_ast is None:
-            emitter.error("\t[error] unable to find binary operator for memcpy error")
+            emitter.error("\t[error] unable to find call operator for memcpy error")
             utilities.error_exit("Unable to generate crash free constraint")
         var_list = extract_var_list(crash_call_ast, src_file)
         cfc = constraints.generate_memcpy_constraint(crash_call_ast)
+    elif crash_type == definitions.CRASH_TYPE_MEMMOVE_ERROR:
+        call_node_list = extract_call_node_list(func_ast, None, ["memmove"])
+        crash_call_ast = None
+        for call_ast in call_node_list:
+            if oracle.is_loc_in_range(crash_loc, call_ast["range"]):
+                crash_call_ast = call_ast
+                break
+        if crash_call_ast is None:
+            emitter.error("\t[error] unable to find call operator for memmove error")
+            utilities.error_exit("Unable to generate crash free constraint")
+        var_list = extract_var_list(crash_call_ast, src_file)
+        cfc = constraints.generate_memmove_constraint(crash_call_ast)
     elif crash_type == definitions.CRASH_TYPE_MEMSET_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memset"])
         crash_call_ast = None
@@ -1108,6 +1120,8 @@ def extract_crash_type(crash_reason):
         crash_type = definitions.CRASH_TYPE_MEMSET_ERROR
     elif "memcpy error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMCPY_ERROR
+    elif "memmove error" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_MEMMOVE_ERROR
     elif "assertion error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_ASSERTION_ERROR
     else:
