@@ -123,6 +123,8 @@ def get_crash_values(argument_list, program_path):
         v_info["expr_list"] = []
         var_info[v_name] = v_info
         v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
+        if "sizeof " in v_name or "base " in v_name:
+            v_name = v_name.split(" ")[-1].replace(")", "")
         var_loc_map[v_loc] = v_name
 
     crash_info["var-info"] = var_info
@@ -155,12 +157,24 @@ def extract_value_list(value_map, crash_info):
                 data_type, expr = expr.split(":")
                 if data_type == var_type:
                     value_info[var_name]["expr_list"] = [expr]
-                if ("sizeof " in var_name or "base " in var_name) and data_type == "pointer":
-                    value_info[var_name]["meta_data"] = expr
-                    # if data_type == "integer":
-                    #     value_info[var_name]["expr_list"].append(expr)
-                    # else:
-                    #     value_info[var_name]["expr_list"] = [expr]
+                if data_type == "pointer":
+                    sizeof_expr = "(sizeof  @var(pointer, {}))".format(var_name)
+                    base_expr = "(base  @var(pointer, {}))".format(var_name)
+                    if sizeof_expr in var_info:
+                        value_info[sizeof_expr] = {
+                            "expr_list": [],
+                            "loc": loc_info,
+                            "data_type": "integer",
+                            "meta_data": expr
+                        }
+
+                    if base_expr in var_info:
+                       value_info[base_expr] = {
+                           "expr_list": [],
+                           "loc": loc_info,
+                           "data_type": "pointer",
+                           "meta_data": expr
+                       }
     return value_info
 
 
