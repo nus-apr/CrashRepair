@@ -150,10 +150,13 @@ def extract_value_list(value_map, crash_info):
                             "data_type": var_type,
                             "meta_data": var_info[var_name]["meta_data"]
                         }
+
             for expr in expr_list:
                 data_type, expr = expr.split(":")
                 if data_type == var_type:
                     value_info[var_name]["expr_list"] = [expr]
+                if ("sizeof " in var_name or "base " in var_name) and data_type == "pointer":
+                    value_info[var_name]["meta_data"] = expr
                     # if data_type == "integer":
                     #     value_info[var_name]["expr_list"].append(expr)
                     # else:
@@ -161,89 +164,88 @@ def extract_value_list(value_map, crash_info):
     return value_info
 
 
-def pointer_analysis(var_info, crash_type, memory_track, pointer_track):
+def get_base_address(symbolic_ptr, memory_track, pointer_track):
+    concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
+    base_address = None
+    if concrete_ptr in memory_track:
+        base_address = concrete_ptr
+    else:
+        ref_address = None
+        current_ptr = symbolic_ptr
+        count_pointers = len(pointer_track)
+        iteration = 0
+        while base_address is None:
+            iteration = iteration + 1
+            if current_ptr not in pointer_track:
+                break
+            pointer_info = pointer_track[current_ptr]
+            sym_address = pointer_info["base"]
+            if "A-data" in sym_address or "arg" in sym_address:
+                ref_address = sym_address.split(" ")[3].replace("bv", "")
+            else:
+                ref_address = sym_address.split(" ")[1].replace("bv", "")
+            if ref_address in memory_track:
+                base_address = ref_address
+            else:
+                current_ptr = sym_address
+            if iteration == count_pointers:
+                break
+
+        if not base_address and ref_address:
+            for address in memory_track:
+                alloc_info = memory_track[address]
+                alloc_range = range(int(address), int(address) + int(alloc_info["con_size"]) + 1)
+                if int(ref_address) in alloc_range:
+                    base_address = address
+    return base_address
+
+def get_sizeof_pointer(base_address, memory_track):
+    sizeof_expr_list = []
+    concrete_value = None
+    if base_address in memory_track:
+        alloc_info = memory_track[base_address]
+        sym_size_expr = alloc_info["sym_size"]
+        if "A-data" in sym_size_expr or "arg" in sym_size_expr:
+            sizeof_expr_list = [sym_size_expr]
+        else:
+            sym_size_val = sym_size_expr.split(" ")[1].replace("bv", "")
+            sizeof_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
+        concrete_value = alloc_info["con_size"]
+    return sizeof_expr_list, concrete_value
+
+
+def pointer_analysis(var_info, memory_track, pointer_track):
     updated_var_info = dict()
-    count_ptrs = 0
-    count_size_of = 0
-    count_base = 0
     for var_name in var_info:
         var_loc = var_info[var_name]["loc"]
         value_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         updated_var_info[var_name] = var_info[var_name]
-        if var_type == "pointer":
-            count_ptrs = count_ptrs + 1
-            if len(value_list) > 1:
-                emitter.warning("\t[warning] more than one value for pointer")
+        if "sizeof " in var_name:
+            symbolic_ptr = var_info[var_name]["meta_data"]
+            # static_size = var_info[var_name]["meta_data"]
+            # if "[" in static_size:
+            #     static_size = static_size.split("[")[-1].split("]")[0]
+            # if str(static_size).isnumeric():
+            #     sizeof_expr_list = {"width": 1, "con_size": var_info[var_name]["meta_data"]}
 
-            if crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW,
-                              definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
-                symbolic_ptr = value_list[-1]
-                concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
-                sizeof_expr_list = None
-                static_size = var_info[var_name]["meta_data"]
-                if "[" in static_size:
-                    static_size = static_size.split("[")[-1].split("]")[0]
-                if str(static_size).isnumeric():
-                    sizeof_expr_list = {"width": 1, "con_size": var_info[var_name]["meta_data"]}
-                base_address = None
-                if concrete_ptr in memory_track:
-                    base_address = concrete_ptr
-                else:
-                    ref_address = None
-                    current_ptr = symbolic_ptr
-                    count_pointers = len(pointer_track)
-                    iteration = 0
-                    while base_address is None:
-                        iteration = iteration + 1
-                        if current_ptr not in pointer_track:
-                            break
-                        pointer_info = pointer_track[current_ptr]
-                        sym_address = pointer_info["base"]
-                        if "A-data" in sym_address or "arg" in sym_address:
-                            ref_address = sym_address.split(" ")[3].replace("bv", "")
-                        else:
-                            ref_address = sym_address.split(" ")[1].replace("bv", "")
-                        if ref_address in memory_track:
-                            base_address = ref_address
-                        else:
-                            current_ptr = sym_address
-                        if iteration == count_pointers:
-                            break
+            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            sizeof_expr_list, concrete_value = get_sizeof_pointer(base_address, memory_track)
+            updated_var_info[var_name] = {
+                "expr_list": sizeof_expr_list,
+                "data_type": "integer",
+                "concrete_value": concrete_value
+            }
 
-                    if not base_address and ref_address:
-                        for address in memory_track:
-                            alloc_info = memory_track[address]
-                            alloc_range = range(int(address), int(address) + int(alloc_info["con_size"]) + 1)
-                            if int(ref_address) in alloc_range:
-                                base_address = address
+        elif "base " in var_name:
+            symbolic_ptr = var_info[var_name]["meta_data"]
+            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            updated_var_info[var_name] = {
+                "expr_list": [f"(_ bv{base_address} 64)"],
+                "data_type": "pointer"
+            }
 
-                if base_address in memory_track:
-                    alloc_info = memory_track[base_address]
-                    sym_size_expr = alloc_info["sym_size"]
-                    if "A-data" in sym_size_expr or "arg" in sym_size_expr:
-                        sizeof_expr_list = [sym_size_expr]
-                    else:
-                        sym_size_val = sym_size_expr.split(" ")[1].replace("bv", "")
-                        sizeof_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
-
-                if base_address:
-                    count_base = count_base + 1
-                    base_address_name = f"(base  @var(pointer, {var_name}))"
-                    updated_var_info[base_address_name] = {
-                        "expr_list": [f"(_ bv{base_address} 64)"],
-                        "data_type": "pointer"
-                    }
-                if sizeof_expr_list:
-                    count_size_of = count_size_of + 1
-                    sizeof_name = f"(sizeof  @var(pointer, {var_name}))"
-                    updated_var_info[sizeof_name] = {
-                        "expr_list": sizeof_expr_list,
-                        "data_type": "integer",
-                        "concrete_value": alloc_info["con_size"]
-                    }
-
-    return updated_var_info, (count_ptrs, count_base, count_size_of)
+    return updated_var_info
 
 
 def identify_sources(var_info):
@@ -318,12 +320,10 @@ def analyze():
         c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
         concrete_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
         crash_info = get_crash_values(argument_list, program_path)
-        crash_type = crash_info["type"]
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
-        con_var_info, con_count_info = pointer_analysis(crash_var_concrete_info,
-                                                        crash_type,
-                                                        values.MEMORY_TRACK_CONCRETE,
-                                                        values.POINTER_TRACK_CONCRETE)
+        con_var_info = pointer_analysis(crash_var_concrete_info,
+                                        values.MEMORY_TRACK_CONCRETE,
+                                        values.POINTER_TRACK_CONCRETE)
 
         taint_values_symbolic = get_tainted_values(argument_list, program_path, output_dir_path, test_case_id)
         c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
@@ -335,10 +335,9 @@ def analyze():
         value_map = taint_values_concrete
         if concolic_crash == concrete_crash:
             crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
-            sym_var_info, sym_count_info = pointer_analysis(crash_var_symbolic_info,
-                                                            crash_type,
-                                                            values.MEMORY_TRACK_SYMBOLIC,
-                                                            values.POINTER_TRACK_SYMBOLIC)
+            sym_var_info = pointer_analysis(crash_var_symbolic_info,
+                                            values.MEMORY_TRACK_SYMBOLIC,
+                                            values.POINTER_TRACK_SYMBOLIC)
             var_info = sym_var_info
             value_map = taint_values_symbolic
         else:
