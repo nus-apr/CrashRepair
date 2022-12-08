@@ -227,6 +227,8 @@ def collect_crash_point(trace_file_path):
                         crash_reason = "memset error"
                     elif "memcpy" in read_line:
                         crash_reason = "memcpy error"
+                    elif "memmove" in read_line:
+                        crash_reason = "memmove error"
                     elif "assertion" in read_line.lower():
                         crash_reason = "assertion error"
                     elif "out of bound" in read_line.lower():
@@ -262,6 +264,8 @@ def collect_klee_crash_info(trace_file_path):
                         crash_reason = "memset error"
                     elif "memcpy" in read_line:
                         crash_reason = "memcpy error"
+                    elif "memmove" in read_line:
+                        crash_reason = "memmove error"
                     elif "assertion" in read_line.lower():
                         crash_reason = "assertion error"
                     elif "out of bound" in read_line.lower():
