@@ -143,9 +143,10 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
         # if "sizeof " in crash_var_name:
         #     crash_var_expr_list = ["(_ {} 64)".format(crash_var_expr_list["con_size"])]
+        crash_var_input_byte_list = []
         for crash_var_expr in crash_var_expr_list:
             found_mapping = False
-            subset_var_list = list()
+            subset_expr_list = list()
             crash_var_sym_expr_code = generator.generate_z3_code_for_var(crash_var_expr, crash_var_name)
             crash_var_input_byte_list = extractor.extract_input_bytes_used(crash_var_sym_expr_code)
             for expr_taint_info in expr_taint_list:
@@ -228,12 +229,31 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                     logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                                     logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
                                     candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
-                    elif set(var_input_byte_list) <= set(crash_var_input_byte_list):
-                        subset_var_list.append((expr_str, var_expr))
-            # if not found_mapping and subset_var_list:
-            #     sub_expr_mapping = localize_sub_expr(crash_var_expr, subset_var_list)
+                    elif var_input_byte_list and set(var_input_byte_list) <= set(crash_var_input_byte_list):
+                        subset_expr_list.append((expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list))
+
+        if crash_var_name not in candidate_mapping:
+            if subset_expr_list:
+                unique_byte_list = set()
+                for subset_var in subset_expr_list:
+                    _, _, _, _, _, _, byte_list = subset_var
+                    unique_byte_list.update(byte_list)
+                if list(unique_byte_list) == crash_var_input_byte_list:
+                    synthesisze_subset_expr(crash_var_name,
+                                            crash_var_expr_list[0],
+                                            subset_expr_list)
+
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
+
+def synthesisze_subset_expr(ref_var, ref_expr, expr_list):
+    emitter.debug("\t\tPossible Synthesis (not implemented)")
+    emitter.debug("\t\tLogical Var Name:{}".format(ref_var))
+    emitter.debug("\t\tSymbolic Expr:{}".format(ref_expr))
+    for expr in expr_list:
+        expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list = expr
+        emitter.debug("\t\t\tProgram Expr:{}".format(expr_str))
+        emitter.debug("\t\t\tSymbolic Expr:{}".format(var_expr))
 
 
 def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
