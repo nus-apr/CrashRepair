@@ -149,7 +149,7 @@ def extract_value_list(value_map, crash_info):
                 var_type = var_info[var_name]["data_type"]
                 value_info[var_name] = {
                             "expr_list": [],
-                            "loc": loc_info,
+                            "loc": loc,
                             "data_type": var_type,
                             "meta_data": var_info[var_name]["meta_data"]
                         }
