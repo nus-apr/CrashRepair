@@ -1137,6 +1137,6 @@ def get_var_list(ast_var_list, cfc):
     var_list = []
     for var_node in ast_var_list:
         var_name = var_node[0]
-        if var_name not in cfc_symbol_list:
+        if var_name in cfc_symbol_list:
             var_list.append(var_node)
     return var_list
