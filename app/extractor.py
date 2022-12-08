@@ -339,6 +339,7 @@ def extract_var_ref_list(ast_node, file_path):
         for var_name, line_number, col_number, var_type, _ in child_var_list:
             if node_value in ["++", "--"]:
                 if ast_node["isPostfix"]:
+                    col_number = col_number + len(var_name)
                     var_name = str(var_name) + node_value
                     var_list.append((var_name, line_number, col_number, var_type, "ref"))
                 else:
