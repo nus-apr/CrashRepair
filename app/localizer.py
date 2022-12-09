@@ -197,7 +197,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                 if var_size_bytes == crash_size_bytes:
                                     candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                                 else:
-                                    candidate_mapping[crash_var_name].add((str(crash_size_bytes), e_line, e_col, e_addr, is_exp_dec))
+                                    continue
+                                    # candidate_mapping[crash_var_name].add((str(crash_size_bytes), e_line, e_col, e_addr, is_exp_dec))
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
                                 logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                                 logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))

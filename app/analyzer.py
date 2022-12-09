@@ -201,7 +201,7 @@ def extract_value_list(value_map, crash_info):
                        value_info[diff_expr] = {
                            "expr_list": [],
                            "loc": loc_info,
-                           "data_type": "pointer",
+                           "data_type": "integer",
                            "meta_data": expr
                        }
     return value_info
@@ -301,7 +301,7 @@ def pointer_analysis(var_info, memory_track, pointer_track):
             diff_expr = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
-                "data_type": "pointer"
+                "data_type": "integer"
             }
 
     return updated_var_info
