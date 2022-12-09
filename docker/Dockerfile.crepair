@@ -31,16 +31,18 @@ RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install numpy==1
 RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install wllvm; return 0;
 RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install sympy
 
-RUN pypy3 -m easy_install cython
-RUN pypy3 -m easy_install setuptools
-#RUN pypy3 -m easy_install pysmt==0.9.0
-#RUN pysmt-install --z3 --confirm-agreement
-RUN pypy3 -m easy_install funcy
-RUN pypy3 -m easy_install six
-RUN pypy3 -m easy_install numpy==1.19.1
-RUN pypy3 -m easy_install wllvm
-RUN pypy3 -m easy_install sympy
-RUN python3 -m easy_install wllvm
+# WARNING: CT thinks that this may use the same Python package directory as the standard pip
+RUN pypy3 -m pip install \
+      cython==0.29.32 \
+      distlib==0.3.6 \
+      setuptools==65.6.3 \
+      pip==22.3.1 \
+      funcy==1.17 \
+      six==1.16.0
+RUN pypy3 -m pip install \
+      wllvm==1.3.1 \
+      sympy==1.11.1
+RUN python3 -m pip install wllvm==1.3.1
 ENV PATH "/opt/llvm-6/bin:/klee/build/bin:${PATH}"
 ENV LLVM_COMPILER=clang
 
