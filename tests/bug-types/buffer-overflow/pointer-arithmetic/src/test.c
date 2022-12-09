@@ -5,8 +5,8 @@ void func_a(int* ptr_a){
     *ptr_a = 12;
 }
 
-void func_b(int* ptr_b){
-    int k = 12;
+void func_b(int* ptr_b, int y){
+    int k = y + 2;
     ptr_b += k;
     func_a(ptr_b);
 }
@@ -19,6 +19,6 @@ int main(int argc, char **argv) {
   fclose(fp);
   int y = buffer[1];
   int *arr = (int *) malloc(10);
-  func_b(arr);
+  func_b(arr, y);
 }
 
