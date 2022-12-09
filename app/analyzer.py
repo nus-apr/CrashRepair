@@ -259,8 +259,14 @@ def get_sizeof_pointer(base_address, memory_track):
 
 def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
     base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-    base_expr = "(_ bv{} 64)".format(base_address)
-    diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
+    if "A-data" in symbolic_ptr or "arg" in symbolic_ptr:
+        base_expr = "(_ bv{} 64)".format(base_address)
+        diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
+    else:
+        concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
+        diff_val = int(concrete_ptr) - int(base_address)
+        diff_expr = "(_ bv{} 64)".format(symbolic_ptr, diff_val)
+
     return diff_expr
 
 
@@ -326,12 +332,14 @@ def identify_sources(var_info):
             value_list = var_info[var_name]["expr_list"]
             for expr in value_list:
                 expr_tokens = expr.strip().split(" ")
-                if "(bvsub" in expr_tokens[0]:
-                    memory_address = expr_tokens[4]
-                elif "A-data" in expr or "arg" in expr:
+                if "A-data" in expr or "arg" in expr:
                     memory_address = expr_tokens[3]
+                    if "(bvsub" in expr_tokens[0]:
+                        memory_address = expr_tokens[4]
                 else:
                     memory_address = expr_tokens[1]
+                    if "(bvsub" in expr_tokens[0]:
+                        memory_address = expr_tokens[2]
                 memory_list.append(memory_address)
             memory_list = list(set(memory_list))
             taint_memory_list = taint_memory_list + memory_list
