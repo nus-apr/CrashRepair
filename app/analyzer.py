@@ -181,6 +181,7 @@ def extract_value_list(value_map, crash_info):
                 if data_type == "pointer":
                     sizeof_expr = "(sizeof  @var(pointer, {}))".format(var_name)
                     base_expr = "(base  @var(pointer, {}))".format(var_name)
+                    diff_expr = "(diff  @var(pointer, {}))".format(var_name)
                     if sizeof_expr in var_info:
                         value_info[sizeof_expr] = {
                             "expr_list": [],
@@ -191,6 +192,13 @@ def extract_value_list(value_map, crash_info):
 
                     if base_expr in var_info:
                        value_info[base_expr] = {
+                           "expr_list": [],
+                           "loc": loc_info,
+                           "data_type": "pointer",
+                           "meta_data": expr
+                       }
+                    if diff_expr in var_info:
+                       value_info[diff_expr] = {
                            "expr_list": [],
                            "loc": loc_info,
                            "data_type": "pointer",
@@ -249,6 +257,12 @@ def get_sizeof_pointer(base_address, memory_track):
     return sizeof_expr_list, concrete_value
 
 
+def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
+    base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+    diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_address)
+    return diff_expr
+
+
 def pointer_analysis(var_info, memory_track, pointer_track):
     updated_var_info = dict()
     for var_name in var_info:
@@ -277,6 +291,14 @@ def pointer_analysis(var_info, memory_track, pointer_track):
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [f"(_ bv{base_address} 64)"],
+                "data_type": "pointer"
+            }
+
+        elif "diff " in var_name:
+            symbolic_ptr = var_info[var_name]["meta_data"]
+            diff_expr = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
+            updated_var_info[var_name] = {
+                "expr_list": [diff_expr],
                 "data_type": "pointer"
             }
 

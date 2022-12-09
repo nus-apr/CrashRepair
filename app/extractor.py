@@ -1138,7 +1138,7 @@ def get_var_list(ast_var_list, cfc, crash_loc):
     var_list = []
 
     for symbol in cfc_symbol_list:
-        if "sizeof " in symbol or "base " in symbol:
+        if "sizeof " in symbol or "base " in symbol or "diff " in symbol:
             symbol_ptr = symbol.split(" ")[3].replace(")", "")
             for var_node in ast_var_list:
                 var_name = var_node[0]
