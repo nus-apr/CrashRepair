@@ -53,7 +53,7 @@ SymbolType = {
 
     "NULL_VAL": "null",
     "OP_SIZE_OF": "sizeof ",
-    "OP_DIFF": "diff",
+    "OP_DIFF": "diff ",
     "OP_BASE": "base "
 }
 
