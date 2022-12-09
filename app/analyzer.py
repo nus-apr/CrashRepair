@@ -325,10 +325,13 @@ def identify_sources(var_info):
             memory_list = []
             value_list = var_info[var_name]["expr_list"]
             for expr in value_list:
-                if "A-data" in expr or "arg" in expr:
-                    memory_address = expr.strip().split(" ")[3]
+                expr_tokens = expr.strip().split(" ")
+                if "(bvsub" in expr_tokens[0]:
+                    memory_address = expr_tokens[4]
+                elif "A-data" in expr or "arg" in expr:
+                    memory_address = expr_tokens[3]
                 else:
-                    memory_address = expr.strip().split(" ")[1]
+                    memory_address = expr_tokens[1]
                 memory_list.append(memory_address)
             memory_list = list(set(memory_list))
             taint_memory_list = taint_memory_list + memory_list
