@@ -259,15 +259,15 @@ def get_sizeof_pointer(base_address, memory_track):
 
 def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
     base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+    concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
+    diff_val = int(concrete_ptr) - int(base_address)
     if "A-data" in symbolic_ptr or "arg" in symbolic_ptr:
         base_expr = "(_ bv{} 64)".format(base_address)
         diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
     else:
-        concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
-        diff_val = int(concrete_ptr) - int(base_address)
         diff_expr = "(_ bv{} 64)".format(symbolic_ptr, diff_val)
 
-    return diff_expr
+    return diff_expr, diff_val
 
 
 def pointer_analysis(var_info, memory_track, pointer_track):
@@ -304,10 +304,11 @@ def pointer_analysis(var_info, memory_track, pointer_track):
         elif "diff " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
 
-            diff_expr = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
+            diff_expr, concrete_value = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
-                "data_type": "integer"
+                "data_type": "integer",
+                "concrete_value": concrete_value
             }
 
     return updated_var_info

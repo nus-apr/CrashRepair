@@ -278,7 +278,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
     for c_t_lookup in cfc_tokens:
         if c_t_lookup in candidate_mapping:
             cfc_token_mappings.append((c_t_lookup, len(candidate_mapping[c_t_lookup])))
-        elif "sizeof" in c_t_lookup:
+        elif "sizeof " in c_t_lookup or "diff " in c_t_lookup:
             cfc_token_mappings.append((c_t_lookup, 1))
     sorted_cfc_tokens = sorted(cfc_token_mappings, key=lambda x:x[1])
     sorted_cfc_tokens = [x[0] for x in sorted_cfc_tokens]
@@ -335,7 +335,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
             else:
-                if "sizeof" in c_t_lookup:
+                if "sizeof " in c_t_lookup or "diff " in c_t_lookup:
                     concrete_value = cfc_var_info_list[c_t_lookup]["concrete_value"]
                     localized_tokens[c_t_lookup] = str(concrete_value)
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
