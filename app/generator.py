@@ -977,8 +977,8 @@ def generate_z3_code_for_var(var_expr, var_name):
     var_name = str(var_name).replace("->", "")
     var_name = str(var_name).replace("[", "-")
     var_name = str(var_name).replace("]", "-")
-    if "sizeof " in var_name:
-        var_name = "_".join(var_name.split(" "))
+    if "sizeof " in var_name or "diff " in var_name:
+        var_name = "sizeof_" + var_name.split(" ")[3]
     try:
         code = generate_z3_code_for_expr(var_expr, var_name, 32)
         parser = SmtLibParser()
