@@ -9,9 +9,10 @@ from app import emitter, utilities, definitions, values, builder, \
     reader, extractor,  generator, instrumentor, klee
 
 
-def get_concrete_values(argument_list, output_dir_path, test_case_id, program_path):
+def get_concrete_values(arguments_str, output_dir_path, test_case_id, program_path):
     emitter.sub_sub_title("Running Concrete Execution")
-    print_argument_list = app.configuration.extract_input_arg_list(argument_list)
+    print_argument_list = app.configuration.extract_input_arg_list(arguments_str)
+    argument_list = app.configuration.extract_input_arg_list(arguments_str)
     generalized_arg_list = []
     seed_file = None
     for arg in print_argument_list:
@@ -22,7 +23,7 @@ def get_concrete_values(argument_list, output_dir_path, test_case_id, program_pa
             generalized_arg_list.append(arg)
     emitter.highlight("\tUsing Arguments: " + str(generalized_arg_list))
     emitter.highlight("\tUsing Input File: " + str(seed_file))
-    emitter.debug("input list in test case:" + argument_list)
+    emitter.debug("input list in test case:" + arguments_str)
     if not values.CONF_SKIP_BUILD and not values.DEFAULT_USE_CACHE:
         builder.build_normal()
         if values.CONF_PATH_PROGRAM:
@@ -55,8 +56,9 @@ def get_concrete_values(argument_list, output_dir_path, test_case_id, program_pa
     values.POINTER_TRACK_CONCRETE = reader.read_pointer_values(pointer_track_log)
     return taint_values_concrete, state_value_map, concrete_crash
 
-def get_tainted_values(argument_list, program_path, output_dir_path, test_case_id):
+def get_tainted_values(arguments_str, program_path, output_dir_path, test_case_id):
     emitter.sub_sub_title("Running Concolic Execution")
+    argument_list = app.configuration.extract_input_arg_list(arguments_str)
     generalized_arg_list = []
     second_var_list = list()
     poc_path = None
@@ -326,7 +328,6 @@ def analyze():
     for argument_list in test_input_list[:count_inputs - count_seeds]:
         test_case_id = test_case_id + 1
         emitter.sub_title("Test Case #" + str(test_case_id))
-        argument_list = app.configuration.extract_input_arg_list(argument_list)
         if values.LIST_TEST_BINARY:
             program_path = values.LIST_TEST_BINARY[test_case_id - 1]
             values.CONF_PATH_PROGRAM = program_path
