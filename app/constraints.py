@@ -619,10 +619,8 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
         ptr_expr = generate_expr_for_ast(ptr_node)
         sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
 
-        base_op = build_op_symbol("base ")
-        base_expr = make_unary_expression(base_op, ptr_expr)
-        diff_op = build_op_symbol("-")
-        diff_expr = make_binary_expression(diff_op, ptr_expr, base_expr)
+        diff_op = build_op_symbol("diff ")
+        diff_expr = make_unary_expression(diff_op, ptr_expr)
         lte_op = build_op_symbol("<=")
         constraint_expr = make_binary_expression(lte_op, diff_expr, sizeof_expr)
 
