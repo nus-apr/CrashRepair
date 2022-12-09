@@ -53,6 +53,7 @@ SymbolType = {
 
     "NULL_VAL": "null",
     "OP_SIZE_OF": "sizeof ",
+    "OP_DIFF": "diff",
     "OP_BASE": "base "
 }
 
@@ -126,6 +127,9 @@ class ConstraintSymbol:
     def is_sizeof(self):
         return self._m_cons_type == "OP_SIZE_OF"
 
+    def is_diff(self):
+        return self._m_cons_type == "OP_DIFF"
+
     def is_base(self):
         return self._m_cons_type == "OP_BASE"
 
@@ -136,6 +140,7 @@ class ConstraintSymbol:
 class ConstraintExpression:
     _m_symbol: ConstraintSymbol
     _m_sizeof_mapping: t.Optional[ConstraintExpression]
+    _m_diff_mapping:t.Optional[ConstraintExpression]
     _m_base_mapping: t.Optional[ConstraintExpression]
     _m_lvalue: t.Optional[ConstraintExpression]
     _m_rvalue: t.Optional[ConstraintExpression]
@@ -150,6 +155,7 @@ class ConstraintExpression:
         self._m_lvalue = l_expr
         self._m_rvalue = r_expr
         self._m_sizeof_mapping = None
+        self._m_diff_mapping = None
         self._m_base_mapping = None
 
     def get_type(self) -> str:
@@ -202,6 +208,12 @@ class ConstraintExpression:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
 
+        if self._m_symbol.is_diff():
+            resolved_expr = self.get_diff()
+            if resolved_expr is not None:
+                return resolved_expr.to_string()
+            return f"({expr_str} {rhs_str})"
+
         if self._m_symbol.is_base():
             resolved_expr = self.get_base()
             if resolved_expr is not None:
@@ -232,6 +244,12 @@ class ConstraintExpression:
                 return resolved_expr.to_expression()
             return f"({expr_str} {rhs_str})"
 
+        if self._m_symbol.is_diff():
+            resolved_expr = self.get_diff()
+            if resolved_expr is not None:
+                return resolved_expr.to_expression()
+            return f"({expr_str} {rhs_str})"
+
         if self._m_symbol.is_base():
             resolved_expr = self.get_base()
             if resolved_expr is not None:
@@ -254,6 +272,8 @@ class ConstraintExpression:
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
             return [self.to_string()]
+        elif self._m_symbol.is_diff():
+            return [self.to_string()]
         elif self._m_symbol.is_base():
             return [self.to_string()]
         if self._m_lvalue:
@@ -264,6 +284,9 @@ class ConstraintExpression:
 
     def get_sizeof(self):
         return self._m_sizeof_mapping
+
+    def get_diff(self):
+        return self._m_diff_mapping
 
     def get_base(self):
         return self._m_base_mapping
@@ -285,6 +308,23 @@ class ConstraintExpression:
                     mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
 
+    def resolve_diff(self, symbolic_mapping):
+        if self._m_symbol.is_diff():
+            symbol_name = self.to_string()
+            if symbol_name in symbolic_mapping:
+                mapping = symbolic_mapping[symbol_name]
+                # assumption: mapping is either constant or variable, not an expression i.e. a+b
+                if str(mapping).isnumeric():
+                    mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
+                    self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
+                elif isinstance(mapping, dict):
+                    constant = str(int(mapping["size"]/ int(mapping["width"])))
+                    mapped_symbol = make_constraint_symbol(constant, "INT_CONST")
+                    self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
+                else:
+                    mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
+                    self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
+
     def resolve_base(self, symbolic_mapping):
         if self._m_symbol.is_base():
             symbol_name = self.to_string()
@@ -305,6 +345,8 @@ class ConstraintExpression:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
         elif self._m_symbol.is_sizeof():
             self.resolve_sizeof(symbol_mapping)
+        elif self._m_symbol.is_diff():
+            self.resolve_diff(symbol_mapping)
         elif self._m_symbol.is_base():
             self.resolve_base(symbol_mapping)
 
