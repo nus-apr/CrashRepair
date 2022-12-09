@@ -314,16 +314,14 @@ def identify_sources(var_info):
     for var_name in var_info:
         sym_expr_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
-        if var_type == "integer":
-            byte_list = []
-            for sym_expr in sym_expr_list:
-                var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-                byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
-            byte_list = list(set(byte_list))
-            taint_byte_list = taint_byte_list + byte_list
-            tainted_bytes = sorted([str(i) for i in byte_list])
-            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_bytes)))
-        else:
+        byte_list = []
+        for sym_expr in sym_expr_list:
+            var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
+            byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+        byte_list = list(set(byte_list))
+        taint_byte_list = taint_byte_list + byte_list
+        taint_sources = sorted([str(i) for i in byte_list])
+        if var_type == "pointer":
             memory_list = []
             value_list = var_info[var_name]["expr_list"]
             for expr in value_list:
@@ -335,8 +333,8 @@ def identify_sources(var_info):
             memory_list = list(set(memory_list))
             taint_memory_list = taint_memory_list + memory_list
             tainted_addresses = sorted([str(i) for i in memory_list])
-            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(tainted_addresses)))
-
+            taint_sources = taint_sources + tainted_addresses
+        emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
     taint_byte_list = list(set(taint_byte_list))
     taint_memory_list = list(set(taint_memory_list))
     return taint_byte_list, taint_memory_list
