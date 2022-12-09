@@ -142,7 +142,7 @@ def get_crash_values(argument_list, program_path):
         v_info["expr_list"] = []
         var_info[v_name] = v_info
         v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
-        if "sizeof " in v_name or "base " in v_name:
+        if "sizeof " in v_name or "base " in v_name or "diff " in v_name:
             v_name = v_name.split(" ")[-1].replace(")", "")
         var_loc_map[v_loc] = v_name
 
@@ -259,7 +259,8 @@ def get_sizeof_pointer(base_address, memory_track):
 
 def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
     base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-    diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_address)
+    base_expr = "(_ bv{} 64)".format(base_address)
+    diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
     return diff_expr
 
 
@@ -296,6 +297,7 @@ def pointer_analysis(var_info, memory_track, pointer_track):
 
         elif "diff " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
+
             diff_expr = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
