@@ -10,7 +10,19 @@ from app import emitter, utilities, definitions, values, builder, \
 
 
 def get_concrete_values(argument_list, output_dir_path, test_case_id, program_path):
-    emitter.sub_sub_title("Running Sanitized Analysis")
+    emitter.sub_sub_title("Running Concrete Execution")
+    print_argument_list = app.configuration.extract_input_arg_list(argument_list)
+    generalized_arg_list = []
+    seed_file = None
+    for arg in print_argument_list:
+        if arg in (list(values.LIST_SEED_FILES.values()) + list(values.LIST_TEST_FILES.values())):
+            generalized_arg_list.append("$POC")
+            seed_file = arg
+        else:
+            generalized_arg_list.append(arg)
+    emitter.highlight("\tUsing Arguments: " + str(generalized_arg_list))
+    emitter.highlight("\tUsing Input File: " + str(seed_file))
+    emitter.debug("input list in test case:" + argument_list)
     if not values.CONF_SKIP_BUILD and not values.DEFAULT_USE_CACHE:
         builder.build_normal()
         if values.CONF_PATH_PROGRAM:
@@ -30,6 +42,8 @@ def get_concrete_values(argument_list, output_dir_path, test_case_id, program_pa
     values.TIME_CONCRETE_RUN = format((concrete_start - concrete_end) / 60, '.3f')
     # set location of bug/crash
     values.IS_CRASH = False
+    c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
+    concrete_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
     taint_log_path = klee_concrete_out_dir + "/taint.log"
 
     # Retrieve concrete values from the taint.log file.
@@ -39,10 +53,10 @@ def get_concrete_values(argument_list, output_dir_path, test_case_id, program_pa
     values.MEMORY_TRACK_CONCRETE = reader.read_memory_values(memory_track_log)
     pointer_track_log = klee_concrete_out_dir + "/pointer.log"
     values.POINTER_TRACK_CONCRETE = reader.read_pointer_values(pointer_track_log)
-    return taint_values_concrete, state_value_map
-
+    return taint_values_concrete, state_value_map, concrete_crash
 
 def get_tainted_values(argument_list, program_path, output_dir_path, test_case_id):
+    emitter.sub_sub_title("Running Concolic Execution")
     generalized_arg_list = []
     second_var_list = list()
     poc_path = None
@@ -59,8 +73,6 @@ def get_tainted_values(argument_list, program_path, output_dir_path, test_case_i
 
     emitter.highlight("\tUsing Arguments: " + str(generalized_arg_list))
     emitter.highlight("\tUsing Input File: " + str(poc_path))
-
-    emitter.sub_sub_title("Running Taint Analysis")
     if not values.DEFAULT_USE_CACHE:
         builder.build_normal()
     extractor.extract_byte_code(program_path)
@@ -77,7 +89,12 @@ def get_tainted_values(argument_list, program_path, output_dir_path, test_case_i
                                             second_var_list,
                                             True,
                                             klee_taint_out_dir)
-
+    c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
+    concolic_crash = None
+    if c_type is not None:
+        concolic_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
+    if c_type is None:
+        return None, concolic_crash
     taint_log_path = klee_taint_out_dir + "/taint.log"
     taint_end = time.time()
     values.TIME_TAINT_ANALYSIS = format((taint_end - taint_start) / 60, '.3f')
@@ -87,7 +104,7 @@ def get_tainted_values(argument_list, program_path, output_dir_path, test_case_i
     values.MEMORY_TRACK_SYMBOLIC = reader.read_memory_values(memory_track_log)
     pointer_track_log = klee_taint_out_dir + "/pointer.log"
     values.POINTER_TRACK_SYMBOLIC = reader.read_pointer_values(pointer_track_log)
-    return taint_values_symbolic
+    return taint_values_symbolic, concolic_crash
 
 
 def get_crash_values(argument_list, program_path):
@@ -307,20 +324,8 @@ def analyze():
     count_seeds = len(values.LIST_SEED_INPUT)
     count_inputs = len(test_input_list)
     for argument_list in test_input_list[:count_inputs - count_seeds]:
-        print_argument_list = app.configuration.extract_input_arg_list(argument_list)
-        generalized_arg_list = []
-        seed_file = None
         test_case_id = test_case_id + 1
-        for arg in print_argument_list:
-            if arg in (list(values.LIST_SEED_FILES.values()) + list(values.LIST_TEST_FILES.values())):
-                generalized_arg_list.append("$POC")
-                seed_file = arg
-            else:
-                generalized_arg_list.append(arg)
         emitter.sub_title("Test Case #" + str(test_case_id))
-        emitter.highlight("\tUsing Arguments: " + str(generalized_arg_list))
-        emitter.highlight("\tUsing Input File: " + str(seed_file))
-        emitter.debug("input list in test case:" + argument_list)
         argument_list = app.configuration.extract_input_arg_list(argument_list)
         if values.LIST_TEST_BINARY:
             program_path = values.LIST_TEST_BINARY[test_case_id - 1]
@@ -328,25 +333,20 @@ def analyze():
         else:
             program_path = values.CONF_PATH_PROGRAM
 
-        taint_values_concrete, state_values = get_concrete_values(argument_list,
-                                                                  output_dir_path,
-                                                                  test_case_id,
-                                                                  program_path)
-
-        c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
-        concrete_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
+        taint_values_concrete, state_values, concrete_crash = get_concrete_values(argument_list,
+                                                                                  output_dir_path,
+                                                                                  test_case_id,
+                                                                                  program_path)
         crash_info = get_crash_values(argument_list, program_path)
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
         con_var_info = pointer_analysis(crash_var_concrete_info,
                                         values.MEMORY_TRACK_CONCRETE,
                                         values.POINTER_TRACK_CONCRETE)
 
-        taint_values_symbolic = get_tainted_values(argument_list, program_path, output_dir_path, test_case_id)
-        c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
-        concolic_crash = None
-        if c_type is not None:
-            concolic_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
-
+        taint_values_symbolic, concolic_crash = get_tainted_values(argument_list,
+                                                                   program_path,
+                                                                   output_dir_path,
+                                                                   test_case_id)
         var_info = con_var_info
         value_map = taint_values_concrete
         if concolic_crash == concrete_crash:
