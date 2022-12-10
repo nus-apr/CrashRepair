@@ -351,25 +351,25 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
         candidate_cfc, candidate_line, candidate_col = candidate_constraint
         candidate_loc = (candidate_line, candidate_col)
         if candidate_loc in expression_string_list:
-            expression_str = expression_string_list[candidate_loc]
+            expression_str, data_type = expression_string_list[candidate_loc]
             cfc_rhs_str = candidate_cfc.get_r_expr().to_expression()
             cfc_lhs_str = candidate_cfc.get_l_expr().to_expression()
             # print("CANDIDATE", candidate_loc)
             # print(cfc_lhs_str)
             # print(cfc_rhs_str)
             # print(expression_str)
-            if "sizeof " not in cfc_lhs_str:
+            if "sizeof " not in cfc_lhs_str and "diff " not in cfc_rhs_str:
                 if oracle.is_expression_equal(cfc_lhs_str, expression_str):
                     # print("MATCH LHS", localized_cfc.to_string(), expression_str)
-                    result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
+                    result_symbol = constraints.make_constraint_symbol(expression_str, data_type)
                     result_expr = constraints.make_symbolic_expression(result_symbol)
                     candidate_cfc.set_l_expr(result_expr)
                     updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))
                     continue
-            if "sizeof " not in cfc_rhs_str:
+            if "sizeof " not in cfc_rhs_str and "diff " not in cfc_rhs_str:
                 if oracle.is_expression_equal(cfc_rhs_str, expression_str):
                     # print("MATCH RHS", localized_cfc.to_string(), expression_str)
-                    result_symbol = constraints.make_constraint_symbol(expression_str, "RESULT_INT")
+                    result_symbol = constraints.make_constraint_symbol(expression_str, data_type)
                     result_expr = constraints.make_symbolic_expression(result_symbol)
                     candidate_cfc.set_r_expr(result_expr)
                     updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))

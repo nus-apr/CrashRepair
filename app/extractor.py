@@ -1034,12 +1034,14 @@ def extract_expression_list(ast_node, src_file):
         expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
     return list(set(expression_list))
 
+
 def extract_expression_string_list(ast_node, src_file):
     expression_list = dict()
     binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/"])
     array_access_list = extract_array_subscript_node_list(ast_node)
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node)
+    ref_node_list = extract_reference_node_list(ast_node)
     for subscript_node in array_access_list:
         index_node = subscript_node["inner"][1]
         # expression_str = converter.convert_node_to_str(index_node)
@@ -1049,8 +1051,12 @@ def extract_expression_string_list(ast_node, src_file):
             continue
         expression_index = (expression_loc[1], expression_loc[2])
         # expression_list[expression_index] = expression_str
-    for ast_node in (binary_op_list + unary_op_list + initialize_op_list):
+    for ast_node in (binary_op_list + unary_op_list + initialize_op_list + ref_node_list):
         op_code = None
+        data_type = extract_data_type(ast_node)
+        result_type = "RESULT_INT"
+        if "*" in data_type or "[" in data_type:
+            result_type = "RESULT_PTR"
         if "opcode" in ast_node:
             op_code = ast_node["opcode"]
             if op_code == "=":
@@ -1069,7 +1075,7 @@ def extract_expression_string_list(ast_node, src_file):
         if expression_loc is None:
             continue
         expression_index = (expression_loc[1], expression_loc[2])
-        expression_list[expression_index] = expression_str
+        expression_list[expression_index] = (expression_str, result_type)
     return expression_list
 
 def extract_data_type(ast_node):
