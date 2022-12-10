@@ -426,7 +426,6 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
             if is_prefix:
                 symbol_str = op_symbol_str + str(child_ast["referencedDecl"]["name"])
             else:
-                converter.get_node_value()
                 symbol_str = str(child_ast["referencedDecl"]["name"]) + op_symbol_str
             data_type = extractor.extract_data_type(ast_node)
             op_type = "INT_VAR"
@@ -625,27 +624,35 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                     got_pointer = True
             ptr_node = reference_node["inner"][0]
 
-            # Special Case
-            # check if base pointer exists
-            # Hack: access memory info
-            # TODO: Refactor properly to get this information
-            crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(int(crash_address)-1) + " "])
-            pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
-            crash_pointer = pointer_list[-1].replace("pointer:", "")
-            base_pointer = analyzer.get_base_address(crash_pointer,
-                                                     values.MEMORY_TRACK_CONCRETE,
-                                                     values.POINTER_TRACK_CONCRETE)
-            if base_pointer is None:
-                base_ptr_node = ptr_node["inner"][0]
-                ptr_expr = generate_expr_for_ast(base_ptr_node)
-                null_symbol = make_constraint_symbol("NULL", "PTR")
-                null_expr = make_symbolic_expression(null_symbol)
-                neq_op = build_op_symbol("!=")
-                constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
-                return constraint_expr
         else:
             print(reference_node)
             utilities.error_exit("Unknown AST Type in function generate_memory_overflow_constraint")
+
+        # Special Case Overflow with Struct Pointer Type when base is NULL
+        # check if base pointer exists
+        # Hack: access memory info
+        # TODO: Refactor properly to get this information
+        src_file, crash_l, crash_c = crash_loc
+        crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(int(crash_address) - 1) + " "])
+        pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
+        crash_pointer = pointer_list[-1].replace("pointer:", "")
+        base_pointer = analyzer.get_base_address(crash_pointer,
+                                                 values.MEMORY_TRACK_CONCRETE,
+                                                 values.POINTER_TRACK_CONCRETE)
+        if base_pointer is None:
+            member_expr_node = None
+            while member_expr_node is None:
+                ptr_node_type = ptr_node["kind"]
+                if ptr_node_type == "MemberExpr":
+                    member_expr_node = ptr_node
+                ptr_node = ptr_node["inner"][0]
+            base_ptr_node = member_expr_node["inner"][0]
+            ptr_expr = generate_expr_for_ast(base_ptr_node)
+            null_symbol = make_constraint_symbol("NULL", "PTR")
+            null_expr = make_symbolic_expression(null_symbol)
+            neq_op = build_op_symbol("!=")
+            constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
+            return constraint_expr
 
         sizeof_op = build_op_symbol("sizeof ")
         ptr_expr = generate_expr_for_ast(ptr_node)

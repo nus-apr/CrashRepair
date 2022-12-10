@@ -1053,6 +1053,9 @@ def extract_expression_string_list(ast_node, src_file):
         # expression_list[expression_index] = expression_str
     for ast_node in (binary_op_list + unary_op_list + initialize_op_list + ref_node_list):
         op_code = None
+        ast_type = ast_node["kind"]
+        if ast_type in ["GotoStmt"]:
+            continue
         data_type = extract_data_type(ast_node)
         result_type = "RESULT_INT"
         if "*" in data_type or "[" in data_type:
