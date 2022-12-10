@@ -424,7 +424,18 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
             if is_prefix:
                 symbol_str = op_symbol_str + str(child_ast["referencedDecl"]["name"])
             else:
+                converter.get_node_value()
                 symbol_str = str(child_ast["referencedDecl"]["name"]) + op_symbol_str
+            data_type = extractor.extract_data_type(ast_node)
+            op_type = "INT_VAR"
+            if "*" in data_type or "[" in data_type:
+                op_type = "PTR"
+            constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+            constraint_expr = make_symbolic_expression(constraint_symbol)
+            return constraint_expr
+        elif op_symbol_str in ["&"]:
+            child_ast = ast_node["inner"][0]
+            symbol_str = op_symbol_str + converter.get_node_value(child_ast)
             data_type = extractor.extract_data_type(ast_node)
             op_type = "INT_VAR"
             if "*" in data_type or "[" in data_type:

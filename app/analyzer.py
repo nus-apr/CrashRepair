@@ -2,7 +2,7 @@ from ast import Or
 import collections
 import time
 import os
-from typing import OrderedDict
+import re
 import app.configuration
 import app.utilities
 from app import emitter, utilities, definitions, values, builder, \
@@ -143,7 +143,9 @@ def get_crash_values(argument_list, program_path):
         var_info[v_name] = v_info
         v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
         if "sizeof " in v_name or "base " in v_name or "diff " in v_name:
-            v_name = v_name.split(" ")[-1].replace(")", "")
+            search_ex = re.search(r'pointer, (.*)\)\)', v_name)
+            v_name = search_ex.group(1)
+            #v_name = v_name.split(" ")[-1].replace(")", "")
         var_loc_map[v_loc] = v_name
 
     crash_info["var-info"] = var_info

@@ -1139,7 +1139,8 @@ def get_var_list(ast_var_list, cfc, crash_loc):
 
     for symbol in cfc_symbol_list:
         if "sizeof " in symbol or "base " in symbol or "diff " in symbol:
-            symbol_ptr = symbol.split(" ")[3].replace(")", "")
+            search_ex = re.search(r'pointer, (.*)\)\)', symbol)
+            symbol_ptr = search_ex.group(1)
             for var_node in ast_var_list:
                 var_name = var_node[0]
                 if var_name == symbol_ptr:
