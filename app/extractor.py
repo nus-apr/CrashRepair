@@ -218,7 +218,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     # function_node_list = extract_function_node_list(ast_tree)
     c_func_name, crash_func_ast = extract_func_ast(c_file, c_line)
     c_loc = ":".join([c_file, c_line, c_column])
-    cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc)
+    cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc, c_address)
     var_name_list = sorted([x[0] for x in var_list])
     c_details = definitions.CRASH_TYPE_MESSAGE[c_type]
     emitter.highlight("\t\t[info] crash type: {}".format(c_details))
@@ -427,7 +427,7 @@ def extract_ast_var_list(ast_node, file_path):
     return sorted_var_list
 
 
-def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
+def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_address):
     cfc = None
     var_list = []
     src_file, line_num, column_num = crash_loc_str.split(":")
@@ -514,7 +514,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
         ast_var_list = extract_ast_var_list(target_ast, src_file)
-        cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc)
+        cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc, crash_address)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
 
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:

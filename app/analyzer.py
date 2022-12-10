@@ -49,12 +49,14 @@ def get_concrete_values(arguments_str, output_dir_path, test_case_id, program_pa
 
     # Retrieve concrete values from the taint.log file.
     taint_values_concrete = reader.read_tainted_expressions(taint_log_path)
+    values.VALUE_TRACK_CONCRETE = taint_values_concrete
     state_value_map = reader.read_state_values(taint_log_path)
     memory_track_log = klee_concrete_out_dir + "/memory.log"
     values.MEMORY_TRACK_CONCRETE = reader.read_memory_values(memory_track_log)
     pointer_track_log = klee_concrete_out_dir + "/pointer.log"
     values.POINTER_TRACK_CONCRETE = reader.read_pointer_values(pointer_track_log)
     return taint_values_concrete, state_value_map, concrete_crash
+
 
 def get_tainted_values(arguments_str, program_path, output_dir_path, test_case_id):
     emitter.sub_sub_title("Running Concolic Execution")
@@ -102,6 +104,7 @@ def get_tainted_values(arguments_str, program_path, output_dir_path, test_case_i
     values.TIME_TAINT_ANALYSIS = format((taint_end - taint_start) / 60, '.3f')
     # Retrieve symbolic expressions from taint.log of concolic run.
     taint_values_symbolic = reader.read_tainted_expressions(taint_log_path)
+    values.VALUE_TRACK_SYMBOLIC = taint_values_symbolic
     memory_track_log = klee_taint_out_dir + "/memory.log"
     values.MEMORY_TRACK_SYMBOLIC = reader.read_memory_values(memory_track_log)
     pointer_track_log = klee_taint_out_dir + "/pointer.log"

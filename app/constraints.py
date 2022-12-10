@@ -5,7 +5,7 @@ from sympy import sympify
 import os
 import typing as t
 
-from app import emitter, utilities, converter, extractor
+from app import values, utilities, converter, extractor, analyzer
 
 SymbolType = {
     "INT_CONST": "",
@@ -579,7 +579,7 @@ def generate_type_overflow_constraint(ast_node):
     return constraint_expr
 
 
-def generate_memory_overflow_constraint(reference_node, crash_loc):
+def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address):
     ref_node_type = reference_node["kind"]
     if ref_node_type == "ArraySubscriptExpr":
         array_node = reference_node["inner"][0]
@@ -615,12 +615,32 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
             got_pointer = False
             src_file, crash_l, crash_c = crash_loc
             while not got_pointer:
-                node_end_loc = int(reference_node["range"]["end"]["col"]) + int(reference_node["range"]["end"]["tokLen"])
+                node_end_loc = int(reference_node["range"]["end"]["col"]) + \
+                               int(reference_node["range"]["end"]["tokLen"])
                 if node_end_loc >= crash_c:
                     reference_node = reference_node["inner"][0]
                 else:
                     got_pointer = True
             ptr_node = reference_node["inner"][0]
+
+            # Special Case
+            # check if base pointer exists
+            # Hack: access memory info
+            # TODO: Refactor properly to get this information
+            crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(crash_address-1) + " "])
+            pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
+            crash_pointer = pointer_list[-1].replace("pointer:", "")
+            base_pointer = analyzer.get_base_address(crash_pointer,
+                                                     values.MEMORY_TRACK_CONCRETE,
+                                                     values.POINTER_TRACK_CONCRETE)
+            if base_pointer is None:
+                base_ptr_node = ptr_node["inner"][0]
+                ptr_expr = generate_expr_for_ast(base_ptr_node)
+                null_symbol = make_constraint_symbol("NULL", "PTR")
+                null_expr = make_symbolic_expression(null_symbol)
+                neq_op = build_op_symbol("!=")
+                constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
+                return constraint_expr
         else:
             print(reference_node)
             utilities.error_exit("Unknown AST Type in function generate_memory_overflow_constraint")
