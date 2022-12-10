@@ -268,6 +268,8 @@ class ConstraintExpression:
 
     def get_symbol_list(self):
         symbol_list = []
+        if self._m_symbol.is_null():
+            return []
         if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
