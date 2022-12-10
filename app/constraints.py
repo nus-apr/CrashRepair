@@ -634,7 +634,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         # TODO: Refactor properly to get this information
         src_file, crash_l, crash_c = crash_loc
         crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(int(crash_address) - 1) + " "])
-        if crash_logical_loc in values.POINTER_TRACK_CONCRETE:
+        if crash_logical_loc in values.VALUE_TRACK_CONCRETE:
             pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
             if pointer_list:
                 crash_pointer = pointer_list[-1].replace("pointer:", "")
