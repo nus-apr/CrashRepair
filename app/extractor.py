@@ -420,9 +420,8 @@ def extract_ast_var_list(ast_node, file_path):
     variable_list = list(set(var_ref_list + var_dec_list))
     if 'inner' in ast_node:
         for child_node in ast_node['inner']:
-            child_var_dec_list = extract_var_dec_list(child_node, file_path)
-            child_var_ref_list = extract_var_ref_list(child_node, file_path)
-            variable_list = list(set(variable_list + child_var_ref_list + child_var_dec_list))
+            child_var_list = extract_ast_var_list(child_node, file_path)
+            variable_list = list(set(variable_list + child_var_list))
     sorted_var_list = sorted(list(set(variable_list)), key=lambda x: x[1], reverse=True)
     return sorted_var_list
 
