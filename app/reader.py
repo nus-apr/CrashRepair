@@ -501,7 +501,7 @@ def read_pointer_values(pointer_log_path):
             for line in track_file:
                 if 'KLEE: PointerTrack:' in line:
                     line = line.replace("KLEE: PointerTrack:", "").strip()
-                    source_loc = line.split(" ")[3]
+                    source_loc = line.split(" ")[0]
                     pointer = line.split(" : ")[-1]
                     if "BASE" in line:
                         pointer_stack.append(pointer)
