@@ -627,7 +627,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
             # check if base pointer exists
             # Hack: access memory info
             # TODO: Refactor properly to get this information
-            crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(crash_address-1) + " "])
+            crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(int(crash_address)-1) + " "])
             pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
             crash_pointer = pointer_list[-1].replace("pointer:", "")
             base_pointer = analyzer.get_base_address(crash_pointer,
