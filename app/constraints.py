@@ -634,29 +634,30 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         # TODO: Refactor properly to get this information
         src_file, crash_l, crash_c = crash_loc
         crash_logical_loc = ":".join([src_file, str(crash_l), str(crash_c), str(int(crash_address) - 1) + " "])
-        pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
-        if pointer_list:
-            crash_pointer = pointer_list[-1].replace("pointer:", "")
-            base_pointer = analyzer.get_base_address(crash_pointer,
-                                                     values.MEMORY_TRACK_CONCRETE,
-                                                     values.POINTER_TRACK_CONCRETE)
-            if base_pointer is None:
-                member_expr_node = None
-                while member_expr_node is None:
-                    ptr_node_type = ptr_node["kind"]
-                    if ptr_node_type == "MemberExpr":
-                        member_expr_node = ptr_node
-                    if "inner" not in ptr_node:
-                        break
-                    ptr_node = ptr_node["inner"][0]
-                if member_expr_node:
-                    base_ptr_node = member_expr_node["inner"][0]
-                    ptr_expr = generate_expr_for_ast(base_ptr_node)
-                    null_symbol = make_constraint_symbol("NULL", "PTR")
-                    null_expr = make_symbolic_expression(null_symbol)
-                    neq_op = build_op_symbol("!=")
-                    constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
-                    return constraint_expr
+        if crash_logical_loc in values.POINTER_TRACK_CONCRETE:
+            pointer_list = values.VALUE_TRACK_CONCRETE[crash_logical_loc]
+            if pointer_list:
+                crash_pointer = pointer_list[-1].replace("pointer:", "")
+                base_pointer = analyzer.get_base_address(crash_pointer,
+                                                         values.MEMORY_TRACK_CONCRETE,
+                                                         values.POINTER_TRACK_CONCRETE)
+                if base_pointer is None:
+                    member_expr_node = None
+                    while member_expr_node is None:
+                        ptr_node_type = ptr_node["kind"]
+                        if ptr_node_type == "MemberExpr":
+                            member_expr_node = ptr_node
+                        if "inner" not in ptr_node:
+                            break
+                        ptr_node = ptr_node["inner"][0]
+                    if member_expr_node:
+                        base_ptr_node = member_expr_node["inner"][0]
+                        ptr_expr = generate_expr_for_ast(base_ptr_node)
+                        null_symbol = make_constraint_symbol("NULL", "PTR")
+                        null_expr = make_symbolic_expression(null_symbol)
+                        neq_op = build_op_symbol("!=")
+                        constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
+                        return constraint_expr
 
         sizeof_op = build_op_symbol("sizeof ")
         ptr_expr = generate_expr_for_ast(ptr_node)
