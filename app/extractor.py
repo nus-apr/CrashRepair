@@ -508,7 +508,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
                             is_arrow = ref_node["isArrow"]
                         if oracle.is_loc_in_range(crash_loc, ref_node["range"], is_arrow):
                             target_ast = ref_node
-
+                            break
 
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
@@ -516,7 +516,6 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str):
         ast_var_list = extract_ast_var_list(target_ast, src_file)
         cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
-
 
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
         # check for memory write nodes if not found check for memory access nodes

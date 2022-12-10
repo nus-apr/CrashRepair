@@ -605,7 +605,6 @@ def generate_memory_overflow_constraint(reference_node, crash_loc):
         logic_and_op = build_op_symbol("&&")
         constraint_expr = make_binary_expression(logic_and_op, upper_bound_expr, lower_bound_expr)
 
-
     else:
         ptr_node = None
         if ref_node_type == "DeclRefExpr":
