@@ -181,6 +181,13 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
+                        elif var_expr == crash_var_expr and crash_var_name == expr_str:
+                            if crash_var_name not in candidate_mapping:
+                                candidate_mapping[crash_var_name] = set()
+                            logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                            logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                            logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
+                            candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
                             crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
                             if "width" in crash_var_expr_list:
@@ -193,7 +200,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                 if "bv" in var_expr:
                                     var_size_bytes = int(var_expr.split(" ")[1].replace("bv", ""))
 
-                                if var_size_bytes == crash_size_bytes:
+                                if var_size_bytes == crash_size_bytes :
                                     if crash_var_name not in candidate_mapping:
                                         candidate_mapping[crash_var_name] = set()
                                     candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
@@ -203,6 +210,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
                                 logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                                 logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
+
                     elif var_input_byte_list == crash_var_input_byte_list:
                         z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
                                                                                 crash_var_sym_expr_code)

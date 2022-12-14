@@ -254,15 +254,15 @@ def get_sizeof_pointer(base_address, memory_track, static_size):
     if base_address in memory_track:
         alloc_info = memory_track[base_address]
         sym_size_expr = alloc_info["sym_size"]
+        concrete_value = alloc_info["con_size"]
         if "A-data" in sym_size_expr or "arg" in sym_size_expr:
             sizeof_expr_list = [sym_size_expr]
-        elif static_size:
+        elif static_size and str(static_size).isnumeric():
             sizeof_expr_list = {"width": "1", "con_size": static_size}
+            concrete_value = static_size
         else:
             sym_size_val = sym_size_expr.split(" ")[1].replace("bv", "")
             sizeof_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
-
-        concrete_value = alloc_info["con_size"]
     return sizeof_expr_list, concrete_value
 
 
