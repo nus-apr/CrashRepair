@@ -101,7 +101,7 @@ def get_node_value(ast_node):
     elif ast_type == "CallExpr":
         ast_value = convert_call_expr(ast_node, True)
     elif ast_type == "UnaryExprOrTypeTraitExpr":
-        ast_value = ""
+        ast_value = convert_unaryexprortypetraitexpr_to_expr(ast_node, True)
     elif ast_type == "UnaryOperator":
         ast_value = convert_unary_node_to_expr(ast_node, True)
     elif ast_type == "ConditionalOperator":
