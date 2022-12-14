@@ -1060,7 +1060,7 @@ def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
     code += var_dec_b + "\n"
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
-    code += "(assert (= " + var_name_a + " " + var_name_b + "))\n"
+    code += "(assert (not (= " + var_name_a + " " + var_name_b + ")))\n"
     code += "(check-sat)"
     return code
 
