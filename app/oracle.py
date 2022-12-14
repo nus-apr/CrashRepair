@@ -1,6 +1,6 @@
 import os
 
-from app import definitions, values, emitter, extractor, logger, utilities
+from app import definitions, values, emitter, extractor, logger, utilities, generator
 from pysmt.shortcuts import is_sat, Not, And, is_unsat
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
@@ -249,6 +249,9 @@ def is_expression_equal(str_a, str_b):
         return False
     return expr_a == expr_b
 
+def is_equivalent(expr_a, expr_b):
+    z3_eq_code = generator.generate_z3_code_for_equivalence(expr_a, expr_b)
+    return not is_satisfiable(z3_eq_code)
 
 def is_satisfiable(z3_code):
     parser = SmtLibParser()

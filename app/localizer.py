@@ -212,9 +212,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                 logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
 
                     elif var_input_byte_list == crash_var_input_byte_list:
-                        z3_eq_code = generator.generate_z3_code_for_equivalence(var_sym_expr_code,
-                                                                                crash_var_sym_expr_code)
-                        if oracle.is_satisfiable(z3_eq_code):
+                        if oracle.is_equivalent(var_sym_expr_code, crash_var_sym_expr_code):
                             found_mapping = True
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
@@ -228,17 +226,18 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             if oracle.is_satisfiable(z3_offset_code):
                                 found_mapping = True
                                 offset = solver.get_offset(z3_offset_code)
-                                if len(str(offset)) > 16:
-                                    number = offset & 0xFFFFFFFF
-                                    offset = ctypes.c_long(number).value
-                                if offset < 1000:
-                                    mapping = "({} - {})".format(expr_str, offset)
-                                    if crash_var_name not in candidate_mapping:
-                                        candidate_mapping[crash_var_name] = set()
-                                    logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
-                                    logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
-                                    logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
-                                    candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
+                                if offset:
+                                    if len(str(offset)) > 16:
+                                        number = offset & 0xFFFFFFFF
+                                        offset = ctypes.c_long(number).value
+                                    if offset < 1000:
+                                        mapping = "({} - {})".format(expr_str, offset)
+                                        if crash_var_name not in candidate_mapping:
+                                            candidate_mapping[crash_var_name] = set()
+                                        logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                                        logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                        logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
+                                        candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
                     elif var_input_byte_list and set(var_input_byte_list) <= set(crash_var_input_byte_list):
                         subset_expr_list.append((expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list))
 
