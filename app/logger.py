@@ -127,9 +127,8 @@ def end(time_duration, is_error=False):
     output("\nTime duration\n----------------------\n\n")
     output("Startup: " + str(time_duration[definitions.KEY_DURATION_BOOTSTRAP]) + " minutes")
     output("Build: " + str(time_duration[definitions.KEY_DURATION_BUILD]) + " minutes")
-    output("Sanitizer Run: " + str(time_duration[definitions.KEY_DURATION_SANITIZER]) + " minutes")
-    output("Concolic Run: " + str(time_duration[definitions.KEY_DURATION_CONCOLIC]) + " minutes")
-    output("Taint Run: " + str(time_duration[definitions.KEY_DURATION_TAINT]) + " minutes")
+    output("Concrete Analysis: " + str(time_duration[definitions.KEY_DURATION_CONCRETE]) + " minutes")
+    output("Concolic Analysis: " + str(time_duration[definitions.KEY_DURATION_CONCOLIC]) + " minutes")
     output("Total Analysis: " + str(time_duration[definitions.KEY_DURATION_ANALYSIS]) + " minutes")
     output("Localization: " + str(time_duration[definitions.KEY_DURATION_LOCALIZATION]) + " minutes")
 
