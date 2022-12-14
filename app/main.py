@@ -83,8 +83,7 @@ def run(arg_list):
     duration = format((time.time() - time_check) / 60, '.3f')
     time_info[definitions.KEY_DURATION_ANALYSIS] = str(duration)
     time_info[definitions.KEY_DURATION_CONCOLIC] = values.TIME_CONCOLIC_ANALYSIS
-    time_info[definitions.KEY_DURATION_SANITIZER] = values.TIME_CONCRETE_RUN
-    time_info[definitions.KEY_DURATION_TAINT] = values.TIME_TAINT_ANALYSIS
+    time_info[definitions.KEY_DURATION_CONCRETE] = values.TIME_CONCRETE_ANALYSIS
 
 
     time_check = time.time()

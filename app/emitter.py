@@ -165,7 +165,7 @@ def end(time_info, is_error=False):
         statistics("\nRun time statistics:\n-----------------------\n")
         statistics("Startup: " + str(time_info[definitions.KEY_DURATION_BOOTSTRAP].format()) + " minutes")
         statistics("Build: " + str(time_info[definitions.KEY_DURATION_BUILD]) + " minutes")
-        statistics("Sanitizer Run: " + str(time_info[definitions.KEY_DURATION_SANITIZER]) + " minutes")
+        statistics("Concrete Run: " + str(time_info[definitions.KEY_DURATION_SANITIZER]) + " minutes")
         statistics("Concolic Run: " + str(time_info[definitions.KEY_DURATION_CONCOLIC]) + " minutes")
         statistics("Tainted Run: " + str(time_info[definitions.KEY_DURATION_TAINT]) + " minutes")
         statistics("Total Analysis: " + str(time_info[definitions.KEY_DURATION_ANALYSIS]) + " minutes")

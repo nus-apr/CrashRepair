@@ -32,15 +32,13 @@ def get_concrete_values(arguments_str, output_dir_path, test_case_id, program_pa
     klee_concrete_out_dir = output_dir_path + "/klee-out-concrete-" + str(test_case_id - 1)
     emitter.highlight("\tUsing Binary: " + str(program_path))
 
-    concrete_start = time.time()
+
     extractor.extract_byte_code(program_path)
     if not os.path.isfile(program_path + ".bc"):
         app.utilities.error_exit("Unable to generate bytecode for " + program_path)
     exit_code = klee.run_concrete_execution(program_path + ".bc", argument_list, True, klee_concrete_out_dir)
     assert exit_code == 0
 
-    concrete_end = time.time()
-    values.TIME_CONCRETE_RUN = format((concrete_start - concrete_end) / 60, '.3f')
     # set location of bug/crash
     values.IS_CRASH = False
     c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
@@ -83,7 +81,6 @@ def get_tainted_values(arguments_str, program_path, output_dir_path, test_case_i
     if not os.path.isfile(program_path + ".bc"):
         app.utilities.error_exit("Unable to generate bytecode for " + program_path)
 
-    taint_start = time.time()
     if not os.path.isfile(program_path + ".bc"):
         app.utilities.error_exit("Unable to generate bytecode for " + program_path)
     values.ARGUMENT_LIST = generalized_arg_list
@@ -100,8 +97,6 @@ def get_tainted_values(arguments_str, program_path, output_dir_path, test_case_i
     if c_type is None:
         return None, concolic_crash
     taint_log_path = klee_taint_out_dir + "/taint.log"
-    taint_end = time.time()
-    values.TIME_TAINT_ANALYSIS = format((taint_end - taint_start) / 60, '.3f')
     # Retrieve symbolic expressions from taint.log of concolic run.
     taint_values_symbolic = reader.read_tainted_expressions(taint_log_path)
     values.VALUE_TRACK_SYMBOLIC = taint_values_symbolic
@@ -379,20 +374,27 @@ def analyze():
         else:
             program_path = values.CONF_PATH_PROGRAM
 
+        concrete_start = time.time()
         taint_values_concrete, state_values, concrete_crash = get_concrete_values(argument_list,
                                                                                   output_dir_path,
                                                                                   test_case_id,
                                                                                   program_path)
+        concrete_end = time.time()
+        values.TIME_CONCRETE_ANALYSIS = format((concrete_start - concrete_end) / 60, '.3f')
         crash_info = get_crash_values(argument_list, program_path)
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
         con_var_info = pointer_analysis(crash_var_concrete_info,
                                         values.MEMORY_TRACK_CONCRETE,
                                         values.POINTER_TRACK_CONCRETE)
 
+        concolic_start = time.time()
         taint_values_symbolic, concolic_crash = get_tainted_values(argument_list,
                                                                    program_path,
                                                                    output_dir_path,
                                                                    test_case_id)
+        concolic_end = time.time()
+        values.TIME_CONCOLIC_ANALYSIS = format((concolic_start - concolic_end) / 60, '.3f')
+
         var_info = con_var_info
         value_map = taint_values_concrete
         if concolic_crash == concrete_crash:
