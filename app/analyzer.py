@@ -130,18 +130,18 @@ def get_crash_values(argument_list, program_path):
     for v in var_list:
         v_name, v_line, v_col, v_type, v_ref = v
         v_info = dict()
-        meta_data = None
+        static_size = None
         if v_type in definitions.INTEGER_TYPES:
             data_type = "integer"
         elif "*" in v_type or "[" in v_type:
-            meta_data = v_type.split("[")[-1].split("]")[0]
+            static_size = v_type.split("[")[-1].split("]")[0]
             data_type = "pointer"
         elif v_type in ["double", "float"]:
             data_type = "double"
         else:
             data_type = None
         v_info["data_type"] = data_type
-        v_info["meta_data"] = meta_data
+        v_info["static_size"] = static_size
         v_info["expr_list"] = []
         var_info[v_name] = v_info
         v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
@@ -176,7 +176,7 @@ def extract_value_list(value_map, crash_info):
                                 "expr_list": [],
                                 "loc": loc,
                                 "data_type": var_type,
-                                "meta_data": var_info[var_name]["meta_data"]
+                                "static_size": var_info[var_name]["static_size"]
                             }
 
             for expr in expr_list:
@@ -192,7 +192,8 @@ def extract_value_list(value_map, crash_info):
                             "expr_list": [],
                             "loc": loc_info,
                             "data_type": "integer",
-                            "meta_data": expr
+                            "meta_data": expr,
+                            "static_size": var_info[var_name]["static_size"]
                         }
 
                     if base_expr in var_info:
@@ -247,7 +248,7 @@ def get_base_address(symbolic_ptr, memory_track, pointer_track):
                     base_address = address
     return base_address
 
-def get_sizeof_pointer(base_address, memory_track):
+def get_sizeof_pointer(base_address, memory_track, static_size):
     sizeof_expr_list = []
     concrete_value = None
     if base_address in memory_track:
@@ -255,9 +256,12 @@ def get_sizeof_pointer(base_address, memory_track):
         sym_size_expr = alloc_info["sym_size"]
         if "A-data" in sym_size_expr or "arg" in sym_size_expr:
             sizeof_expr_list = [sym_size_expr]
+        elif static_size:
+            sizeof_expr_list = {"width": "1", "con_size": static_size}
         else:
             sym_size_val = sym_size_expr.split(" ")[1].replace("bv", "")
             sizeof_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
+
         concrete_value = alloc_info["con_size"]
     return sizeof_expr_list, concrete_value
 
@@ -286,14 +290,14 @@ def pointer_analysis(var_info, memory_track, pointer_track):
         updated_var_info[var_name] = var_info[var_name]
         if "sizeof " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
-            # static_size = var_info[var_name]["meta_data"]
+            static_size = var_info[var_name]["static_size"]
             # if "[" in static_size:
             #     static_size = static_size.split("[")[-1].split("]")[0]
             # if str(static_size).isnumeric():
             #     sizeof_expr_list = {"width": 1, "con_size": var_info[var_name]["meta_data"]}
 
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-            sizeof_expr_list, concrete_value = get_sizeof_pointer(base_address, memory_track)
+            sizeof_expr_list, concrete_value = get_sizeof_pointer(base_address, memory_track, static_size)
             updated_var_info[var_name] = {
                 "expr_list": sizeof_expr_list,
                 "data_type": "integer",
