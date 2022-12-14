@@ -300,8 +300,8 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
                     continue
                 if int(c_line) == int(taint_line) and is_dec:
                     continue
-                if int(c_line) == int(taint_line) and int(c_col) > int(taint_col):
-                    continue
+                # if int(c_line) == int(taint_line) and int(c_col) > int(taint_col):
+                #     continue
                 candidate_locations.add((int(c_line), int(c_col)))
                 candidate_locations.add((int(taint_line), int(taint_col)))
     sorted_candidate_locations = sorted(candidate_locations, key=operator.itemgetter(0, 1))
