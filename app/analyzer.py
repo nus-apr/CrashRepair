@@ -193,7 +193,7 @@ def extract_value_list(value_map, crash_info):
                             "loc": loc_info,
                             "data_type": "integer",
                             "meta_data": expr,
-                            "static_size": var_info[var_name]["static_size"]
+                            "static_size": var_info[sizeof_expr]["static_size"]
                         }
 
                     if base_expr in var_info:

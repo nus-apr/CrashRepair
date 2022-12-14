@@ -200,7 +200,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                 if "bv" in var_expr:
                                     var_size_bytes = int(var_expr.split(" ")[1].replace("bv", ""))
 
-                                if var_size_bytes == crash_size_bytes :
+                                if var_size_bytes == crash_size_bytes and len(var_expr_list) == 1:
                                     if crash_var_name not in candidate_mapping:
                                         candidate_mapping[crash_var_name] = set()
                                     candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
