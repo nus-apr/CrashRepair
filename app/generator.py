@@ -952,10 +952,9 @@ def generate_ppc_from_formula(path_condition):
 def generate_z3_code_for_expr(var_expr, var_name, bit_size):
     select_list = [x.group() for x in re.finditer(r'select (.*?)\)', var_expr)]
     var_name = var_name + "_" + str(bit_size)
-    if bit_size == 64:
-        zero = "x0000000000000000"
-    else:
-        zero = "x00000000"
+    zero = "x0"
+    if int(bit_size) > 4:
+        zero = "x" + "0"*int(int(bit_size)/4)
     code = "(set-logic QF_AUFBV )\n"
     unique_source_list = []
     for sel_expr in select_list:
@@ -980,14 +979,19 @@ def generate_z3_code_for_var(var_expr, var_name):
     var_name = str(var_name).replace(" ", "")
     if "sizeof " in var_name or "diff " in var_name:
         var_name = "sizeof_" + var_name.split(" ")[3]
-    try:
-        code = generate_z3_code_for_expr(var_expr, var_name, 32)
-        parser = SmtLibParser()
-        script = parser.get_script(cStringIO(code))
-        formula = script.get_last_formula()
-        result = is_sat(formula, solver_name="z3")
-    except Exception as exception:
-        code = generate_z3_code_for_expr(var_expr, var_name, 64)
+    bit_size = 2
+    while True:
+        try:
+            code = generate_z3_code_for_expr(var_expr, var_name, bit_size)
+            if bit_size == 64:
+                break
+            parser = SmtLibParser()
+            script = parser.get_script(cStringIO(code))
+            formula = script.get_last_formula()
+            result = is_sat(formula, solver_name="z3")
+            break
+        except Exception as exception:
+            bit_size = bit_size * 2
     return code
 
 
