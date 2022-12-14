@@ -62,7 +62,7 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
 
 def convert_conditional_op_to_expr(ast_node, only_string=False):
     var_name = ""
-    condition_exp = convert_node_to_str(ast_node["inner"][0], True)
+    condition_exp = get_node_value(ast_node["inner"][0], True)
     true_node = ast_node["inner"][1]
     true_node_value = get_node_value(true_node)
     false_node = ast_node["inner"][2]
@@ -373,7 +373,7 @@ def convert_member_expr(ast_node, only_string=False):
         elif child_node_type == "ParenExpr":
             param_node = child_node["inner"][0]
             param_node_type = param_node["kind"]
-            param_node_var_name = convert_node_to_str(param_node, True)
+            param_node_var_name = get_node_value(param_node, True)
             var_name = param_node_var_name + var_name
             break
         elif child_node_type == "CStyleCastExpr":
@@ -409,45 +409,45 @@ def convert_member_expr(ast_node, only_string=False):
 
 
 
-def convert_node_to_str(ast_node, only_string=False):
-    node_str = ""
-    # print(ast_node)
-    node_type = str(ast_node["kind"])
-    if node_type in ["ImplicitCastExpr", "PredefinedExpr", "VAArgExpr"]:
-        return convert_node_to_str(ast_node["inner"][0], only_string)
-    if node_type in ["DeclRefExpr"]:
-        node_str = str(ast_node['referencedDecl']['name'])
-    elif node_type in ["IntegerLiteral", "CharacterLiteral", "StringLiteral", "FloatingLiteral"]:
-        node_str = str(ast_node["value"])
-    elif node_type in ["DeclStmt", "VarDecl"]:
-        node_str = str(ast_node['value'])
-    elif node_type == "ArraySubscriptExpr":
-        node_str = str(convert_array_subscript(ast_node, True))
-    elif node_type == "MemberExpr":
-        node_str = str(convert_member_expr(ast_node, True))
-    elif node_type in ["BinaryOperator", "CompoundAssignOperator"]:
-        operator = str(ast_node['opcode'])
-        right_operand = convert_node_to_str(ast_node["inner"][1], only_string)
-        left_operand = convert_node_to_str(ast_node["inner"][0])
-        node_str = left_operand + " " + operator + " " + right_operand
-    elif node_type == "UnaryOperator":
-        operator = str(ast_node['opcode'])
-        child_operand = convert_node_to_str(ast_node["inner"][0])
-        node_str = operator + child_operand
-    elif node_type == "CallExpr":
-        node_str = convert_call_expr(ast_node, True)
-    elif node_type == "CStyleCastExpr":
-        node_str = convert_cast_expr(ast_node, True)
-    elif node_type == "ParenExpr":
-        node_str = convert_paren_node_to_expr(ast_node, True)
-    elif node_type == "ConditionalOperator":
-        node_str = convert_conditional_op_to_expr(ast_node, True)
-    elif node_type in ["UnaryExprOrTypeTraitExpr", "InitListExpr", "StmtExpr"]:
-        node_str = ""
-    else:
-        print(ast_node)
-        utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
-    return node_str
+# def convert_node_to_str(ast_node, only_string=False):
+#     node_str = ""
+#     # print(ast_node)
+#     node_type = str(ast_node["kind"])
+#     if node_type in ["ImplicitCastExpr", "PredefinedExpr", "VAArgExpr"]:
+#         return convert_node_to_str(ast_node["inner"][0], only_string)
+#     if node_type in ["DeclRefExpr"]:
+#         node_str = str(ast_node['referencedDecl']['name'])
+#     elif node_type in ["IntegerLiteral", "CharacterLiteral", "StringLiteral", "FloatingLiteral"]:
+#         node_str = str(ast_node["value"])
+#     elif node_type in ["DeclStmt", "VarDecl"]:
+#         node_str = str(ast_node['value'])
+#     elif node_type == "ArraySubscriptExpr":
+#         node_str = str(convert_array_subscript(ast_node, True))
+#     elif node_type == "MemberExpr":
+#         node_str = str(convert_member_expr(ast_node, True))
+#     elif node_type in ["BinaryOperator", "CompoundAssignOperator"]:
+#         operator = str(ast_node['opcode'])
+#         right_operand = convert_node_to_str(ast_node["inner"][1], only_string)
+#         left_operand = convert_node_to_str(ast_node["inner"][0])
+#         node_str = left_operand + " " + operator + " " + right_operand
+#     elif node_type == "UnaryOperator":
+#         operator = str(ast_node['opcode'])
+#         child_operand = convert_node_to_str(ast_node["inner"][0])
+#         node_str = operator + child_operand
+#     elif node_type == "CallExpr":
+#         node_str = convert_call_expr(ast_node, True)
+#     elif node_type == "CStyleCastExpr":
+#         node_str = convert_cast_expr(ast_node, True)
+#     elif node_type == "ParenExpr":
+#         node_str = convert_paren_node_to_expr(ast_node, True)
+#     elif node_type == "ConditionalOperator":
+#         node_str = convert_conditional_op_to_expr(ast_node, True)
+#     elif node_type in ["UnaryExprOrTypeTraitExpr", "InitListExpr", "StmtExpr"]:
+#         node_str = ""
+#     else:
+#         print(ast_node)
+#         utilities.error_exit("Unhandled AST Node type for String conversion: {}".format(node_type))
+#     return node_str
 
 
 def convert_macro_list_to_dict(string_list):

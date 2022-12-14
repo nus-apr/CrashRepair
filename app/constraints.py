@@ -464,7 +464,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["CStyleCastExpr"]:
-        symbol_str = converter.convert_node_to_str(ast_node)
+        symbol_str = converter.get_node_value(ast_node)
         data_type = extractor.extract_data_type(ast_node)
         op_type = "INT_VAR"
         if "*" in data_type or "[" in data_type:
@@ -763,7 +763,7 @@ def generate_memset_constraint(call_node):
 ## Incomplete lifting of constraint from StringLiteral
 def generate_assertion_constraint(call_node, func_node, src_file):
     assertion_str_node = call_node["inner"][1]
-    assertion_str = converter.convert_node_to_str(assertion_str_node)
+    assertion_str = converter.get_node_value(assertion_str_node)
     assertion_expr = sympify(assertion_str)
     var_list = extractor.extract_ast_var_list(func_node, src_file)
     var_name_list = [x[0] for x in var_list]

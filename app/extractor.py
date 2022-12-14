@@ -324,7 +324,7 @@ def extract_var_ref_list(ast_node, file_path):
             if op_code not in source_line:
                 return var_list
             op_position = source_line.index(op_code, col_number-1) + 1
-            assignment_var_name = converter.convert_node_to_str(left_side)
+            assignment_var_name = converter.get_node_value(left_side)
             # print("ADD", (str(assignment_var_name), line_number, op_position, data_type))
             var_list.append((str(assignment_var_name), line_number, op_position, data_type, "ref"))
         for var_name, line_number, col_number, var_type, _ in operands_var_list:
@@ -1027,7 +1027,7 @@ def extract_expression_list(ast_node, src_file):
             data_type = "bool"
         else:
             data_type = extract_data_type(op_node)
-        expression_str = converter.convert_node_to_str(op_node)
+        expression_str = converter.get_node_value(op_node)
         expression_loc = extract_loc(src_file, op_node["range"]["begin"], op_code)
         if expression_loc is None:
             continue
@@ -1070,7 +1070,7 @@ def extract_expression_string_list(ast_node, src_file):
                     op_code = None
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
             continue
-        expression_str = converter.convert_node_to_str(ast_node)
+        expression_str = converter.get_node_value(ast_node)
         loc_range = ast_node["range"]["begin"]
         if ast_node["kind"] == "BinaryOperator":
             loc_range = ast_node["inner"][0]["range"]["end"]
