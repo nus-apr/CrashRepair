@@ -68,7 +68,7 @@ class ConstraintSymbol:
 
     def __str__(self) -> str:
         if self._m_cons_type == "NULL_VAL":
-            return "null"
+            return "NULL"
         if self._m_cons_type == "INT_VAR":
             return f"@var(integer, {self._m_symbol})"
         if self._m_cons_type == "PTR":
@@ -653,7 +653,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                     if member_expr_node:
                         base_ptr_node = member_expr_node["inner"][0]
                         ptr_expr = generate_expr_for_ast(base_ptr_node)
-                        null_symbol = make_constraint_symbol("NULL", "PTR")
+                        null_symbol = make_constraint_symbol("NULL", "NULL_VAL")
                         null_expr = make_symbolic_expression(null_symbol)
                         neq_op = build_op_symbol("!=")
                         constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
@@ -687,7 +687,7 @@ def generate_memory_null_constraint(reference_node, crash_loc):
     constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
     constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
     constraint_val_str = "NULL"
-    constraint_val_type = "PTR"
+    constraint_val_type = "NULL_VAL"
     constraint_val = make_constraint_symbol(constraint_val_str, constraint_val_type)
     right_expr = make_symbolic_expression(constraint_val)
     constraint_expr = make_binary_expression(constraint_op, left_expr, right_expr)
@@ -751,7 +751,7 @@ def generate_memset_constraint(call_node):
 
     # next generate the second constraint pointer != 0
     not_eq_op = build_op_symbol("!=")
-    null_symbol = make_constraint_symbol("NULL", "PTR")
+    null_symbol = make_constraint_symbol("NULL", "NULL_VAL")
     null_expr = make_symbolic_expression(null_symbol)
     second_constraint_expr = make_binary_expression(not_eq_op, null_expr, pointer_expr)
 
