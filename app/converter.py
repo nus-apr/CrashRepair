@@ -20,7 +20,11 @@ def convert_cast_expr(ast_node, only_string=False):
 
 def convert_unaryexprortypetraitexpr_to_expr(ast_node, only_string=False):
     var_list = list()
-    expr = "{}({})".format(ast_node["name"], ast_node["argType"]["qualType"])
+    if "argType" in ast_node:
+        arg_value = ast_node["argType"]["qualType"]
+    else:
+        arg_value = get_node_value(ast_node["inner"][0])
+    expr = "{}({})".format(ast_node["name"], arg_value)
     if only_string:
         return expr
     return expr, var_list
