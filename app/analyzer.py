@@ -380,7 +380,7 @@ def analyze():
                                                                                   test_case_id,
                                                                                   program_path)
         concrete_end = time.time()
-        values.TIME_CONCRETE_ANALYSIS = format((concrete_start - concrete_end) / 60, '.3f')
+        values.TIME_CONCRETE_ANALYSIS = format((concrete_end - concrete_start) / 60, '.3f')
         crash_info = get_crash_values(argument_list, program_path)
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
         con_var_info = pointer_analysis(crash_var_concrete_info,
@@ -393,7 +393,7 @@ def analyze():
                                                                    output_dir_path,
                                                                    test_case_id)
         concolic_end = time.time()
-        values.TIME_CONCOLIC_ANALYSIS = format((concolic_start - concolic_end) / 60, '.3f')
+        values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
 
         var_info = con_var_info
         value_map = taint_values_concrete
