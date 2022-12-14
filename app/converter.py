@@ -43,28 +43,10 @@ def convert_paren_node_to_expr(ast_node, only_string=False):
 
 
 def convert_unary_node_to_expr(ast_node, only_string=False):
-    var_name = ""
     var_list = list()
-    # print(ast_node)
     child_node = ast_node["inner"][0]
-    # print(left_child)
-    child_value = ""
-    child_type = str(child_node["kind"])
-    if child_type in [ "IntegerLiteral", "FloatingLiteral"]:
-        child_value = str(child_node['value'])
-    elif child_type in ["DeclRefExpr"]:
-        child_value = str(child_node['referencedDecl']['name'])
-    elif child_type == "BinaryOperator":
-        child_value = convert_binary_node_to_expr(child_node, True)
-        # var_list = var_list + child_var_list
-    elif child_type == "MemberExpr":
-        child_value = convert_member_expr(child_node, True)
-        # var_list = var_list + child_var_list
-    elif child_type == "ParenExpr":
-        child_value = convert_paren_node_to_expr(child_node, True)
-        # var_list = var_list + child_var_list
+    child_value = get_node_value(child_node)
     operation = str(ast_node['opcode'])
-    # print(operation)
     var_name = operation + child_value
     if "isPostfix" in ast_node:
         if ast_node["isPostfix"] == "True":
