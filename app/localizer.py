@@ -166,6 +166,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                     var_sym_expr_code = generator.generate_z3_code_for_var(var_expr, expr_str)
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
+                        logger.track_localization("NO TAINT SOURCES FOR {} and {}".format(crash_var_name, expr_str))
                         if crash_var_type == "pointer" and e_type == "pointer":
                             if var_expr in crash_var_expr_list:
                                 if crash_var_name not in candidate_mapping:
@@ -212,6 +213,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                 logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
 
                     elif var_input_byte_list == crash_var_input_byte_list:
+                        logger.track_localization("Matching Source for {} and {}".format(crash_var_name, expr_str))
                         if oracle.is_equivalent(var_sym_expr_code, crash_var_sym_expr_code):
                             found_mapping = True
                             if crash_var_name not in candidate_mapping:
@@ -239,6 +241,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                         logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
                                         candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
                     elif var_input_byte_list and set(var_input_byte_list) <= set(crash_var_input_byte_list):
+                        logger.track_localization("Subset Match for {} and {}: {} <= {}".format(crash_var_name, expr_str, var_input_byte_list, crash_var_input_byte_list))
                         subset_expr_list.append((expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list))
 
         if crash_var_name not in candidate_mapping:
