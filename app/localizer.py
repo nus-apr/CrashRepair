@@ -223,68 +223,26 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
-                            z3_offset_code = generator.generate_z3_code_for_offset(var_sym_expr_code,
-                                                                                   crash_var_sym_expr_code)
-                            if oracle.is_satisfiable(z3_offset_code):
-                                found_mapping = True
-                                offset = solver.get_offset(z3_offset_code)
-                                if offset:
-                                    if len(str(offset)) > 16:
-                                        number = offset & 0xFFFFFFFF
-                                        offset = ctypes.c_long(number).value
-                                    if offset < 1000:
-                                        mapping = "({} - {})".format(expr_str, offset)
-                                        if crash_var_name not in candidate_mapping:
-                                            candidate_mapping[crash_var_name] = set()
-                                        logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
-                                        logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
-                                        logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
-                                        candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
-                            else:
-                                z3_factor_code_a = generator.generate_z3_code_for_factor(var_sym_expr_code,
-                                                                                       crash_var_sym_expr_code)
-                                offset = None
-                                if oracle.is_satisfiable(z3_factor_code_a):
-                                    found_mapping = True
-                                    offset = solver.get_offset(z3_factor_code_a)
-                                    if offset:
-                                        if len(str(offset)) > 16:
-                                            number = offset & 0xFFFFFFFF
-                                            offset = ctypes.c_long(number).value
-                                        if offset < 1000:
-                                            mapping = "({} / {})".format(expr_str, offset)
-                                            if crash_var_name not in candidate_mapping:
-                                                candidate_mapping[crash_var_name] = set()
-                                            logger.track_localization(
-                                                "MAPPING {} with {}".format(crash_var_name, expr_str))
-                                            logger.track_localization(
-                                                "{}->[{}]".format(crash_var_name, crash_var_expr_list))
-                                            logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
-                                            candidate_mapping[crash_var_name].add(
-                                                (mapping, e_line, e_col, e_addr, is_exp_dec))
-                                else:
-                                    z3_factor_code_b = generator.generate_z3_code_for_factor(crash_var_sym_expr_code,
-                                                                                           var_sym_expr_code)
-                                    if oracle.is_satisfiable(z3_factor_code_b):
-                                        found_mapping = True
-                                        offset = solver.get_offset(z3_factor_code_b)
-                                    if offset:
-                                        if len(str(offset)) > 16:
-                                            number = offset & 0xFFFFFFFF
-                                            offset = ctypes.c_long(number).value
-                                        if offset < 1000:
-                                            mapping = "({} * {})".format(expr_str, offset)
-                                            if crash_var_name not in candidate_mapping:
-                                                candidate_mapping[crash_var_name] = set()
-                                            logger.track_localization(
-                                                "MAPPING {} with {}".format(crash_var_name, expr_str))
-                                            logger.track_localization(
-                                                "{}->[{}]".format(crash_var_name, crash_var_expr_list))
-                                            logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
-                                            candidate_mapping[crash_var_name].add(
-                                                (mapping, e_line, e_col, e_addr, is_exp_dec))
 
+                            constant_mapping = synthesize_constant_factor(var_sym_expr_code,
+                                                                         crash_var_sym_expr_code,
+                                                                         expr_str)
+                            if constant_mapping is None:
+                                constant_mapping = synthesize_constant_divisor(var_sym_expr_code,
+                                                                               crash_var_sym_expr_code,
+                                                                               expr_str)
 
+                            if constant_mapping is None:
+                                constant_mapping = synthesize_constant_offset(var_sym_expr_code,
+                                                                              crash_var_sym_expr_code,
+                                                                              expr_str)
+                            if constant_mapping:
+                                if crash_var_name not in candidate_mapping:
+                                    candidate_mapping[crash_var_name] = set()
+                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                                logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                logger.track_localization("{}->[{}]".format(constant_mapping, var_expr_list))
+                                candidate_mapping[crash_var_name].add((constant_mapping, e_line, e_col, e_addr, is_exp_dec))
 
                     elif var_input_byte_list and set(var_input_byte_list) <= set(crash_var_input_byte_list):
                         logger.track_localization("Subset Match for {} and {}: {} <= {}".format(crash_var_name, expr_str, var_input_byte_list, crash_var_input_byte_list))
@@ -312,6 +270,51 @@ def synthesisze_subset_expr(ref_var, ref_expr, expr_list):
         expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list = expr
         emitter.debug("\t\t\tProgram Expr:{}".format(expr_str))
         emitter.debug("\t\t\tSymbolic Expr:{}".format(var_expr))
+
+def synthesize_constant_divisor(var_sym_expr_code, crash_var_sym_expr_code, expr_str):
+    z3_factor_code_b, bit_size = generator.generate_z3_code_for_factor(var_sym_expr_code,
+                                                                       crash_var_sym_expr_code)
+    mapping = None
+    offset = None
+    if oracle.is_satisfiable(z3_factor_code_b):
+        offset = solver.get_offset(z3_factor_code_b, bit_size)
+    if offset:
+        if len(str(offset)) > 16:
+            number = offset & 0xFFFFFFFF
+            offset = ctypes.c_long(number).value
+        if offset < 1000:
+            mapping = "({} / {})".format(expr_str, offset)
+    return mapping
+
+def synthesize_constant_factor(var_sym_expr_code, crash_var_sym_expr_code, expr_str):
+    z3_factor_code_b, bit_size = generator.generate_z3_code_for_factor(crash_var_sym_expr_code,
+                                                                       var_sym_expr_code)
+    mapping = None
+    offset = None
+    if oracle.is_satisfiable(z3_factor_code_b):
+        offset = solver.get_offset(z3_factor_code_b, bit_size)
+    if offset:
+        if len(str(offset)) > 16:
+            number = offset & 0xFFFFFFFF
+            offset = ctypes.c_long(number).value
+        if offset < 1000:
+            mapping = "({} * {})".format(expr_str, offset)
+    return mapping
+
+def synthesize_constant_offset(var_sym_expr_code, crash_var_sym_expr_code, expr_str):
+    z3_offset_code, bit_size = generator.generate_z3_code_for_offset(var_sym_expr_code,
+                                                                     crash_var_sym_expr_code)
+    mapping = None
+    if oracle.is_satisfiable(z3_offset_code):
+        found_mapping = True
+        offset = solver.get_offset(z3_offset_code, bit_size)
+        if offset:
+            if len(str(offset)) > 16:
+                number = offset & 0xFFFFFFFF
+                offset = ctypes.c_long(number).value
+            if offset < 1000:
+                mapping = "({} - {})".format(expr_str, offset)
+    return mapping
 
 
 def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
