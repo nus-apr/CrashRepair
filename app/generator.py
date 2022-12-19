@@ -1077,17 +1077,22 @@ def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     code += generate_source_definitions(sym_expr_code_a, sym_expr_code_b)
     code += var_dec_a + "\n"
     code += var_dec_b + "\n"
-    bitsize_a = int(var_name_a.split("_")[-1])
-    bitsize_b = int(var_name_b.split("_")[-1])
-    bitsize = bitsize_a
-    if bitsize_a < bitsize_b:
-        bitsize = bitsize_b
-    code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bitsize)
+    bit_size_a = int(var_name_a.split("_")[-1])
+    bit_size_b = int(var_name_b.split("_")[-1])
+    bit_size = bit_size_a
+    if bit_size_a < bit_size_b:
+        bit_size = bit_size_b
+    zero = "x0"
+    if int(bit_size) > 4:
+        zero = "x" + "0" * int(int(bit_size) / 4)
+    code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bit_size)
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " (bvadd " + var_name_b + " constant_offset)))\n"
+    code += "(assert  (not (= " + var_name_a + " #" + zero + ")))\n"
+    code += "(assert  (not (= " + var_name_b + " #" + zero + ")))\n"
     code += "(check-sat)"
-    return code
+    return code, bit_size
 
 def generate_z3_code_for_factor(sym_expr_code_a, sym_expr_code_b):
     def_a, def_b = generate_definitions(sym_expr_code_a, sym_expr_code_b)
@@ -1098,17 +1103,22 @@ def generate_z3_code_for_factor(sym_expr_code_a, sym_expr_code_b):
     code += generate_source_definitions(sym_expr_code_a, sym_expr_code_b)
     code += var_dec_a + "\n"
     code += var_dec_b + "\n"
-    bitsize_a = int(var_name_a.split("_")[-1])
-    bitsize_b = int(var_name_b.split("_")[-1])
-    bitsize = bitsize_a
-    if bitsize_a < bitsize_b:
-        bitsize = bitsize_b
-    code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bitsize)
+    bit_size_a = int(var_name_a.split("_")[-1])
+    bit_size_b = int(var_name_b.split("_")[-1])
+    bit_size = bit_size_a
+    if bit_size_a < bit_size_b:
+        bit_size = bit_size_b
+    zero = "x0"
+    if int(bit_size) > 4:
+        zero = "x" + "0" * int(int(bit_size) / 4)
+    code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bit_size)
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " (bvmul " + var_name_b + " constant_offset)))\n"
+    code += "(assert  (not (= " + var_name_a + " #" + zero + ")))\n"
+    code += "(assert  (not (= " + var_name_b + " #" + zero + ")))\n"
     code += "(check-sat)"
-    return code
+    return code, bit_size
 
 def generate_offset_to_line(src_file_path):
     offset_to_line = dict()

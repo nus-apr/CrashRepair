@@ -223,11 +223,11 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
-                            z3_offset_code = generator.generate_z3_code_for_offset(var_sym_expr_code,
+                            z3_offset_code, bit_size = generator.generate_z3_code_for_offset(var_sym_expr_code,
                                                                                    crash_var_sym_expr_code)
                             if oracle.is_satisfiable(z3_offset_code):
                                 found_mapping = True
-                                offset = solver.get_offset(z3_offset_code)
+                                offset = solver.get_offset(z3_offset_code, bit_size)
                                 if offset:
                                     if len(str(offset)) > 16:
                                         number = offset & 0xFFFFFFFF
@@ -241,12 +241,12 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                         logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
                                         candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
                             else:
-                                z3_factor_code_a = generator.generate_z3_code_for_factor(var_sym_expr_code,
+                                z3_factor_code_a, bit_size = generator.generate_z3_code_for_factor(var_sym_expr_code,
                                                                                        crash_var_sym_expr_code)
                                 offset = None
                                 if oracle.is_satisfiable(z3_factor_code_a):
                                     found_mapping = True
-                                    offset = solver.get_offset(z3_factor_code_a)
+                                    offset = solver.get_offset(z3_factor_code_a, bit_size)
                                     if offset:
                                         if len(str(offset)) > 16:
                                             number = offset & 0xFFFFFFFF
@@ -263,9 +263,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                             candidate_mapping[crash_var_name].add(
                                                 (mapping, e_line, e_col, e_addr, is_exp_dec))
                                 else:
-                                    z3_factor_code_b = generator.generate_z3_code_for_factor(crash_var_sym_expr_code,
+                                    z3_factor_code_b, bit_size = generator.generate_z3_code_for_factor(crash_var_sym_expr_code,
                                                                                            var_sym_expr_code)
-                                    if oracle.is_satisfiable(z3_factor_code_b):
+                                    if oracle.is_satisfiable(z3_factor_code_b, bit_size):
                                         found_mapping = True
                                         offset = solver.get_offset(z3_factor_code_b)
                                     if offset:
