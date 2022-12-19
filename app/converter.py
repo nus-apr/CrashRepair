@@ -62,7 +62,7 @@ def convert_unary_node_to_expr(ast_node, only_string=False):
 
 def convert_conditional_op_to_expr(ast_node, only_string=False):
     var_name = ""
-    condition_exp = get_node_value(ast_node["inner"][0], True)
+    condition_exp = get_node_value(ast_node["inner"][0])
     true_node = ast_node["inner"][1]
     true_node_value = get_node_value(true_node)
     false_node = ast_node["inner"][2]
@@ -373,7 +373,7 @@ def convert_member_expr(ast_node, only_string=False):
         elif child_node_type == "ParenExpr":
             param_node = child_node["inner"][0]
             param_node_type = param_node["kind"]
-            param_node_var_name = get_node_value(param_node, True)
+            param_node_var_name = get_node_value(param_node)
             var_name = param_node_var_name + var_name
             break
         elif child_node_type == "CStyleCastExpr":
