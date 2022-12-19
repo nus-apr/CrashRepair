@@ -1113,7 +1113,7 @@ def extract_crash_type(crash_reason):
             crash_type = definitions.CRASH_TYPE_MEMORY_READ_NULL
         else:
             crash_type = definitions.CRASH_TYPE_MEMORY_WRITE_NULL
-    elif "overflow on shift operation" in crash_reason:
+    elif "overflow on shift operation" in crash_reason or "overshift error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_SHIFT_OVERFLOW
     elif "memset error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMSET_ERROR
