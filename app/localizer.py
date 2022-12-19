@@ -240,6 +240,52 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                         logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                                         logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
                                         candidate_mapping[crash_var_name].add((mapping, e_line, e_col, e_addr, is_exp_dec))
+                            else:
+                                z3_factor_code_a = generator.generate_z3_code_for_factor(var_sym_expr_code,
+                                                                                       crash_var_sym_expr_code)
+                                offset = None
+                                if oracle.is_satisfiable(z3_factor_code_a):
+                                    found_mapping = True
+                                    offset = solver.get_offset(z3_factor_code_a)
+                                    if offset:
+                                        if len(str(offset)) > 16:
+                                            number = offset & 0xFFFFFFFF
+                                            offset = ctypes.c_long(number).value
+                                        if offset < 1000:
+                                            mapping = "({} / {})".format(expr_str, offset)
+                                            if crash_var_name not in candidate_mapping:
+                                                candidate_mapping[crash_var_name] = set()
+                                            logger.track_localization(
+                                                "MAPPING {} with {}".format(crash_var_name, expr_str))
+                                            logger.track_localization(
+                                                "{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                            logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
+                                            candidate_mapping[crash_var_name].add(
+                                                (mapping, e_line, e_col, e_addr, is_exp_dec))
+                                else:
+                                    z3_factor_code_b = generator.generate_z3_code_for_factor(crash_var_sym_expr_code,
+                                                                                           var_sym_expr_code)
+                                    if oracle.is_satisfiable(z3_factor_code_b):
+                                        found_mapping = True
+                                        offset = solver.get_offset(z3_factor_code_b)
+                                    if offset:
+                                        if len(str(offset)) > 16:
+                                            number = offset & 0xFFFFFFFF
+                                            offset = ctypes.c_long(number).value
+                                        if offset < 1000:
+                                            mapping = "({} * {})".format(expr_str, offset)
+                                            if crash_var_name not in candidate_mapping:
+                                                candidate_mapping[crash_var_name] = set()
+                                            logger.track_localization(
+                                                "MAPPING {} with {}".format(crash_var_name, expr_str))
+                                            logger.track_localization(
+                                                "{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                                            logger.track_localization("{}->[{}]".format(mapping, var_expr_list))
+                                            candidate_mapping[crash_var_name].add(
+                                                (mapping, e_line, e_col, e_addr, is_exp_dec))
+
+
+
                     elif var_input_byte_list and set(var_input_byte_list) <= set(crash_var_input_byte_list):
                         logger.track_localization("Subset Match for {} and {}: {} <= {}".format(crash_var_name, expr_str, var_input_byte_list, crash_var_input_byte_list))
                         subset_expr_list.append((expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list))
