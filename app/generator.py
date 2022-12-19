@@ -1089,6 +1089,27 @@ def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     code += "(check-sat)"
     return code
 
+def generate_z3_code_for_factor(sym_expr_code_a, sym_expr_code_b):
+    def_a, def_b = generate_definitions(sym_expr_code_a, sym_expr_code_b)
+    var_name_a, sym_expr_a, var_dec_a = def_a
+    var_name_b, sym_expr_b, var_dec_b = def_b
+
+    code = "(set-logic QF_AUFBV )\n"
+    code += generate_source_definitions(sym_expr_code_a, sym_expr_code_b)
+    code += var_dec_a + "\n"
+    code += var_dec_b + "\n"
+    bitsize_a = int(var_name_a.split("_")[-1])
+    bitsize_b = int(var_name_b.split("_")[-1])
+    bitsize = bitsize_a
+    if bitsize_a < bitsize_b:
+        bitsize = bitsize_b
+    code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bitsize)
+    code += sym_expr_a + "\n"
+    code += sym_expr_b + "\n"
+    code += "(assert (= " + var_name_a + " (bvmul " + var_name_b + " constant_offset)))\n"
+    code += "(check-sat)"
+    return code
+
 def generate_offset_to_line(src_file_path):
     offset_to_line = dict()
     line = 1
