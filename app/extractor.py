@@ -951,6 +951,7 @@ def extract_input_bytes_used(sym_expr):
 
     # print("input byte list")
     # print(input_byte_list)
+    input_byte_list = list(set(input_byte_list))
     if input_byte_list:
         input_byte_list = sorted(input_byte_list)
     return input_byte_list
