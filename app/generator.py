@@ -1070,7 +1070,7 @@ def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (not (= " + var_name_a + " " + var_name_b + ")))\n"
-    code += "(check-sat)"
+    code += "(check-sat)\n"
     return code
 
 
@@ -1090,15 +1090,19 @@ def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     if bit_size_a < bit_size_b:
         bit_size = bit_size_b
     zero = "x0"
+    one = "x1"
     if int(bit_size) > 4:
-        zero = "x" + "0" * int(int(bit_size) / 4)
+        count_zeros = int(int(bit_size) / 4)
+        zero = "x" + "0" * count_zeros
+        one = "x" + "0" * (count_zeros-1) + "1"
     code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bit_size)
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " (bvadd " + var_name_b + " constant_offset)))\n"
     code += "(assert  (not (= " + var_name_a + " #" + zero + ")))\n"
     code += "(assert  (not (= " + var_name_b + " #" + zero + ")))\n"
-    code += "(check-sat)"
+    code += "(assert  (bvsgt constant_offset #" + one + "))\n"
+    code += "(check-sat)\n"
     return code, bit_size
 
 def generate_z3_code_for_factor(sym_expr_code_a, sym_expr_code_b):
@@ -1116,15 +1120,19 @@ def generate_z3_code_for_factor(sym_expr_code_a, sym_expr_code_b):
     if bit_size_a < bit_size_b:
         bit_size = bit_size_b
     zero = "x0"
+    one = "x1"
     if int(bit_size) > 4:
-        zero = "x" + "0" * int(int(bit_size) / 4)
+        count_zeros = int(int(bit_size) / 4)
+        zero = "x" + "0" * count_zeros
+        one = "x" + "0" * (count_zeros - 1) + "1"
     code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bit_size)
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " (bvmul " + var_name_b + " constant_offset)))\n"
     code += "(assert  (not (= " + var_name_a + " #" + zero + ")))\n"
     code += "(assert  (not (= " + var_name_b + " #" + zero + ")))\n"
-    code += "(check-sat)"
+    code += "(assert  (bvsgt constant_offset #" + one + "))\n"
+    code += "(check-sat)\n"
     return code, bit_size
 
 def generate_offset_to_line(src_file_path):

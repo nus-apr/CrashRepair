@@ -282,7 +282,7 @@ def synthesize_constant_divisor(var_sym_expr_code, crash_var_sym_expr_code, expr
         if len(str(offset)) > 16:
             number = offset & 0xFFFFFFFF
             offset = ctypes.c_long(number).value
-        if offset < 1000:
+        if 1 < offset < 1000:
             mapping = "({} / {})".format(expr_str, offset)
     return mapping
 
@@ -297,7 +297,7 @@ def synthesize_constant_factor(var_sym_expr_code, crash_var_sym_expr_code, expr_
         if len(str(offset)) > 16:
             number = offset & 0xFFFFFFFF
             offset = ctypes.c_long(number).value
-        if offset < 1000:
+        if 1 < offset < 1000:
             mapping = "({} * {})".format(expr_str, offset)
     return mapping
 
@@ -312,7 +312,7 @@ def synthesize_constant_offset(var_sym_expr_code, crash_var_sym_expr_code, expr_
             if len(str(offset)) > 16:
                 number = offset & 0xFFFFFFFF
                 offset = ctypes.c_long(number).value
-            if offset < 1000:
+            if 0 < offset < 1000:
                 mapping = "({} - {})".format(expr_str, offset)
     return mapping
 
