@@ -1019,38 +1019,33 @@ def generate_definitions(sym_expr_a, sym_expr_b):
     lines_b = sym_expr_b.split("\n")
     var_dec_b = [x for x in lines_b if "declare" in x][-1]
     sym_expr_b = [x for x in lines_b if "assert" in x][0]
-    var_name_a = str(var_dec_a.split(" ")[1]).replace("()", "")
-    var_name_b = str(var_dec_b.split(" ")[1]).replace("()", "")
+    var_name_a = str(var_dec_a.split(" ")[1]).replace("(", "").replace(")", "")
+    var_name_b = str(var_dec_b.split(" ")[1]).replace("(", "").replace(")", "")
+    bitsize_a = int(var_name_a.split("_")[-1])
+    bitsize_b = int(var_name_b.split("_")[-1])
 
-    if "_64" in var_name_a:
-        if "_32" in var_name_b:
-            sym_expr_b = sym_expr_b.replace(var_name_b, var_name_b + "_64_b")
-            var_dec_b = var_dec_b.replace(var_name_b, var_name_b + "_64_b")
-            var_name_b = var_name_b + "_64_b"
-            var_dec_b = var_dec_b.replace("_ BitVec 32", "_ BitVec 64")
-            var_expr_b_tokens = sym_expr_b.split(" ")
-            var_expr_b_tokens[3] = "((_ zero_extend 32)" + var_expr_b_tokens[3]
-            sym_expr_b = " ".join(var_expr_b_tokens)
-            sym_expr_b += ")"
+    if bitsize_a > bitsize_b:
+        var_dec_b = var_dec_b.replace("_ BitVec {}".format(bitsize_b), "_ BitVec {}".format(bitsize_a))
+        var_expr_b_tokens = sym_expr_b.split(" ")
+        var_expr_b_tokens[3] = "((_ zero_extend {})".format(bitsize_a - bitsize_b) + var_expr_b_tokens[3]
+        sym_expr_b = " ".join(var_expr_b_tokens)
+        sym_expr_b += ")"
 
-    if "_64" in var_name_b:
-        if "_32" in var_name_a:
-            sym_expr_a = sym_expr_a.replace(var_name_a, var_name_a + "_64_a")
-            var_dec_a = var_dec_a.replace(var_name_a, var_name_a + "_64_a")
-            var_name_a = var_name_a + "_64_a"
-            var_dec_a = var_dec_a.replace("_ BitVec 32", "_ BitVec 64")
-            var_expr_a_tokens = sym_expr_a.split(" ")
-            var_expr_a_tokens[3] = "((_ zero_extend 32)" + var_expr_a_tokens[3]
-            sym_expr_a = " ".join(var_expr_a_tokens)
-            sym_expr_a += ")"
+    if bitsize_b > bitsize_a:
+        var_dec_a = var_dec_a.replace("_ BitVec {}".format(bitsize_a), "_ BitVec {}".format(bitsize_b))
+        var_expr_a_tokens = sym_expr_a.split(" ")
+        var_expr_a_tokens[3] = "((_ zero_extend {})".format(bitsize_b - bitsize_a) + var_expr_a_tokens[3]
+        sym_expr_a = " ".join(var_expr_a_tokens)
+        sym_expr_a += ")"
+
 
     if var_name_a == var_name_b:
-        sym_expr_b = sym_expr_b.replace(var_name_b, var_name_b + "_b")
-        var_dec_b = var_dec_b.replace(var_name_b, var_name_b + "_b")
-        var_name_b = var_name_b + "_b"
-        sym_expr_a = sym_expr_a.replace(var_name_a, var_name_a + "_a")
-        var_dec_a = var_dec_a.replace(var_name_a, var_name_a + "_a")
-        var_name_a = var_name_a + "_a"
+        sym_expr_b = sym_expr_b.replace(var_name_b, "b_" + var_name_b )
+        var_dec_b = var_dec_b.replace(var_name_b, "b_" + var_name_b)
+        var_name_b = "b_" + var_name_b
+        sym_expr_a = sym_expr_a.replace(var_name_a, "a_" + var_name_a)
+        var_dec_a = var_dec_a.replace(var_name_a, "a_" + var_name_a)
+        var_name_a = "a_" + var_name_a
     return (var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b)
 
 
@@ -1069,6 +1064,7 @@ def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
     return code
 
 
+
 def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     def_a, def_b = generate_definitions(sym_expr_code_a, sym_expr_code_b)
     var_name_a, sym_expr_a, var_dec_a = def_a
@@ -1083,7 +1079,7 @@ def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     bitsize = bitsize_a
     if bitsize_a < bitsize_b:
         bitsize = bitsize_b
-    code += "(declare-fun constant_offset() (_ BitVec {}}))\n".format(bitsize)
+    code += "(declare-fun constant_offset() (_ BitVec {}))\n".format(bitsize)
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " (bvadd " + var_name_b + " constant_offset)))\n"
