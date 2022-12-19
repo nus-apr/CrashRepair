@@ -991,7 +991,10 @@ def generate_z3_code_for_var(var_expr, var_name):
             result = is_sat(formula, solver_name="z3")
             break
         except Exception as exception:
-            bit_size = bit_size * 2
+            if "not well-formed" in str(repr(exception)):
+                bit_size = bit_size * 2
+            else:
+                break
     return code
 
 
