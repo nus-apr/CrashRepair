@@ -205,6 +205,8 @@ def extract_value_list(value_map, crash_info):
                            "data_type": "integer",
                            "meta_data": expr
                        }
+            if crash_info["type"] == definitions.CRASH_TYPE_ASSERTION_ERROR:
+                break
     return value_info
 
 
