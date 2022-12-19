@@ -33,3 +33,31 @@ build_command:make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O
 test_input_list:-n7/75 /dev/null
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
 EOF
+
+
+
+cat <<EOF > $dir_name/bug.json
+{
+  "project": {
+    "name": "$project_name"
+  },
+  "name": "$bug_id",
+  "binary": "$dir_name/src/src/split",
+  "crash": {
+    "command": "-n7/75 /dev/null",
+    "input": "",
+    "extra-klee-flags": "--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca",
+    "expected-exit-code": 1
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "$dir_name/src/src/split",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean  > /dev/null 2>&1",
+      "build": "make CC=crepair-cc CXX=crepair-cxx CFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' CXXFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' LDFLAGS='-static' src/split > /dev/null 2>&1 "
+    }
+  }
+}
+EOF

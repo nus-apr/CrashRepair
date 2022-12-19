@@ -37,3 +37,30 @@ poc_list:$script_dir/tests/1.txt
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca
 mask_arg:0,1,2
 EOF
+
+
+cat <<EOF > $dir_name/bug.json
+{
+  "project": {
+    "name": "$project_name"
+  },
+  "name": "$bug_id",
+  "binary": "$dir_name/src/src/pr",
+  "crash": {
+    "command": '"-S\$(printf "\t\t\t")" a -m \$POC',
+    "input": "$script_dir/tests/1.txt",
+    "extra-klee-flags": "--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca",
+    "expected-exit-code": 1
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "$dir_name/src/src/pr",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean  > /dev/null 2>&1",
+      "build": "make CC=crepair-cc CXX=crepair-cxx CFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' CXXFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' LDFLAGS='-static' src/pr > /dev/null 2>&1 "
+    }
+  }
+}
+EOF
