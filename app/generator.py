@@ -7,7 +7,7 @@ from pysmt.exceptions import UndefinedSymbolError, PysmtValueError,PysmtTypeErro
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.typing import BV32, BV8, ArrayType
 from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, is_sat
-from app import emitter, values, reader, definitions, extractor, oracle, utilities
+from app import emitter, values, reader, definitions, extractor, oracle, utilities, logger
 import re
 import struct
 import random
@@ -996,7 +996,11 @@ def generate_z3_code_for_var(var_expr, var_name):
         except Exception as exception:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(exception).__name__, exception.args)
-            print(message)
+            logger.error("Unhandled exception")
+            logger.information((var_expr, var_name, bit_size))
+            logger.information(code)
+            logger.error(message)
+
             break
     return code
 
