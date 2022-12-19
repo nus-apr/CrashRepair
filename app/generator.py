@@ -1078,10 +1078,12 @@ def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     code += generate_source_definitions(sym_expr_code_a, sym_expr_code_b)
     code += var_dec_a + "\n"
     code += var_dec_b + "\n"
-    if "_64" in var_name_b or "_64" in var_name_a:
-        code += "(declare-fun constant_offset() (_ BitVec 64))\n"
-    else:
-        code += "(declare-fun constant_offset() (_ BitVec 32))\n"
+    bitsize_a = int(var_name_a.split("_")[-1])
+    bitsize_b = int(var_name_b.split("_")[-1])
+    bitsize = bitsize_a
+    if bitsize_a < bitsize_b:
+        bitsize = bitsize_b
+    code += "(declare-fun constant_offset() (_ BitVec {}}))\n".format(bitsize)
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (= " + var_name_a + " (bvadd " + var_name_b + " constant_offset)))\n"
