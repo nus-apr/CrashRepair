@@ -3,6 +3,7 @@ from typing import List, Dict
 from six.moves import cStringIO
 from pysmt.shortcuts import Not, And, Or
 import os
+from pysmt.exceptions import UndefinedSymbolError, PysmtValueError,PysmtTypeError
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.typing import BV32, BV8, ArrayType
 from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, is_sat
@@ -990,11 +991,13 @@ def generate_z3_code_for_var(var_expr, var_name):
             formula = script.get_last_formula()
             result = is_sat(formula, solver_name="z3")
             break
+        except PysmtTypeError as ex:
+            bit_size = bit_size * 2
         except Exception as exception:
-            if "not well-formed" in str(repr(exception)):
-                bit_size = bit_size * 2
-            else:
-                break
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(exception).__name__, ex.args)
+            print(message)
+            break
     return code
 
 
