@@ -995,7 +995,7 @@ def generate_z3_code_for_var(var_expr, var_name):
             bit_size = bit_size * 2
         except Exception as exception:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(exception).__name__, ex.args)
+            message = template.format(type(exception).__name__, exception.args)
             print(message)
             break
     return code
