@@ -6,43 +6,43 @@ COPY --from=crepair:klee /klee/ /klee
 COPY --from=crepair:klee /klee-uclibc /klee-uclibc
 
 RUN add-apt-repository -y ppa:pypy/ppa
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y  --no-install-recommends --force-yes \
-    bear \
-    clang-tidy \
-    clang-10 \
-    file \
-    gfortran \
-    pypy3 \
-    pypy3-dev \
-    python3.8 \
-    python3.8-dev \
-    python3-pip \
-    python3-setuptools
+RUN apt-get update -qq \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --force-yes \
+      bear \
+      clang-10 \
+      clang-tidy \
+      file \
+      gfortran \
+      pypy3 \
+      pypy3-dev \
+      python3.8 \
+      python3.8-dev
 
-RUN python3.8 -m pip install --upgrade pip
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install setuptools
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install pylint
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install cython
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install pysmt==0.9.0
-RUN pysmt-install --z3 --confirm-agreement
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install funcy
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install six
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install numpy==1.19.1
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install wllvm; return 0;
-RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install sympy
+RUN python3.8 -m pip --disable-pip-version-check --no-cache-dir install \
+      pip==22.3.1 \
+      setuptools==65.6.3 \
+ && python3.8 -m pip --disable-pip-version-check --no-cache-dir install \
+      pylint==2.15.9 \
+      cython==0.29.32 \
+      pysmt==0.9.0 \
+      funcy==1.17 \
+      six==1.16.0 \
+      numpy==1.19.1 \
+      sympy==1.11.1 \
+      wllvm==1.3.1 \
+ && pysmt-install --z3 --confirm-agreement
 
-# WARNING: CT thinks that this may use the same Python package directory as the standard pip
-RUN pypy3 -m pip install \
+RUN pypy3 -m pip install --no-cache-dir \
       cython==0.29.32 \
       distlib==0.3.6 \
       setuptools==65.6.3 \
       pip==22.3.1 \
       funcy==1.17 \
-      six==1.16.0
-RUN pypy3 -m pip install \
+      six==1.16.0 \
+ && pypy3 -m pip install --no-cache-dir \
       wllvm==1.3.1 \
       sympy==1.11.1
-RUN python3 -m pip install wllvm==1.3.1
+
 ENV PATH "/opt/llvm-6/bin:/klee/build/bin:${PATH}"
 ENV LLVM_COMPILER=clang
 
