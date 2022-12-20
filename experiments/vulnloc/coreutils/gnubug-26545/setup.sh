@@ -47,7 +47,7 @@ cat <<EOF > $dir_name/bug.json
   "crash": {
     "command": "-n4 -s7 \$POC",
     "input": "$script_dir/tests/1.txt",
-    "extra-klee-flags": "--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca",
+    "extra-klee-flags": "",
     "expected-exit-code": 1
   },
   "source-directory": "src",
