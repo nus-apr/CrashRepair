@@ -9,6 +9,7 @@ from app import emitter, oracle, definitions, generator, extractor, values, writ
     utilities, logger, parallel, converter, constraints
 import ctypes
 import copy
+from itertools import chain, combinations, product
 
 
 global_candidate_mapping = collections.OrderedDict()
@@ -255,21 +256,72 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                     _, _, _, _, _, _, byte_list = subset_var
                     unique_byte_list.update(byte_list)
                 if list(unique_byte_list) == crash_var_input_byte_list:
-                    synthesisze_subset_expr(crash_var_name,
-                                            crash_var_expr_list[0],
-                                            subset_expr_list)
+                    subset_mapping = synthesize_subset_expr(crash_var_name,
+                                                            crash_var_expr_list[0],
+                                                            crash_var_input_byte_list,
+                                                            subset_expr_list)
+                    candidate_mapping.update(subset_mapping)
 
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
 
-def synthesisze_subset_expr(ref_var, ref_expr, expr_list):
+
+def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
     emitter.debug("\t\tPossible Synthesis (not implemented)")
     emitter.debug("\t\tLogical Var Name:{}".format(ref_var))
     emitter.debug("\t\tSymbolic Expr:{}".format(ref_expr))
+    expr_info = dict()
+    expr_loc_list = []
+    candidate_mapping = dict()
     for expr in expr_list:
         expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list = expr
+        expr_loc_list.append((e_line, e_col, e_addr))
+        expr_info[(e_line, e_col, e_addr)] = (var_expr, expr_str, var_input_byte_list)
         emitter.debug("\t\t\tProgram Expr:{}".format(expr_str))
         emitter.debug("\t\t\tSymbolic Expr:{}".format(var_expr))
+
+    combination_depth = 3
+    l1 = list(combinations(expr_loc_list, 2))
+    l2 = []
+    l3 = []
+    if len(expr_loc_list) > 3:
+        l2 = list(combinations(expr_loc_list, 3))
+    if len(expr_loc_list) > 4:
+        l3 = list(combinations(expr_loc_list, 4))
+    combination_list = l1 + l2 + l3
+    latest_expr_loc = None
+    latest_expr_addr = 0
+    for combination in combination_list:
+        program_expr_list = []
+        symbolic_expr_list = []
+        combination_byte_list = []
+        num_expr = len(combination)
+        for expr_loc in combination:
+            expr_addr = expr_loc[2]
+            if latest_expr_addr < expr_addr:
+                latest_expr_addr = expr_addr
+                latest_expr_loc = expr_loc
+            expr_loc_info = expr_info[expr_loc]
+            combination_byte_list = combination_byte_list + expr_loc_info[2]
+            if expr_loc_info[1] in program_expr_list:
+                break
+            program_expr_list.append(expr_loc_info[1])
+            symbolic_expr_list.append(expr_loc_info[0])
+        if len(program_expr_list) == num_expr:
+            if set(ref_byte_list) == set(combination_list):
+                z3_code = generator.generate_z3_code_for_combination(symbolic_expr_list, ref_expr)
+                if oracle.is_satisfiable(z3_code):
+                    prog_expr_str = "+".join(program_expr_list)
+                    logger.track_localization("MAPPING {} with {}".format(ref_expr, prog_expr_str))
+                    logger.track_localization("{}->[{}]".format(ref_expr, ref_byte_list))
+                    logger.track_localization("{}->[{}]".format(prog_expr_str, combination_byte_list))
+                    candidate_mapping[ref_expr].add((prog_expr_str,
+                                                     latest_expr_loc[0],
+                                                     latest_expr_loc[1],
+                                                     latest_expr_loc[2],
+                                                     False))
+    return candidate_mapping
+
 
 def synthesize_constant_divisor(var_sym_expr_code, crash_var_sym_expr_code, expr_str):
     z3_factor_code_b, bit_size = generator.generate_z3_code_for_factor(var_sym_expr_code,

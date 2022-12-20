@@ -1049,6 +1049,15 @@ def extend_formula(sym_dec, sym_expr, var_name):
     return extended_expr
 
 
+def extract_definition(sym_expr):
+    lines = sym_expr.split("\n")
+    var_dec = [x for x in lines if "declare" in x][-1]
+    sym_expr = [x for x in lines if "assert" in x][0]
+    var_name = str(var_dec.split(" ")[1]).replace("(", "").replace(")", "")
+    bit_size = int(var_name.split("_")[-1])
+    return var_name, var_dec, sym_expr, bit_size
+
+
 def generate_definitions(sym_expr_a, sym_expr_b):
     lines_a = sym_expr_a.split("\n")
     var_dec_a = [x for x in lines_a if "declare" in x][-1]
@@ -1058,20 +1067,20 @@ def generate_definitions(sym_expr_a, sym_expr_b):
     sym_expr_b = [x for x in lines_b if "assert" in x][0]
     var_name_a = str(var_dec_a.split(" ")[1]).replace("(", "").replace(")", "")
     var_name_b = str(var_dec_b.split(" ")[1]).replace("(", "").replace(")", "")
-    bitsize_a = int(var_name_a.split("_")[-1])
-    bitsize_b = int(var_name_b.split("_")[-1])
+    bit_size_a = int(var_name_a.split("_")[-1])
+    bit_size_b = int(var_name_b.split("_")[-1])
 
-    if bitsize_a > bitsize_b:
-        var_dec_b = var_dec_b.replace("_ BitVec {}".format(bitsize_b), "_ BitVec {}".format(bitsize_a))
+    if bit_size_a > bit_size_b:
+        var_dec_b = var_dec_b.replace("_ BitVec {}".format(bit_size_b), "_ BitVec {}".format(bit_size_a))
         var_expr_b_tokens = sym_expr_b.split(" ")
-        var_expr_b_tokens[3] = "((_ zero_extend {})".format(bitsize_a - bitsize_b) + var_expr_b_tokens[3]
+        var_expr_b_tokens[3] = "((_ zero_extend {})".format(bit_size_a - bit_size_b) + var_expr_b_tokens[3]
         sym_expr_b = " ".join(var_expr_b_tokens)
         sym_expr_b += ")"
 
-    if bitsize_b > bitsize_a:
-        var_dec_a = var_dec_a.replace("_ BitVec {}".format(bitsize_a), "_ BitVec {}".format(bitsize_b))
+    if bit_size_b > bit_size_a:
+        var_dec_a = var_dec_a.replace("_ BitVec {}".format(bit_size_a), "_ BitVec {}".format(bit_size_b))
         var_expr_a_tokens = sym_expr_a.split(" ")
-        var_expr_a_tokens[3] = "((_ zero_extend {})".format(bitsize_b - bitsize_a) + var_expr_a_tokens[3]
+        var_expr_a_tokens[3] = "((_ zero_extend {})".format(bit_size_b - bit_size_a) + var_expr_a_tokens[3]
         sym_expr_a = " ".join(var_expr_a_tokens)
         sym_expr_a += ")"
 
@@ -1084,6 +1093,48 @@ def generate_definitions(sym_expr_a, sym_expr_b):
         var_dec_a = var_dec_a.replace(var_name_a, "a_" + var_name_a)
         var_name_a = "a_" + var_name_a
     return (var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b)
+
+
+def generate_z3_code_for_combination(z3_expr_list, ref_z3_expr):
+    ref_name, ref_sym_expr, ref_dec, ref_bit_size = extract_definition(ref_z3_expr)
+    code = "(set-logic QF_AUFBV )\n"
+    source_def_list = set()
+    source_def_list.add(generate_source_definitions(ref_sym_expr, ref_sym_expr))
+    expr_dec_list = set()
+    expr_dec_list.add(ref_dec)
+    sym_expr_list = set()
+    max_bit_size = 0
+    for z3_expr in z3_expr_list:
+        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_expr)
+        source_def = generate_source_definitions(sym_expr, sym_expr)
+        source_def_list.add(source_def)
+        expr_dec_list.add(declaration)
+        if bit_size > max_bit_size:
+            max_bit_size = bit_size
+
+    for source_def in source_def_list:
+        code += source_def
+    for dec in expr_dec_list:
+        code += dec
+
+    combination_z3_code = ""
+    for i in range(len(sym_expr_list)):
+        z3_expr = z3_expr_list[i]
+        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_expr)
+        extended_sym_expr = sym_expr
+        if bit_size < max_bit_size:
+            extended_sym_expr = extend_formula(declaration, sym_expr, max_bit_size)
+        code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        if combination_z3_code:
+            combination_z3_code = "(bvadd {} {})".format(combination_z3_code, prog_expr)
+        else:
+            combination_z3_code = prog_expr
+
+    code += "(assert (= {} {}))\n".format(ref_name, ref_sym_expr)
+    code += "(assert (= {} {}))\n".format(combination_z3_code, ref_sym_expr)
+    code += "(check-sat)\n"
+    return code
+
 
 
 def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
