@@ -211,7 +211,7 @@ def read_conf_file():
             poc_list = list_str.replace("[", "").replace("]", "").split(",")
             updated_poc_list = []
             for poc_file in poc_list:
-                if not os.path.isfile(poc_file):
+                if poc_file and not os.path.isfile(poc_file):
                     poc_path = values.CONF_DIR_EXPERIMENT + "/" + poc_file
                     if os.path.isfile(poc_path):
                         poc_file= poc_path
