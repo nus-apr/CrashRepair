@@ -1,4 +1,4 @@
-from app import definitions, values, emitter, extractor, utilities
+from app import definitions, values, emitter, logger, utilities
 from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
 from pysmt.typing import BV32, BV8, ArrayType, BV64, BV16, BV8
@@ -29,7 +29,10 @@ def get_offset(z3_code, bit_size):
             x = model[sym_def].simplify()
             offset = int(str(x).split("_")[0])
     except Exception as ex:
-        print(ex)
-        emitter.warning("\t\t[warning] Z3 Exception")
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        logger.error("Unhandled exception")
+        logger.information(z3_code)
+        logger.error(message)
     return offset
 

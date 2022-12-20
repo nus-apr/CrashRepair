@@ -1000,6 +1000,8 @@ def generate_z3_code_for_var(var_expr, var_name):
             break
         except PysmtTypeError as ex:
             bit_size = bit_size * 2
+        except AssertionError as ex:
+            break
         except Exception as exception:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(exception).__name__, exception.args)
@@ -1044,9 +1046,15 @@ def extend_formula(sym_dec, sym_expr, var_name):
             break
         except PysmtTypeError as ex:
             continue
+        except AssertionError as ex:
+            return sym_expr
         except Exception as ex:
-            print("Unhandled exception")
-            print(ex)
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            logger.error("Unhandled exception")
+            logger.information(z3_code)
+            logger.error(message)
+            return sym_expr
     return extended_expr
 
 
@@ -1096,7 +1104,55 @@ def generate_definitions(sym_expr_a, sym_expr_b):
     return (var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b)
 
 
-def generate_z3_code_for_combination(sym_expr_list, ref_sym_expr):
+def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
+    ref_z3_code = generate_z3_code_for_var(ref_sym_expr, "crash_var_ref")
+    ref_name, ref_sym_expr, ref_dec, ref_bit_size = extract_definition(ref_z3_code)
+    code = "(set-logic QF_AUFBV )\n"
+    source_def_list = set()
+    source_def_list.add(generate_source_definitions(ref_z3_code, ref_z3_code))
+    expr_dec_list = set()
+    expr_dec_list.add(ref_dec)
+    z3_code_list = list()
+    max_bit_size = 0
+    i = 0
+    for sym_expr in sym_expr_list:
+        i = i + 1
+        z3_code = generate_z3_code_for_var(sym_expr, "expr_{}".format(i))
+        z3_code_list.append(z3_code)
+        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_code)
+        source_def = generate_source_definitions(z3_code, z3_code)
+        source_def_list.add(source_def)
+        expr_dec_list.add(declaration)
+        if bit_size > max_bit_size:
+            max_bit_size = bit_size
+
+
+    for source_def in source_def_list:
+        code += source_def
+    for dec in expr_dec_list:
+        code += dec
+
+    combination_z3_code = ""
+    for i in range(len(sym_expr_list)):
+        z3_code = z3_code_list[i]
+        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_code)
+        extended_sym_expr = sym_expr
+        if bit_size < max_bit_size:
+            extended_sym_expr = extend_formula(declaration, sym_expr, max_bit_size)
+        code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        if combination_z3_code:
+            combination_z3_code = "(bvadd {} {})".format(combination_z3_code, prog_expr)
+        else:
+            combination_z3_code = prog_expr
+
+    code += "(assert (= {} {}))\n".format(ref_name, ref_sym_expr)
+    code += "(assert (= {} {}))\n".format(combination_z3_code, ref_sym_expr)
+    code += "(check-sat)\n"
+    return code
+
+
+
+def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
     ref_z3_code = generate_z3_code_for_var(ref_sym_expr, "crash_var_ref")
     ref_name, ref_sym_expr, ref_dec, ref_bit_size = extract_definition(ref_z3_code)
     code = "(set-logic QF_AUFBV )\n"
@@ -1132,7 +1188,7 @@ def generate_z3_code_for_combination(sym_expr_list, ref_sym_expr):
             extended_sym_expr = extend_formula(declaration, sym_expr, max_bit_size)
         code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
         if combination_z3_code:
-            combination_z3_code = "(bvadd {} {})".format(combination_z3_code, prog_expr)
+            combination_z3_code = "(bvmul {} {})".format(combination_z3_code, prog_expr)
         else:
             combination_z3_code = prog_expr
 
@@ -1140,8 +1196,6 @@ def generate_z3_code_for_combination(sym_expr_list, ref_sym_expr):
     code += "(assert (= {} {}))\n".format(combination_z3_code, ref_sym_expr)
     code += "(check-sat)\n"
     return code
-
-
 
 def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
     def_a, def_b = generate_definitions(sym_expr_code_a, sym_expr_code_b)

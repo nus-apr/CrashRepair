@@ -284,10 +284,10 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
     l1 = list(combinations(expr_loc_list, 2))
     l2 = []
     l3 = []
-    if len(expr_loc_list) > 3:
-        l2 = list(combinations(expr_loc_list, 3))
-    if len(expr_loc_list) > 4:
-        l3 = list(combinations(expr_loc_list, 4))
+    # if len(expr_loc_list) > 3:
+    #     l2 = list(combinations(expr_loc_list, 3))
+    # if len(expr_loc_list) > 4:
+    #     l3 = list(combinations(expr_loc_list, 4))
     combination_list = l1 + l2 + l3
     latest_expr_loc = None
     latest_expr_addr = 0
@@ -309,20 +309,43 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
             symbolic_expr_list.append(expr_loc_info[0])
         if len(program_expr_list) == num_expr:
             if set(ref_byte_list) == set(combination_byte_list):
-                z3_code = generator.generate_z3_code_for_combination(symbolic_expr_list, ref_expr)
-                if oracle.is_satisfiable(z3_code):
-                    prog_expr_str = "+".join(program_expr_list)
+                synthesized_expr = synthesize_sub_expr_mul(symbolic_expr_list, ref_expr, program_expr_list)
+                if not synthesized_expr:
+                    synthesized_expr = synthesize_sub_expr_add(symbolic_expr_list, ref_expr, program_expr_list)
+                if synthesized_expr:
                     if ref_var not in candidate_mapping:
                         candidate_mapping[ref_var] = set()
                     logger.track_localization("MAPPING {} with {}".format(ref_var, ref_expr))
                     logger.track_localization("{}->[{}]".format(ref_var, ref_byte_list))
-                    logger.track_localization("{}->[{}]".format(prog_expr_str, combination_byte_list))
-                    candidate_mapping[ref_var].add((prog_expr_str,
+                    logger.track_localization("{}->[{}]".format(synthesized_expr, combination_byte_list))
+                    candidate_mapping[ref_var].add((synthesized_expr,
                                                     latest_expr_loc[0],
                                                     latest_expr_loc[1],
                                                     latest_expr_loc[2],
                                                     False))
     return candidate_mapping
+
+def synthesize_sub_expr_mul(symbolic_expr_list, ref_expr, prog_expr_list):
+    z3_code = generator.generate_z3_code_for_combination_mul(symbolic_expr_list, ref_expr)
+    mapping_str = ""
+    if oracle.is_satisfiable(z3_code):
+        for expr in prog_expr_list:
+            if mapping_str:
+                mapping_str = mapping_str + "* ({})".format(expr)
+            else:
+                mapping_str = "({})".format(expr)
+    return mapping_str
+
+def synthesize_sub_expr_add(symbolic_expr_list, ref_expr, prog_expr_list):
+    z3_code = generator.generate_z3_code_for_combination_add(symbolic_expr_list, ref_expr)
+    mapping_str = ""
+    if oracle.is_satisfiable(z3_code):
+        for expr in prog_expr_list:
+            if mapping_str:
+                mapping_str = mapping_str + "+ ({})".format(expr)
+            else:
+                mapping_str = "({})".format(expr)
+    return mapping_str
 
 
 def synthesize_constant_divisor(var_sym_expr_code, crash_var_sym_expr_code, expr_str):
