@@ -330,9 +330,10 @@ def identify_sources(var_info):
         sym_expr_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         byte_list = []
-        for sym_expr in sym_expr_list:
-            var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
-            byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
+        if isinstance(sym_expr_list, list):
+            for sym_expr in sym_expr_list:
+                var_sym_expr_code = generator.generate_z3_code_for_var(sym_expr, var_name)
+                byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
         byte_list = list(set(byte_list))
         taint_byte_list = taint_byte_list + byte_list
         taint_sources = sorted([str(i) for i in byte_list])

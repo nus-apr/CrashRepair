@@ -967,11 +967,11 @@ def generate_z3_code_for_expr(var_expr, var_name, bit_size):
         declarations += "(declare-fun {} () (Array (_ BitVec 32) (_ BitVec 8) ) )\n".format(symbolic_source)
     declarations += "(declare-fun " + var_name + "() (_ BitVec " + str(bit_size) + "))\n"
     assertions =  "(assert  (not (= " + var_name + " #" + zero + ")))\n"
-    extended_expression = extend_formula(declarations, var_expr)
+    extended_expression = extend_formula(declarations, var_expr, var_name)
+    assertions += "(assert (= {} {}))\n".format(var_name, extended_expression)
     code += declarations
-    code += extended_expression
     code += assertions
-    code += "(check-sat)"
+    code += "(check-sat)\n"
     # code += "(declare-fun b () (_ BitVec " + str(bit_size) + "))\n"
     # code += "(assert (= " + var_name + " " + var_expr + "))\n"
     # code += "(assert (not (= b #" + zero + ")))\n"
@@ -986,6 +986,7 @@ def generate_z3_code_for_var(var_expr, var_name):
     if "sizeof " in var_name or "diff " in var_name:
         var_name = "sizeof_" + var_name.split(" ")[3]
     bit_size = 2
+    code = ""
     while True:
         try:
             code = generate_z3_code_for_expr(var_expr, var_name, bit_size)
@@ -1005,7 +1006,6 @@ def generate_z3_code_for_var(var_expr, var_name):
             logger.information((var_expr, var_name, bit_size))
             logger.information(code)
             logger.error(message)
-
             break
     return code
 
@@ -1027,16 +1027,13 @@ def generate_source_definitions(sym_expr_a, sym_expr_b):
     return source_def_str
 
 
-def extend_formula(sym_dec, sym_expr):
+def extend_formula(sym_dec, sym_expr, var_name):
     extended_expr = sym_expr
     for bits in [2,4,6,8,12,16,24,32,48,56,64]:
         z3_code = "(set-logic QF_AUFBV )\n"
         z3_code += sym_dec + "\n"
-        expr_tokens = sym_expr.split(" ")
-        expr_tokens[3] = "((_ zero_extend {})".format(bits) + expr_tokens[3]
-        extended_expr = " ".join(expr_tokens)
-        extended_expr += ")"
-        z3_code += sym_expr + "\n"
+        extended_expr = "((_ zero_extend {}) {})".format(bits, sym_expr)
+        z3_code += "(assert (= " + var_name + " " + extended_expr + "))\n"
         z3_code += "(check-sat)\n"
         try:
             parser = SmtLibParser()
