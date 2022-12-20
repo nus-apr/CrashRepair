@@ -255,7 +255,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                 for subset_var in subset_expr_list:
                     _, _, _, _, _, _, byte_list = subset_var
                     unique_byte_list.update(byte_list)
-                if list(unique_byte_list) == crash_var_input_byte_list:
+                if unique_byte_list == set(crash_var_input_byte_list):
                     subset_mapping = synthesize_subset_expr(crash_var_name,
                                                             crash_var_expr_list[0],
                                                             crash_var_input_byte_list,
@@ -298,8 +298,8 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
         num_expr = len(combination)
         for expr_loc in combination:
             expr_addr = expr_loc[2]
-            if latest_expr_addr < expr_addr:
-                latest_expr_addr = expr_addr
+            if latest_expr_addr < int(expr_addr):
+                latest_expr_addr = int(expr_addr)
                 latest_expr_loc = expr_loc
             expr_loc_info = expr_info[expr_loc]
             combination_byte_list = combination_byte_list + expr_loc_info[2]
@@ -308,18 +308,20 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
             program_expr_list.append(expr_loc_info[1])
             symbolic_expr_list.append(expr_loc_info[0])
         if len(program_expr_list) == num_expr:
-            if set(ref_byte_list) == set(combination_list):
+            if set(ref_byte_list) == set(combination_byte_list):
                 z3_code = generator.generate_z3_code_for_combination(symbolic_expr_list, ref_expr)
                 if oracle.is_satisfiable(z3_code):
                     prog_expr_str = "+".join(program_expr_list)
-                    logger.track_localization("MAPPING {} with {}".format(ref_expr, prog_expr_str))
-                    logger.track_localization("{}->[{}]".format(ref_expr, ref_byte_list))
+                    if ref_var not in candidate_mapping:
+                        candidate_mapping[ref_var] = set()
+                    logger.track_localization("MAPPING {} with {}".format(ref_var, ref_expr))
+                    logger.track_localization("{}->[{}]".format(ref_var, ref_byte_list))
                     logger.track_localization("{}->[{}]".format(prog_expr_str, combination_byte_list))
-                    candidate_mapping[ref_expr].add((prog_expr_str,
-                                                     latest_expr_loc[0],
-                                                     latest_expr_loc[1],
-                                                     latest_expr_loc[2],
-                                                     False))
+                    candidate_mapping[ref_var].add((prog_expr_str,
+                                                    latest_expr_loc[0],
+                                                    latest_expr_loc[1],
+                                                    latest_expr_loc[2],
+                                                    False))
     return candidate_mapping
 
 

@@ -966,9 +966,10 @@ def generate_z3_code_for_expr(var_expr, var_name, bit_size):
         unique_source_list.append(symbolic_source)
         declarations += "(declare-fun {} () (Array (_ BitVec 32) (_ BitVec 8) ) )\n".format(symbolic_source)
     declarations += "(declare-fun " + var_name + "() (_ BitVec " + str(bit_size) + "))\n"
-    assertions =  "(assert  (not (= " + var_name + " #" + zero + ")))\n"
+
     extended_expression = extend_formula(declarations, var_expr, var_name)
-    assertions += "(assert (= {} {}))\n".format(var_name, extended_expression)
+    assertions = "(assert (= {} {}))\n".format(var_name, extended_expression)
+    assertions += "(assert  (not (= " + var_name + " #" + zero + ")))\n"
     code += declarations
     code += assertions
     code += "(check-sat)\n"
@@ -1029,7 +1030,7 @@ def generate_source_definitions(sym_expr_a, sym_expr_b):
 
 def extend_formula(sym_dec, sym_expr, var_name):
     extended_expr = sym_expr
-    for bits in [2,4,6,8,12,16,24,32,48,56,64]:
+    for bits in [0,1,2,4,6,8,12,16,24,32,48,56,64]:
         z3_code = "(set-logic QF_AUFBV )\n"
         z3_code += sym_dec + "\n"
         extended_expr = "((_ zero_extend {}) {})".format(bits, sym_expr)
@@ -1095,18 +1096,23 @@ def generate_definitions(sym_expr_a, sym_expr_b):
     return (var_name_a, sym_expr_a, var_dec_a), (var_name_b, sym_expr_b, var_dec_b)
 
 
-def generate_z3_code_for_combination(z3_expr_list, ref_z3_expr):
-    ref_name, ref_sym_expr, ref_dec, ref_bit_size = extract_definition(ref_z3_expr)
+def generate_z3_code_for_combination(sym_expr_list, ref_sym_expr):
+    ref_z3_code = generate_z3_code_for_var(ref_sym_expr, "crash_var_ref")
+    ref_name, ref_sym_expr, ref_dec, ref_bit_size = extract_definition(ref_z3_code)
     code = "(set-logic QF_AUFBV )\n"
     source_def_list = set()
-    source_def_list.add(generate_source_definitions(ref_sym_expr, ref_sym_expr))
+    source_def_list.add(generate_source_definitions(ref_z3_code, ref_z3_code))
     expr_dec_list = set()
     expr_dec_list.add(ref_dec)
-    sym_expr_list = set()
+    z3_code_list = list()
     max_bit_size = 0
-    for z3_expr in z3_expr_list:
-        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_expr)
-        source_def = generate_source_definitions(sym_expr, sym_expr)
+    i = 0
+    for sym_expr in sym_expr_list:
+        i = i + 1
+        z3_code = generate_z3_code_for_var(sym_expr, "expr_{}".format(i))
+        z3_code_list.append(z3_code)
+        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_code)
+        source_def = generate_source_definitions(z3_code, z3_code)
         source_def_list.add(source_def)
         expr_dec_list.add(declaration)
         if bit_size > max_bit_size:
@@ -1119,8 +1125,8 @@ def generate_z3_code_for_combination(z3_expr_list, ref_z3_expr):
 
     combination_z3_code = ""
     for i in range(len(sym_expr_list)):
-        z3_expr = z3_expr_list[i]
-        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_expr)
+        z3_code = z3_code_list[i]
+        prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_code)
         extended_sym_expr = sym_expr
         if bit_size < max_bit_size:
             extended_sym_expr = extend_formula(declaration, sym_expr, max_bit_size)
