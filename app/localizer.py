@@ -323,6 +323,7 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
                                                     latest_expr_loc[1],
                                                     latest_expr_loc[2],
                                                     False))
+                    break
     return candidate_mapping
 
 def synthesize_sub_expr_mul(symbolic_expr_list, ref_expr, prog_expr_list):
