@@ -355,9 +355,13 @@ class ConstraintExpression:
             if left_symbol.is_int_var() or left_symbol.is_real_var() or left_symbol.is_ptr():
                 left_symbol_str = str(left_symbol._m_symbol)
                 if left_symbol_str in symbol_mapping:
-                    mapped_expr = generate_expr_for_str(symbol_mapping[left_symbol_str],
-                                                        self._m_lvalue.get_type())
-                    self._m_lvalue = mapped_expr
+                    mapped_str = symbol_mapping[left_symbol_str]
+                    if any(op in mapped_str for op in ["+", "-", "*", "/"]):
+                        mapped_expr = generate_expr_for_str(mapped_str,
+                                                            self._m_lvalue.get_type())
+                        self._m_lvalue = mapped_expr
+                    else:
+                        self._m_lvalue.update_symbols(symbol_mapping)
                 else:
                     self._m_lvalue.update_symbols(symbol_mapping)
             else:
@@ -367,9 +371,13 @@ class ConstraintExpression:
             if right_symbol.is_int_var() or right_symbol.is_real_var() or right_symbol.is_ptr():
                 right_symbol_str = str(right_symbol._m_symbol)
                 if right_symbol_str in symbol_mapping:
-                    mapped_expr = generate_expr_for_str(symbol_mapping[right_symbol_str],
-                                                        self._m_rvalue.get_type())
-                    self._m_rvalue = mapped_expr
+                    mapped_str = symbol_mapping[right_symbol_str]
+                    if any(op in mapped_str for op in ["+", "-", "*", "/"]):
+                        mapped_expr = generate_expr_for_str(mapped_str,
+                                                            self._m_rvalue.get_type())
+                        self._m_rvalue = mapped_expr
+                    else:
+                        self._m_rvalue.update_symbols(symbol_mapping)
                 else:
                     self._m_rvalue.update_symbols(symbol_mapping)
             else:
