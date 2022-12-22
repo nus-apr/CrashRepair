@@ -3,6 +3,7 @@ from pysmt.smtlib.parser import SmtLibParser
 from six.moves import cStringIO
 from pysmt.typing import BV32, BV8, ArrayType, BV64, BV16, BV8
 from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, reset_env
+import ctypes
 
 
 def get_offset(z3_code, bit_size):
@@ -30,5 +31,10 @@ def get_offset(z3_code, bit_size):
             offset = int(str(x).split("_")[0])
     except Exception as ex:
         logger.exception(ex, z3_code)
+
+    if offset:
+        hex_string = "0x" + "F"*int(bit_size/4)
+        number = offset & int(hex_string, 16)
+        offset = ctypes.c_long(number).value
     return offset
 

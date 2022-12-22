@@ -1031,7 +1031,7 @@ def extend_formula(sym_dec, sym_expr, var_name):
         z3_code = "(set-logic QF_AUFBV )\n"
         z3_code += sym_dec + "\n"
         extended_expr = "((_ zero_extend {}) {})".format(bits, sym_expr)
-        z3_code += "(assert (= " + var_name + " " + extended_expr + "))\n"
+        z3_code += "(assert (= " + str(var_name) + " " + str(extended_expr) + "))\n"
         z3_code += "(check-sat)\n"
         try:
             parser = SmtLibParser()
@@ -1230,7 +1230,7 @@ def generate_z3_code_for_offset(sym_expr_code_a, sym_expr_code_b):
     code += "(assert (= " + var_name_a + " (bvadd " + var_name_b + " constant_offset)))\n"
     code += "(assert  (not (= " + var_name_a + " #" + zero + ")))\n"
     code += "(assert  (not (= " + var_name_b + " #" + zero + ")))\n"
-    code += "(assert  (bvsgt constant_offset #" + one + "))\n"
+    code += "(assert  (not (= constant_offset #" + zero + ")))\n"
     code += "(check-sat)\n"
     return code, bit_size
 

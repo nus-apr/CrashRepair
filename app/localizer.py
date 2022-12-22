@@ -356,9 +356,6 @@ def synthesize_constant_divisor(var_sym_expr_code, crash_var_sym_expr_code, expr
     if oracle.is_satisfiable(z3_factor_code_b):
         offset = solver.get_offset(z3_factor_code_b, bit_size)
     if offset:
-        if len(str(offset)) > 16:
-            number = offset & 0xFFFFFFFF
-            offset = ctypes.c_long(number).value
         if 1 < offset < 1000:
             mapping = "({} / {})".format(expr_str, offset)
     return mapping
@@ -371,9 +368,6 @@ def synthesize_constant_factor(var_sym_expr_code, crash_var_sym_expr_code, expr_
     if oracle.is_satisfiable(z3_factor_code_b):
         offset = solver.get_offset(z3_factor_code_b, bit_size)
     if offset:
-        if len(str(offset)) > 16:
-            number = offset & 0xFFFFFFFF
-            offset = ctypes.c_long(number).value
         if 1 < offset < 1000:
             mapping = "({} * {})".format(expr_str, offset)
     return mapping
@@ -383,14 +377,12 @@ def synthesize_constant_offset(var_sym_expr_code, crash_var_sym_expr_code, expr_
                                                                      crash_var_sym_expr_code)
     mapping = None
     if oracle.is_satisfiable(z3_offset_code):
-        found_mapping = True
         offset = solver.get_offset(z3_offset_code, bit_size)
         if offset:
-            if len(str(offset)) > 16:
-                number = offset & 0xFFFFFFFF
-                offset = ctypes.c_long(number).value
-            if 0 < offset < 1000:
+            if offset > 0:
                 mapping = "({} - {})".format(expr_str, offset)
+            else:
+                mapping = "({} + {})".format(expr_str, abs(offset))
     return mapping
 
 
