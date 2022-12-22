@@ -34,7 +34,7 @@ def generate_flipped_path(ppc):
         new_path = And(prefix, Not(constraint))
         assert str(new_path.serialize()) != str(formula.serialize())
     except Exception as ex:
-        emitter.debug("Pysmt parser error, skipping path flip")
+        logger.exception(ex, ppc)
     finally:
         return new_path
 
@@ -1003,12 +1003,7 @@ def generate_z3_code_for_var(var_expr, var_name):
         except AssertionError as ex:
             break
         except Exception as exception:
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(exception).__name__, exception.args)
-            logger.error("Unhandled exception")
-            logger.information((var_expr, var_name, bit_size))
-            logger.information(code)
-            logger.error(message)
+            logger.exception(exception, code)
             break
     return code
 
@@ -1049,11 +1044,7 @@ def extend_formula(sym_dec, sym_expr, var_name):
         except AssertionError as ex:
             return sym_expr
         except Exception as ex:
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(ex).__name__, ex.args)
-            logger.error("Unhandled exception")
-            logger.information(z3_code)
-            logger.error(message)
+            logger.exception(ex, z3_code)
             return sym_expr
     return extended_expr
 

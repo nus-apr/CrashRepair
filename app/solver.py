@@ -29,10 +29,6 @@ def get_offset(z3_code, bit_size):
             x = model[sym_def].simplify()
             offset = int(str(x).split("_")[0])
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        logger.error("Unhandled exception")
-        logger.information(z3_code)
-        logger.error(message)
+        logger.exception(ex, z3_code)
     return offset
 

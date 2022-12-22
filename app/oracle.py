@@ -246,6 +246,7 @@ def is_expression_equal(str_a, str_b):
         expr_a = sympify(str_a.replace("[", "(").replace("]", ")").replace(".", "_").replace("->", "_"))
         expr_b = sympify(str_b.replace("[", "(").replace("]", ")").replace(".", "_").replace("->", "_"))
     except Exception as ex:
+        logger.exception(ex, (str_a, str_b))
         return False
     return expr_a == expr_b
 

@@ -13,22 +13,14 @@ def create():
     definitions.FILE_MAIN_LOG = log_file_path
     with open(definitions.FILE_MAIN_LOG, 'w+') as log_file:
         log_file.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
-    if os.path.exists(definitions.FILE_LAST_LOG):
-        os.remove(definitions.FILE_LAST_LOG)
-    if os.path.exists(definitions.FILE_ERROR_LOG):
-        os.remove(definitions.FILE_ERROR_LOG)
-    if os.path.exists(definitions.FILE_COMMAND_LOG):
-        os.remove(definitions.FILE_COMMAND_LOG)
-    if os.path.exists(definitions.FILE_LOCALIZE_LOG):
-        os.remove(definitions.FILE_LOCALIZE_LOG)
-    with open(definitions.FILE_LAST_LOG, 'w+') as last_log:
-        last_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
-    with open(definitions.FILE_ERROR_LOG, 'w+') as error_log:
-        error_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
-    with open(definitions.FILE_COMMAND_LOG, 'w+') as command_log:
-        command_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
-    with open(definitions.FILE_LOCALIZE_LOG, 'w+') as command_log:
-        command_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
+
+    for log_file in [definitions.FILE_LAST_LOG,definitions.FILE_ERROR_LOG, definitions.FILE_COMMAND_LOG,
+                     definitions.FILE_LOCALIZE_LOG, definitions.FILE_EXCEPTION_LOG]:
+        if os.path.exists(log_file):
+            os.remove(log_file)
+        with open(log_file, 'w+') as last_log:
+            last_log.write("[Start] " + values.TOOL_NAME + " started at " + str(datetime.datetime.now()) + "\n")
+
 
 def store_log_file(log_file_path):
     if os.path.isfile(log_file_path):
@@ -36,11 +28,10 @@ def store_log_file(log_file_path):
 
 def store_logs():
     copyfile(definitions.FILE_MAIN_LOG, definitions.DIRECTORY_LOG + "/log-latest")
-    store_log_file(definitions.FILE_COMMAND_LOG)
-    store_log_file(definitions.FILE_ERROR_LOG)
-    store_log_file(definitions.FILE_MAKE_LOG)
-    store_log_file(definitions.FILE_CRASH_LOG)
-    store_log_file(definitions.FILE_LOCALIZE_LOG)
+    for log_file in [definitions.FILE_COMMAND_LOG, definitions.FILE_ERROR_LOG,
+                     definitions.FILE_MAKE_LOG, definitions.FILE_EXCEPTION_LOG,
+                     definitions.FILE_CRASH_LOG, definitions.FILE_LOCALIZE_LOG]:
+        store_log_file(log_file)
 
 
 def log(log_message):
@@ -68,6 +59,14 @@ def track_localization(log_message):
     log_output = "[{}]: {}\n".format(time.asctime(), log_message)
     with open(definitions.FILE_LOCALIZE_LOG, 'a') as log_file:
         log_file.write(log_output)
+
+def exception(exception, data):
+    template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+    message = template.format(type(exception).__name__, exception.args)
+    log_output = "[{}]: {}\n".format(time.asctime(), message)
+    with open(definitions.FILE_EXCEPTION_LOG, 'a') as log_file:
+        log_file.write(log_output)
+        log_file.write(data)
 
 def command(message):
     message = str(message).strip().replace("[command]", "")
