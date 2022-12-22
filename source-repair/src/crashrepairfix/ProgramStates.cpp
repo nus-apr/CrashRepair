@@ -80,15 +80,18 @@ void ProgramStates::loadValues() {
     std::unordered_map<Variable const *, std::variant<double, long, unsigned long>> row;
     for (int col = 0; col < numColumns; col++) {
       auto cellString = cells[col];
+      auto const *variable = columns[col];
       strip_whitespace(cellString);
 
       // skip columns that have no values
       if (cellString == "none") {
+        spdlog::warn("skipping state values row with missing entry for column: {}", variable->getName());
         continue;
       }
 
-      auto const *variable = columns[col];
       std::variant<double, long, unsigned long> value;
+
+      spdlog::debug("reading value for column: {}", variable->getName());
 
       switch (variable->getResultType()) {
         case ResultType::Int:
