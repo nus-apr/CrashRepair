@@ -433,7 +433,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
 
         right_child = symbolized_expr.as_two_terms()[1]
         binary_op_str = "*"
-        if "/" == str(right_child)[1]:
+        if len(str(right_child)) > 1 and "/" == str(right_child)[1]:
             binary_op_str = "/"
             right_child = sympify(str(right_child)[2:])
         binary_op_symbol = build_op_symbol(binary_op_str)
