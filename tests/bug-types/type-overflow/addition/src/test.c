@@ -20,7 +20,8 @@ int main(int argc, char *argv[]) {
   read_file(argv[1], &buffer);
   int x = buffer[1];
   int y = INT_MAX;
-  printf("%d\n", x);
-  res = add(x,y);
+  int z = x + 1;
+  printf("%d\n", z);
+  res = add(z,y);
   return 0;
 }
