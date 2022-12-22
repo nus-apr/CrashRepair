@@ -35,6 +35,14 @@ TEST(ParserTest, Issue32) {
   ASSERT_NE(parse("(@var(integer, ++i) < @var(integer, n)) && (0 <= @var(integer, ++i))"), nullptr);
 }
 
+TEST(ParserTest, ArrayIndexExpr) {
+  ASSERT_NE(parse("(@var(integer, index) < @var(integer, array_0[index]))"), nullptr);
+}
+
+TEST(ParserTest, Issue35) {
+  ASSERT_NE(parse("(@var(integer, index) < @var(integer, array_0[index])) && (0 <= @var(integer, index))"), nullptr);
+}
+
 TEST(ParserTest, VarLessEqIntMin) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= INT_MIN"), nullptr);
 }
