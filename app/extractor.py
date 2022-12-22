@@ -1131,6 +1131,7 @@ def extract_crash_type(crash_reason):
 def extract_taint_sources(taint_expr_list, taint_memory_list, taint_loc):
     taint_source_list = set()
     for taint_expr in taint_expr_list:
+        taint_data_type, taint_expr = taint_expr.split(":")
         taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
         taint_source = extract_input_bytes_used(taint_expr_code)
         if not taint_source and "bv" in taint_expr:
