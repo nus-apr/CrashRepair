@@ -307,8 +307,7 @@ class ConstraintExpression:
                     mapped_symbol = make_constraint_symbol(constant, "INT_CONST")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
                 else:
-                    mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
-                    self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
+                    self._m_sizeof_mapping = generate_expr_for_str(mapping, "INT_VAR")
 
     def resolve_diff(self, symbolic_mapping):
         if self._m_symbol.is_diff():
@@ -324,8 +323,7 @@ class ConstraintExpression:
                     mapped_symbol = make_constraint_symbol(constant, "INT_CONST")
                     self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
                 else:
-                    mapped_symbol = make_constraint_symbol(mapping, "INT_VAR")
-                    self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
+                    self._m_diff_mapping = generate_expr_for_str(mapping, "INT_VAR")
 
     def resolve_base(self, symbolic_mapping):
         if self._m_symbol.is_base():
@@ -353,9 +351,29 @@ class ConstraintExpression:
             self.resolve_base(symbol_mapping)
 
         if self._m_lvalue:
-            self._m_lvalue.update_symbols(symbol_mapping)
+            left_symbol = self._m_lvalue._m_symbol
+            if left_symbol.is_int_var() or left_symbol.is_real_var() or left_symbol.is_ptr():
+                left_symbol_str = str(left_symbol._m_symbol)
+                if left_symbol_str in symbol_mapping:
+                    mapped_expr = generate_expr_for_str(symbol_mapping[left_symbol_str],
+                                                        self._m_lvalue.get_type())
+                    self._m_lvalue = mapped_expr
+                else:
+                    self._m_lvalue.update_symbols(symbol_mapping)
+            else:
+                self._m_lvalue.update_symbols(symbol_mapping)
         if self._m_rvalue:
-            self._m_rvalue.update_symbols(symbol_mapping)
+            right_symbol = self._m_rvalue._m_symbol
+            if right_symbol.is_int_var() or right_symbol.is_real_var() or right_symbol.is_ptr():
+                right_symbol_str = str(right_symbol._m_symbol)
+                if right_symbol_str in symbol_mapping:
+                    mapped_expr = generate_expr_for_str(symbol_mapping[right_symbol_str],
+                                                        self._m_rvalue.get_type())
+                    self._m_rvalue = mapped_expr
+                else:
+                    self._m_rvalue.update_symbols(symbol_mapping)
+            else:
+                self._m_rvalue.update_symbols(symbol_mapping)
 
 
 def build_op_symbol(symbol_str):
@@ -386,21 +404,44 @@ def make_constraint_expression(c_symbol:ConstraintSymbol, l_val:ConstraintSymbol
     return ConstraintExpression(c_symbol, l_val, r_val)
 
 
-def generate_expr_for_str(expr_str)->ConstraintExpression:
-    symbolic_stack = []
-    symbolic_list = []
-    str_tokens = expr_str.split(" - ").replace("(", "").replace(")", "")
-    for token in str_tokens:
-        if token in SymbolType.keys():
-            symbolic_stack.append(token)
+def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
+    constraint_expr = None
+    symbolized_expr = sympify(expr_str)
+    if symbolized_expr.as_expr().is_Symbol or symbolized_expr.as_expr().is_Function:
+        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), data_type)
+        constraint_expr =  make_symbolic_expression(constraint_symbol)
+    elif symbolized_expr.as_expr().is_Integer:
+        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), "INT_CONST")
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+    elif symbolized_expr.as_expr().is_Float:
+        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), "REAL_CONST")
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+    elif symbolized_expr.as_expr().is_Add:
+        left_child = symbolized_expr.as_two_terms()[0]
+        left_child_expr = generate_expr_for_str(str(left_child.as_expr()), data_type)
+        right_child = symbolized_expr.as_two_terms()[1]
+        binary_op_str = "+"
+        if "-" == str(right_child)[0]:
+            binary_op_str = "-"
+            right_child = sympify(str(right_child)[1:])
+        binary_op_symbol = build_op_symbol(binary_op_str)
+        right_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
+        constraint_expr = make_binary_expression(binary_op_symbol, left_child_expr, right_child_expr)
+    elif symbolized_expr.as_expr().is_Mul:
+        left_child = symbolized_expr.as_two_terms()[0]
+        left_child_expr = generate_expr_for_str(str(left_child.as_expr()), data_type)
 
-    for token in str_tokens:
-        token_strip = str(token).strip().replace("\n", "").replace("(", "").replace(")", "")
-        if token_strip.isnumeric():
-            token_type = "INT_CONST"
-            if token_strip.isdecimal():
-                token_type = "REAL_CONST"
-            token_symbol = make_constraint_symbol(token_strip, token_type)
+        right_child = symbolized_expr.as_two_terms()[1]
+        binary_op_str = "*"
+        if "/" == str(right_child)[1]:
+            binary_op_str = "/"
+            right_child = sympify(str(right_child)[2:])
+        binary_op_symbol = build_op_symbol(binary_op_str)
+        right_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
+        constraint_expr = make_binary_expression(binary_op_symbol, left_child_expr, right_child_expr)
+    else:
+        utilities.error_exit("Unhandled execption in Constraints:generate_expr_for_str")
+    return constraint_expr
 
 
 def generate_expr_for_ast(ast_node)->ConstraintExpression:
