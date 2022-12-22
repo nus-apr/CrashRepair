@@ -66,7 +66,7 @@ def exception(exception, data):
     log_output = "[{}]: {}\n".format(time.asctime(), message)
     with open(definitions.FILE_EXCEPTION_LOG, 'a') as log_file:
         log_file.write(log_output)
-        log_file.write(data)
+        log_file.write(str(data))
 
 def command(message):
     message = str(message).strip().replace("[command]", "")
