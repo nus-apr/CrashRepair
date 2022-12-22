@@ -57,8 +57,8 @@ class Scenario:
         The command that should be used to build the program.
     crashing_command: str
         The command that should be used to trigger the program to crash.
-    crashing_input: str
-        The path to the file that causes the binary to crash. (FIXME: how does this work for command-line arguments?)
+    crashing_input: t.Optional[str]
+        The optional path to the file that causes the binary to crash, if relevant.
     expected_exit_code_for_crashing_input: int
         The exit code that _should_ be produced by the program when the crashing input is provided (i.e., the oracle).
     """
@@ -72,7 +72,7 @@ class Scenario:
     prebuild_command: str
     build_command: str
     crashing_command: str
-    crashing_input: str
+    crashing_input: t.Optional[str]
     shell: Shell
     crash_test: Test
     additional_klee_flags: str = attrs.field(default="")
@@ -135,7 +135,7 @@ class Scenario:
         prebuild_command: str,
         build_command: str,
         crashing_command: str,
-        crashing_input: str,
+        crashing_input: t.Optional[str],
         expected_exit_code_for_crashing_input: int,
         skip_fuzzing: bool,
         additional_klee_flags: str,
@@ -214,7 +214,7 @@ class Scenario:
 
             crash_dict = bug_dict["crash"]
             crashing_command = crash_dict["command"]
-            crashing_input = crash_dict["input"]
+            crashing_input = crash_dict.get("input")
             additional_klee_flags = crash_dict.get("extra-klee-flags", "")
             expected_exit_code_for_crashing_input = crash_dict.get("expected-exit-code", 0)
         except KeyError as exc:

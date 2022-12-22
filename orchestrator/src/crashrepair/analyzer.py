@@ -27,7 +27,7 @@ binary_path:{binary_path}
 config_command:CC=crepair-cc CXX=crepair-cxx {prebuild_command}
 build_command:CC=crepair-cc CXX=crepair-cxx {build_command}
 test_input_list:{crashing_input}
-poc_list:{poc_list}
+{poc_list}
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca {extra_klee_flags}
 """
 
@@ -46,6 +46,7 @@ class Analyzer:
         scenario = self.scenario
 
         def write_config_to_file(filename: str) -> None:
+            poc_list = f"poc_list:{scenario.crashing_input}" if scenario.crashing_input else ""
             contents = _CONFIG_TEMPLATE.format(
                 project_directory=scenario.directory,
                 bug_name=scenario.name,
@@ -55,9 +56,10 @@ class Analyzer:
                 build_command=scenario.build_command,
                 crashing_input=scenario.crashing_command,
                 # FIXME it isn't clear how this works when positional arguments are used
-                poc_list=scenario.crashing_input,
+                poc_list=poc_list,
                 extra_klee_flags=scenario.additional_klee_flags,
             )
+            logger.debug(f"generated analyzer config:\n{contents}")
             with open(filename, "w") as fh:
                 fh.write(contents)
 
