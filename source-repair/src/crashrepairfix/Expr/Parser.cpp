@@ -21,6 +21,7 @@ using namespace tao::pegtl;
 namespace crashrepairfix {
 
 struct dot : one<'.'> {};
+struct plusplus : string<'+', '+'> {};
 struct arrow : string<'-', '>'> {};
 struct comma : seq<star<space>, one<','>, star<space>> {};
 struct open_bracket : seq<one<'('>, star<space>> {};
@@ -31,7 +32,7 @@ struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
 struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
 struct type_name : sor<type_int, type_float, type_pointer> {};
 
-struct var_name : seq<identifier_first, star<sor<identifier_other, dot, arrow>>> {};
+struct var_name : seq<sor<identifier_first, plusplus>, star<sor<identifier_other, dot, arrow, plusplus>>> {};
 struct integer : plus<digit> {};
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};

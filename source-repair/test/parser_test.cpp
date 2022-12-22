@@ -31,6 +31,10 @@ TEST(ParserTest, Issue25) {
   ASSERT_NE(parse("NULL != @var(pointer, header)"), nullptr);
 }
 
+TEST(ParserTest, Issue32) {
+  ASSERT_NE(parse("(@var(integer, ++i) < @var(integer, n)) && (0 <= @var(integer, ++i))"), nullptr);
+}
+
 TEST(ParserTest, VarLessEqIntMin) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= INT_MIN"), nullptr);
 }
