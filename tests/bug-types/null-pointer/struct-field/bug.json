@@ -16,7 +16,7 @@
     "commands": {
       "prebuild": "exit 0",
       "clean": "make clean",
-      "build": "make CFLAGS='-g -O0 -fsanitize=undefined'"
+      "build": "make CFLAGS='-g -O0'"
     }
   }
 }
