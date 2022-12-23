@@ -516,10 +516,14 @@ def localize_state_info(fix_loc, taint_concrete):
     func_name, function_ast = extractor.extract_func_ast(src_file, fix_line)
     func_line_range = extractor.extract_line_range(src_file, function_ast["range"])
     var_info_list = extractor.extract_ast_var_list(function_ast, src_file)
+
+    print(f"computed variable list: {var_info_list}")
+
     state_info_list_values = dict()
     taint_info_listed_occurences = taint_concrete[fix_loc]
     for occurence in range(len(taint_info_listed_occurences)):
         taint_info_list = taint_info_listed_occurences[occurence]
+        print(f"taint occurrences [{occurence}]: {taint_info_list}")
         state_info_list_values[occurence] = dict()
         for taint_loc, taint_value in taint_info_list.items():
             c_file, taint_line, taint_col, inst_addr = taint_loc.split(":")
@@ -530,7 +534,7 @@ def localize_state_info(fix_loc, taint_concrete):
             if int(taint_line) > int(fix_line):
                 continue
             for var_info in var_info_list:
-                var_name, v_line, v_col, v_type, _ = var_info
+                var_name, v_line, v_col, v_type, v_kind = var_info
                 if "argv" in var_name:
                     continue
                 if int(v_col) == int(taint_col) and int(v_line) == int(taint_line):
@@ -541,6 +545,13 @@ def localize_state_info(fix_loc, taint_concrete):
 
                     # Create index.
                     var_type, var_value = taint_value.split(":")
+
+                    # Determine the expression, if any, that is necessary to obtain the underlying value of a pointer
+                    if v_kind == "dec" and var_type == "integer":
+                        num_asterixes = v_type.split(" ")[-1].count("*")
+                        dereference_prefix = "*" * num_asterixes
+                        var_name = f"{dereference_prefix}{var_name}"
+
                     var_info_index = (var_name, v_line, v_col, var_type)
 
                     # We only want to to keep the last value for variable at a specific location (line+column).
@@ -554,6 +565,8 @@ def localize_state_info(fix_loc, taint_concrete):
                         "inst_addr": inst_addr,
                         "values": var_value
                     }
+
+    print(f"computed state info values: {state_info_list_values}")
     return state_info_list_values
 
 
@@ -601,27 +614,28 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
                         "line": line,
                         "column": col,
                         "instruction-address": inst_addr,
-                        "type": var_type
+                        "type": var_type,
                     }
+
+                    print(f"generated var metadata: {var_meta_data}")
 
                     if var_meta_data not in variables:
                         variables.append(var_meta_data)
-                    
-                    if var_type == "pointer":
-                        var_id = var_name
-                    else:
-                        var_id = "*" + var_name
+
+                    var_id = var_name
 
                     if var_id not in fieldnames:
                         fieldnames.append(var_id)
 
                     row[var_id] = var_value
                 rows.append(row)
+
             # Fill in missing values
             for row in rows:
                 for var_id in fieldnames:
                     if var_id not in row:
                         row[var_id] = "none"
+
             localization_obj["variables"] = variables
             values_directory = os.path.join(definitions.DIRECTORY_OUTPUT, "values")
             rel_output_filename = f"{localized_loc.replace('/', '#')}.csv"
