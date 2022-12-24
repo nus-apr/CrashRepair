@@ -517,13 +517,13 @@ def localize_state_info(fix_loc, taint_concrete):
     func_line_range = extractor.extract_line_range(src_file, function_ast["range"])
     var_info_list = extractor.extract_ast_var_list(function_ast, src_file)
 
-    print(f"computed variable list: {var_info_list}")
+    logger.information(f"computed variable list: {var_info_list}")
 
     state_info_list_values = dict()
     taint_info_listed_occurences = taint_concrete[fix_loc]
     for occurence in range(len(taint_info_listed_occurences)):
         taint_info_list = taint_info_listed_occurences[occurence]
-        print(f"taint occurrences [{occurence}]: {taint_info_list}")
+        logger.information(f"taint occurrences [{occurence}]: {taint_info_list}")
         state_info_list_values[occurence] = dict()
         for taint_loc, taint_value in taint_info_list.items():
             c_file, taint_line, taint_col, inst_addr = taint_loc.split(":")
@@ -566,7 +566,7 @@ def localize_state_info(fix_loc, taint_concrete):
                         "values": var_value
                     }
 
-    print(f"computed state info values: {state_info_list_values}")
+    logger.information(f"computed state info values: {state_info_list_values}")
     return state_info_list_values
 
 
@@ -617,7 +617,7 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
                         "type": var_type,
                     }
 
-                    print(f"generated var metadata: {var_meta_data}")
+                    logger.information(f"generated var metadata: {var_meta_data}")
 
                     if var_meta_data not in variables:
                         variables.append(var_meta_data)
