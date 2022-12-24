@@ -332,7 +332,7 @@ def synthesize_sub_expr_mul(symbolic_expr_list, ref_expr, prog_expr_list):
     if oracle.is_satisfiable(z3_code):
         for expr in prog_expr_list:
             if mapping_str:
-                mapping_str = mapping_str + "* ({})".format(expr)
+                mapping_str = mapping_str + " * ({})".format(expr)
             else:
                 mapping_str = "({})".format(expr)
     return mapping_str
@@ -343,7 +343,7 @@ def synthesize_sub_expr_add(symbolic_expr_list, ref_expr, prog_expr_list):
     if oracle.is_satisfiable(z3_code):
         for expr in prog_expr_list:
             if mapping_str:
-                mapping_str = mapping_str + "+ ({})".format(expr)
+                mapping_str = mapping_str + " + ({})".format(expr)
             else:
                 mapping_str = "({})".format(expr)
     return mapping_str
