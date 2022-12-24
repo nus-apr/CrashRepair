@@ -273,7 +273,7 @@ def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
     else:
         concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
         diff_val = int(concrete_ptr) - int(base_address)
-        diff_expr = "(_ bv{} 64)".format(symbolic_ptr, diff_val)
+        diff_expr = "(_ bv{} 64)".format(diff_val)
 
     return diff_expr, diff_val
 
