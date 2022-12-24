@@ -414,7 +414,13 @@ def make_constraint_expression(c_symbol:ConstraintSymbol, l_val:ConstraintSymbol
 
 def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     constraint_expr = None
-    symbolized_expr = sympify(expr_str)
+    try:
+        symbolized_expr = sympify(expr_str)
+    except Exception as ex:
+        constraint_symbol = make_constraint_symbol(expr_str, data_type)
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+        return constraint_expr
+
     if symbolized_expr.as_expr().is_Symbol or symbolized_expr.as_expr().is_Function:
         constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), data_type)
         constraint_expr =  make_symbolic_expression(constraint_symbol)
