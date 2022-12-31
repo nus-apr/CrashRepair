@@ -22,6 +22,15 @@ class ScenarioSummary:
     result_stat: t.Tuple[t.Any]
 
 
+def scenario_directories() -> t.List[str]:
+    """Returns a list of absolute paths to scenario directories containing a bug.json file"""
+    result: t.Set[str] = set()
+    for root, _, files in os.walk(dir_path):
+        if "bug.json" in files:
+            result.add(os.path.abspath(root))
+    return result
+
+
 def read_json(file_path):
     json_data = None
     if os.path.isfile(file_path):
@@ -158,6 +167,24 @@ def run_test(test_dir: str) -> ScenarioSummary:
     )
 
 
+def copy_logs() -> None:
+    """Copies across the log files to the mounted logs directory"""
+    for bug_directory in scenario_directories():
+        from_analyze_log = os.path.join(bug_directory, "analyze.log")
+        from_repair_log = os.path.join(bug_directory, "repair.log")
+
+        rel_test_dir = os.path.relpath(bug_directory, dir_path)
+        log_dir = os.path.join("/logs", rel_test_dir)
+        to_analyze_log = os.path.join(log_dir, "analyze.log")
+        to_repair_log = os.path.join(log_dir, "repair.log")
+
+        os.makedirs(log_dir, exist_ok=True)
+        if os.path.isfile(from_analyze_log):
+            shutil.copyfile(from_analyze_log, to_analyze_log)
+        if os.path.isfile(from_repair_log):
+            shutil.copyfile(from_repair_log, to_repair_log)
+
+
 def run(args: argparse.Namespace) -> None:
     total_test = 0
     total_analyzed = 0
@@ -170,8 +197,7 @@ def run(args: argparse.Namespace) -> None:
         if "repair.conf" not in file_path:
             continue
 
-        # FIXME use os.path.dirname
-        test_dir = "/".join(file_path.split("/")[:-1])
+        test_dir = os.path.dirname(file_path)
         total_test += 1
         summary = run_test(test_dir)
         if summary.analysis_outcome == "SUCCESS":
@@ -189,25 +215,7 @@ def run(args: argparse.Namespace) -> None:
     print(f"Total tests repaired: {total_repaired}({total_test - total_repaired})")
     write_as_json(result_stat, summary_path)
 
-    # copy across log files
-    for file_path in file_list:
-        if "bug.json" not in file_path:
-            continue
-
-        test_dir = os.path.dirname(file_path)
-        from_analyze_log = os.path.join(test_dir, "analyze.log")
-        from_repair_log = os.path.join(test_dir, "repair.log")
-
-        rel_test_dir = os.path.relpath(test_dir, dir_path)
-        log_dir = os.path.join("/logs", rel_test_dir)
-        to_analyze_log = os.path.join(log_dir, "analyze.log")
-        to_repair_log = os.path.join(log_dir, "repair.log")
-
-        os.makedirs(log_dir, exist_ok=True)
-        if os.path.isfile(from_analyze_log):
-            shutil.copyfile(from_analyze_log, to_analyze_log)
-        if os.path.isfile(from_repair_log):
-            shutil.copyfile(from_repair_log, to_repair_log)
+    copy_logs()
 
 
 def main() -> None:
