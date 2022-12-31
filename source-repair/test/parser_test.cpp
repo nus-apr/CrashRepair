@@ -31,6 +31,18 @@ TEST(ParserTest, Issue25) {
   ASSERT_NE(parse("NULL != @var(pointer, header)"), nullptr);
 }
 
+TEST(ParserTest, ShiftRight) {
+  ASSERT_NE(parse("INT_MAX >> @var(integer, x)"), nullptr);
+}
+
+TEST(ParserTest, ShiftLeft) {
+  ASSERT_NE(parse("INT_MAX << @var(integer, x)"), nullptr);
+}
+
+TEST(ParserTest, Issue38) {
+  ASSERT_NE(parse("((INT_MAX >> @var(integer, x)) < @var(integer, z)) && ((0 < @var(integer, x)) && (@var(integer, x) < 4))"), nullptr);
+}
+
 TEST(ParserTest, Issue32) {
   ASSERT_NE(parse("(@var(integer, ++i) < @var(integer, n)) && (0 <= @var(integer, ++i))"), nullptr);
 }

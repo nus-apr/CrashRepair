@@ -49,6 +49,8 @@ struct long_max : string<'L', 'O', 'N', 'G', '_', 'M', 'A', 'X'> {};
 struct long_min : string<'L', 'O', 'N', 'G', '_', 'M', 'I', 'N'> {};
 struct constant : sor<null, int_max, int_min, long_max, long_min> {};
 
+struct left_shift : pad<string<'<', '<'>, space> {};
+struct right_shift : pad<string<'>', '>'>, space> {};
 struct less_than : pad<one<'<'>, space> {};
 struct lesser_or_equal : pad<string<'<', '='>, space> {};
 struct greater_than : pad<one<'>'>, space> {};
@@ -68,7 +70,8 @@ struct value : sor<integer, result, variable, constant, bracketed> {};
 
 struct product : list<value, sor<multiply, divide>> {}; // 3
 struct sum : list<product, sor<plus, minus>> {}; // 4
-struct compare : list<sum, sor<lesser_or_equal, less_than, greater_or_equal, greater_than>> {}; // 6
+struct shift : list<sum, sor<left_shift, right_shift>> {}; // 5
+struct compare : list<shift, sor<lesser_or_equal, less_than, greater_or_equal, greater_than>> {}; // 6
 struct equality : list<compare, sor<equals, not_equals>> {}; // 7
 struct expression : list<equality, sor<logical_and, logical_or>> {}; // 11/12
 
@@ -131,6 +134,8 @@ using selector = parse_tree::selector<
     multiply,
     divide,
     equals,
+    left_shift,
+    right_shift,
     not_equals,
     logical_and,
     logical_or,
@@ -142,6 +147,7 @@ using selector = parse_tree::selector<
   rearrange::on<
     product,
     sum,
+    shift,
     compare,
     equality,
     expression
@@ -215,6 +221,10 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
     return convertBinOpNode(BinOp::Opcode::AND, node);
   } else if (nodeType == "crashrepairfix::logical_or") {
     return convertBinOpNode(BinOp::Opcode::OR, node);
+  } else if (nodeType == "crashrepairfix::left_shift") {
+    return convertBinOpNode(BinOp::Opcode::LEFT_SHIFT, node);
+  } else if (nodeType == "crashrepairfix::right_shift") {
+    return convertBinOpNode(BinOp::Opcode::RIGHT_SHIFT, node);
   } else if (nodeType == "crashrepairfix::null") {
     return NullConst::create();
   } else if (nodeType == "crashrepairfix::int_max") {

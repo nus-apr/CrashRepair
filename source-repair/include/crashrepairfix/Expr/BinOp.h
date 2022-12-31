@@ -24,6 +24,8 @@ public:
     SUBTRACT,
     DIVIDE,
     MULTIPLY,
+    LEFT_SHIFT,
+    RIGHT_SHIFT
   };
 
   static bool isArithmeticOpcode(Opcode const &opcode) {
@@ -32,6 +34,8 @@ public:
       case Opcode::SUBTRACT:
       case Opcode::DIVIDE:
       case Opcode::MULTIPLY:
+      case Opcode::LEFT_SHIFT:
+      case Opcode::RIGHT_SHIFT:
         return true;
       default:
         return false;
@@ -136,6 +140,10 @@ public:
       return Opcode::ADD;
     } else if (string == "*") {
       return Opcode::MULTIPLY;
+    } else if (string == "<<") {
+      return Opcode::LEFT_SHIFT;
+    } else if (string == ">>") {
+      return Opcode::RIGHT_SHIFT;
     } else {
       spdlog::warn("unrecognized binary opcode: {}", string);
       return {};
@@ -168,6 +176,10 @@ public:
         return "+";
       case Opcode::MULTIPLY:
         return "*";
+      case Opcode::LEFT_SHIFT:
+        return "<<";
+      case Opcode::RIGHT_SHIFT:
+        return ">>";
       default:
         abort();
     }

@@ -62,6 +62,11 @@ z3::expr ExprToZ3Converter::convert(BinOp const *expr) {
       return lhsZ3 == rhsZ3;
     case BinOp::Opcode::NEQ:
       return lhsZ3 != rhsZ3;
+
+    case BinOp::Opcode::LEFT_SHIFT:
+      return z3::shl(lhsZ3, rhsZ3);
+    case BinOp::Opcode::RIGHT_SHIFT:
+      return z3::lshr(lhsZ3, rhsZ3);
   }
   assert (false);
 }
