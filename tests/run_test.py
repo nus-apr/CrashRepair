@@ -2,6 +2,7 @@
 import argparse
 import json
 import mmap
+import multiprocessing
 import os
 import re
 import shutil
@@ -16,6 +17,7 @@ summary_path = os.path.join(dir_path, "summary.json")
 
 @dataclass
 class ScenarioSummary:
+    directory: str
     repair_outcome: str
     analysis_outcome: str
     # TODO this should be collapsed into a set of dataclass fields
@@ -47,7 +49,7 @@ def write_as_json(data, output_file_path):
 
 
 def run_analyze(test_dir: str) -> str:
-    analyze_command = "git clean -f; crepair --conf=repair.conf > analyze.log 2>&1"
+    analyze_command = "git clean -f && crepair --conf=repair.conf > analyze.log 2>&1"
     process = subprocess.Popen(analyze_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
     ret_code = process.returncode
@@ -65,7 +67,7 @@ def run_analyze(test_dir: str) -> str:
 
 
 def run_repair(test_dir: str) -> str:
-    repair_command = "git clean -f; rm -rf analysis; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
+    repair_command = "git clean -f && rm -rf analysis; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
     process = subprocess.Popen(repair_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
     ret_code = process.returncode
@@ -156,15 +158,20 @@ def run_test(test_dir: str) -> ScenarioSummary:
         repair_compiled,
         repair_pass_oracle,
     )
-    clean_command = "git clean -f; git checkout HEAD -- {}".format(test_dir)
+    clean_command = "git clean -f && git checkout HEAD -- {}".format(test_dir)
     process = subprocess.Popen(clean_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
 
-    return ScenarioSummary(
+    summary = ScenarioSummary(
+        directory=test_dir,
         repair_outcome=repair_result,
         analysis_outcome=analyze_result,
         result_stat=result_stat,
     )
+
+    print(f"Test:{test_dir:100}\t analysis={summary.analysis_outcome} \t repair={summary.repair_outcome}")
+
+    return summary
 
 
 def copy_logs() -> None:
@@ -186,33 +193,22 @@ def copy_logs() -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    total_test = 0
-    total_analyzed = 0
-    total_repaired = 0
+    test_dirs = scenario_directories()
+    outcomes: t.List[ScenarioSummary] = []
 
-    file_list = getListOfFiles(dir_path)
-    result_stat: t.List[t.Tuple[t.Any]] = []
-    for file_path in file_list:
-        # FIXME why not look for bug.json?
-        if "repair.conf" not in file_path:
-            continue
+    with multiprocessing.Pool(args.workers) as pool:
+        outcomes = pool.map(run_test, test_dirs)
 
-        test_dir = os.path.dirname(file_path)
-        total_test += 1
-        summary = run_test(test_dir)
-        if summary.analysis_outcome == "SUCCESS":
-            total_analyzed += 1
-        if "SUCCESS" in summary.repair_outcome:
-            total_repaired += 1
-
-        result_stat.append(summary.result_stat)
-
-        print(f"Test:{test_dir:100}\t analysis={summary.analysis_outcome} \t repair={summary.repair_outcome}")
+    # compute stats
+    total_tests = len(outcomes)
+    total_analyzed = sum(1 for outcome in outcomes if outcome.analysis_outcome == "SUCCESS")
+    total_repaired = sum(1 for outcome in outcomes if "SUCCESS" in outcome.repair_outcome)
+    result_stat = [outcome.result_stat for outcome in outcomes]
 
     print("Test completed\n")
-    print(f"Total tests executed: {total_test}")
-    print(f"Total tests analyzed: {total_analyzed}({total_test - total_analyzed})")
-    print(f"Total tests repaired: {total_repaired}({total_test - total_repaired})")
+    print(f"Total tests executed: {total_tests}")
+    print(f"Total tests analyzed: {total_analyzed}({total_tests - total_analyzed})")
+    print(f"Total tests repaired: {total_repaired}({total_tests - total_repaired})")
     write_as_json(result_stat, summary_path)
 
     copy_logs()
@@ -221,6 +217,13 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser("runs the HiFix test suite")
     parser.add_argument("--persist-logs", action="store_true", help="copies log files to the mounted logs directory")
+    parser.add_argument(
+        "-j",
+        type=int,
+        default=1,
+        dest="workers",
+        help="number of workers to use when running tests",
+    )
     args = parser.parse_args()
     run(args)
 
