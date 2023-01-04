@@ -489,6 +489,8 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
     return candidate_constraints
 
 def update_result_nodes(cfc, expr_str, data_type):
+    if cfc.is_leaf():
+        return None
     cfc_rhs_str = cfc.get_r_expr().to_expression()
     cfc_lhs_str = cfc.get_l_expr().to_expression()
     # print("CANDIDATE", candidate_loc)
