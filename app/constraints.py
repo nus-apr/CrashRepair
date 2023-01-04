@@ -443,15 +443,22 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
         constraint_expr = make_binary_expression(binary_op_symbol, left_child_expr, right_child_expr)
     elif symbolized_expr.as_expr().is_Mul:
         left_child = symbolized_expr.as_two_terms()[0]
-        left_child_expr = generate_expr_for_str(str(left_child.as_expr()), data_type)
-
         right_child = symbolized_expr.as_two_terms()[1]
         binary_op_str = "*"
-        if len(str(right_child)) > 1 and "/" == str(right_child)[1]:
+        if len(str(left_child)) > 1 and "/" == str(left_child)[1]:
+            binary_op_str = "/"
+            left_child = sympify(str(left_child)[2:])
+            right_child_expr = generate_expr_for_str(str(left_child.as_expr()), data_type)
+            left_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
+        elif len(str(right_child)) > 1 and "/" == str(right_child)[1]:
             binary_op_str = "/"
             right_child = sympify(str(right_child)[2:])
+            right_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
+            left_child_expr = generate_expr_for_str(str(left_child.as_expr()), data_type)
+        else:
+            right_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
+            left_child_expr = generate_expr_for_str(str(left_child.as_expr()), data_type)
         binary_op_symbol = build_op_symbol(binary_op_str)
-        right_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
         constraint_expr = make_binary_expression(binary_op_symbol, left_child_expr, right_child_expr)
     else:
         utilities.error_exit("Unhandled execption in Constraints:generate_expr_for_str")
