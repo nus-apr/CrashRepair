@@ -491,12 +491,14 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
 def update_result_nodes(cfc, expr_str, data_type):
     if cfc.is_leaf():
         return None
-    cfc_rhs_str = cfc.get_r_expr().to_expression()
-    cfc_lhs_str = cfc.get_l_expr().to_expression()
-    # print("CANDIDATE", candidate_loc)
-    # print(cfc_lhs_str)
-    # print(cfc_rhs_str)
-    # print(expression_str)
+    cfc_rhs_str = ""
+    cfc_lhs_str = ""
+    if cfc.get_r_expr():
+        cfc_rhs_str = cfc.get_r_expr().to_expression()
+
+    if cfc.get_l_expr():
+        cfc_lhs_str = cfc.get_l_expr().to_expression()
+
     if "sizeof " not in cfc_lhs_str and "diff " not in cfc_lhs_str:
         if oracle.is_expression_equal(cfc_lhs_str, expr_str):
             # print("MATCH LHS", localized_cfc.to_string(), expression_str)
