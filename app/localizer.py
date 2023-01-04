@@ -261,6 +261,20 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                                                             crash_var_input_byte_list,
                                                             subset_expr_list)
                     candidate_mapping.update(subset_mapping)
+    for crash_var_name in candidate_mapping:
+        edit_distance_index = list()
+        candidate_list = candidate_mapping[crash_var_name]
+        index = 0
+        for candidate_info in candidate_list:
+            constant_mapping, e_line, e_col, e_addr, is_exp_dec = candidate_info
+            edit_distance = solver.levenshtein_distance(crash_var_name, constant_mapping)
+            edit_distance_index.append((index, edit_distance))
+            index = index + 1
+        ranked_index_list = sorted(edit_distance_index, key=lambda x:x[1])
+        ranked_candidate_list = list()
+        for index in ranked_index_list:
+            ranked_candidate_list.append(list(candidate_list)[index[0]])
+        candidate_mapping[crash_var_name] = ranked_candidate_list
 
     global_candidate_mapping[function_name] = candidate_mapping
     return candidate_mapping
