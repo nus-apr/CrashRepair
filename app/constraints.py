@@ -713,6 +713,20 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                         neq_op = build_op_symbol("!=")
                         constraint_expr = make_binary_expression(neq_op, null_expr, ptr_expr)
                         return constraint_expr
+                if base_pointer:
+                    if base_pointer in values.MEMORY_TRACK_CONCRETE:
+                        concrete_size = values.MEMORY_TRACK_CONCRETE[base_pointer]
+                        if int(concrete_size) == 0:
+                            sizeof_op = build_op_symbol("sizeof ")
+                            ptr_expr = generate_expr_for_ast(ptr_node)
+                            sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
+                            zero_symbol = make_constraint_symbol("0", "INT_CONST")
+                            zero_expr = make_symbolic_expression(zero_symbol)
+                            gt_op = build_op_symbol("<")
+                            constraint_expr = make_binary_expression(gt_op, zero_expr, sizeof_expr)
+                            return constraint_expr
+
+
 
         sizeof_op = build_op_symbol("sizeof ")
         ptr_expr = generate_expr_for_ast(ptr_node)
