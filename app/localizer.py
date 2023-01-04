@@ -481,30 +481,45 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
         candidate_loc = (candidate_line, candidate_col)
         if candidate_loc in expression_string_list:
             expression_str, data_type = expression_string_list[candidate_loc]
-            cfc_rhs_str = candidate_cfc.get_r_expr().to_expression()
-            cfc_lhs_str = candidate_cfc.get_l_expr().to_expression()
-            # print("CANDIDATE", candidate_loc)
-            # print(cfc_lhs_str)
-            # print(cfc_rhs_str)
-            # print(expression_str)
-            if "sizeof " not in cfc_lhs_str and "diff " not in cfc_rhs_str:
-                if oracle.is_expression_equal(cfc_lhs_str, expression_str):
-                    # print("MATCH LHS", localized_cfc.to_string(), expression_str)
-                    result_symbol = constraints.make_constraint_symbol(expression_str, data_type)
-                    result_expr = constraints.make_symbolic_expression(result_symbol)
-                    candidate_cfc.set_l_expr(result_expr)
-                    updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))
-                    continue
-            if "sizeof " not in cfc_rhs_str and "diff " not in cfc_rhs_str:
-                if oracle.is_expression_equal(cfc_rhs_str, expression_str):
-                    # print("MATCH RHS", localized_cfc.to_string(), expression_str)
-                    result_symbol = constraints.make_constraint_symbol(expression_str, data_type)
-                    result_expr = constraints.make_symbolic_expression(result_symbol)
-                    candidate_cfc.set_r_expr(result_expr)
-                    updated_candidate_constraints.append((candidate_cfc, candidate_line, candidate_col))
-                    continue
+            updated_cfc = update_result_nodes(candidate_cfc, expression_str, data_type)
+            if updated_cfc:
+                updated_candidate_constraints.append((updated_cfc, candidate_line, candidate_col))
+                continue
         updated_candidate_constraints.append(candidate_constraint)
     return candidate_constraints
+
+def update_result_nodes(cfc, expr_str, data_type):
+    cfc_rhs_str = cfc.get_r_expr().to_expression()
+    cfc_lhs_str = cfc.get_l_expr().to_expression()
+    # print("CANDIDATE", candidate_loc)
+    # print(cfc_lhs_str)
+    # print(cfc_rhs_str)
+    # print(expression_str)
+    if "sizeof " not in cfc_lhs_str and "diff " not in cfc_lhs_str:
+        if oracle.is_expression_equal(cfc_lhs_str, expr_str):
+            # print("MATCH LHS", localized_cfc.to_string(), expression_str)
+            result_symbol = constraints.make_constraint_symbol(expr_str, data_type)
+            result_expr = constraints.make_symbolic_expression(result_symbol)
+            cfc.set_l_expr(result_expr)
+            return cfc
+        if expr_str in cfc_lhs_str:
+            cfc_lhs = update_result_nodes(cfc.get_l_expr(), expr_str, data_type)
+            if cfc_lhs:
+                cfc.set_l_expr(cfc_lhs)
+                return cfc
+    if "sizeof " not in cfc_rhs_str and "diff " not in cfc_rhs_str:
+        if oracle.is_expression_equal(cfc_rhs_str, expr_str):
+            # print("MATCH RHS", localized_cfc.to_string(), expression_str)
+            result_symbol = constraints.make_constraint_symbol(expr_str, data_type)
+            result_expr = constraints.make_symbolic_expression(result_symbol)
+            cfc.set_r_expr(result_expr)
+            return cfc
+        if expr_str in cfc_rhs_str:
+            cfc_rhs = update_result_nodes(cfc.get_r_expr(), expr_str, data_type)
+            if cfc_rhs:
+                cfc.set_r_expr(cfc_rhs)
+                return cfc
+    return None
 
 
 def localize_state_info(fix_loc, taint_concrete):
