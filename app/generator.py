@@ -1124,6 +1124,12 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
         code += dec
 
     combination_z3_code = ""
+    zero = "x0"
+    one = "x1"
+    if int(max_bit_size) > 4:
+        count_zeros = int(int(max_bit_size) / 4)
+        zero = "x" + "0" * count_zeros
+        one = "x" + "0" * (count_zeros - 1) + "1"
     for i in range(len(sym_expr_list)):
         z3_code = z3_code_list[i]
         prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_code)
@@ -1131,6 +1137,7 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
         if bit_size < max_bit_size:
             extended_sym_expr = extend_formula(declaration, sym_expr, max_bit_size)
         code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
         if combination_z3_code:
             combination_z3_code = "(bvadd {} {})".format(combination_z3_code, prog_expr)
         else:
@@ -1171,6 +1178,13 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
         code += dec
 
     combination_z3_code = ""
+    zero = "x0"
+    one = "x1"
+    if int(max_bit_size) > 4:
+        count_zeros = int(int(max_bit_size) / 4)
+        zero = "x" + "0" * count_zeros
+        one = "x" + "0" * (count_zeros - 1) + "1"
+
     for i in range(len(sym_expr_list)):
         z3_code = z3_code_list[i]
         prog_expr, sym_expr, declaration, bit_size = extract_definition(z3_code)
@@ -1178,6 +1192,7 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
         if bit_size < max_bit_size:
             extended_sym_expr = extend_formula(declaration, sym_expr, max_bit_size)
         code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
         if combination_z3_code:
             combination_z3_code = "(bvmul {} {})".format(combination_z3_code, prog_expr)
         else:
