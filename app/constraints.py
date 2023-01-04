@@ -715,8 +715,9 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                         return constraint_expr
                 if base_pointer:
                     if base_pointer in values.MEMORY_TRACK_CONCRETE:
-                        concrete_size = values.MEMORY_TRACK_CONCRETE[base_pointer]
-                        if int(concrete_size) == 0:
+                        alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
+                        concrete_value = alloc_info["con_size"]
+                        if int(concrete_value) == 0:
                             sizeof_op = build_op_symbol("sizeof ")
                             ptr_expr = generate_expr_for_ast(ptr_node)
                             sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
