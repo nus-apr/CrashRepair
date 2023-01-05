@@ -343,7 +343,7 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
 def synthesize_sub_expr_mul(symbolic_expr_list, ref_expr, prog_expr_list):
     z3_code = generator.generate_z3_code_for_combination_mul(symbolic_expr_list, ref_expr)
     mapping_str = ""
-    if oracle.is_satisfiable(z3_code):
+    if not oracle.is_satisfiable(z3_code):
         for expr in prog_expr_list:
             if mapping_str:
                 mapping_str = mapping_str + " * ({})".format(expr)
@@ -354,7 +354,7 @@ def synthesize_sub_expr_mul(symbolic_expr_list, ref_expr, prog_expr_list):
 def synthesize_sub_expr_add(symbolic_expr_list, ref_expr, prog_expr_list):
     z3_code = generator.generate_z3_code_for_combination_add(symbolic_expr_list, ref_expr)
     mapping_str = ""
-    if oracle.is_satisfiable(z3_code):
+    if not oracle.is_satisfiable(z3_code):
         for expr in prog_expr_list:
             if mapping_str:
                 mapping_str = mapping_str + " + ({})".format(expr)

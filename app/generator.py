@@ -250,11 +250,9 @@ def generate_definitions(sym_expr_a, sym_expr_b):
 
 def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
     ref_z3_code = generate_z3_code_for_var(ref_sym_expr, "crash_var_ref")
-    ref_name, ref_sym_expr, ref_dec, ref_bit_size = extract_definition(ref_z3_code)
+    ref_name, _, ref_dec_list, ref_bit_size = extract_definition(ref_z3_code)
     code = "(set-logic QF_AUFBV )\n"
-    source_def_list = generate_source_declarations(ref_z3_code, ref_z3_code)
-    expr_dec_list = set()
-    expr_dec_list.add(ref_dec)
+    complete_decl_list = ref_dec_list
     z3_code_list = list()
     max_bit_size = 0
     i = 0
@@ -262,18 +260,18 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
         i = i + 1
         z3_code = generate_z3_code_for_var(sym_expr, "expr_{}".format(i))
         z3_code_list.append(z3_code)
-        prog_expr, _, declaration, bit_size = extract_definition(z3_code)
-        source_def_list += generate_source_declarations(z3_code, z3_code)
-        expr_dec_list.add(declaration)
+        prog_expr, _, declaration_list, bit_size = extract_definition(z3_code)
+        complete_decl_list += declaration_list
         if bit_size > max_bit_size:
             max_bit_size = bit_size
 
     if max_bit_size < ref_bit_size:
         max_bit_size = ref_bit_size
 
-    for source_def in list(set(source_def_list)):
-        code += source_def
-    for dec in expr_dec_list:
+    for dec in list(set(complete_decl_list)):
+        if ref_name in dec or "expr_" in dec:
+            bit_size = re.search(r'\(_ BitVec (.*)\)', dec).group(0)
+            dec = dec.replace(bit_size, "(_ BitVec {}))".format(max_bit_size))
         code += dec + "\n"
 
     combination_z3_code = ""
@@ -287,14 +285,16 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
         z3_code = z3_code_list[i]
         sym_expr = sym_expr_list[i]
         select_list = [x.group() for x in re.finditer(r'select (.*?)\)', sym_expr)]
-        prog_expr, _, declaration, bit_size = extract_definition(z3_code)
+        prog_expr, _, declaration_list, bit_size = extract_definition(z3_code)
         extended_sym_expr = sym_expr
         if bit_size < max_bit_size:
             dummy_name = "__check__"
-            declaration += "(declare-fun " + dummy_name + "() (_ BitVec " + str(max_bit_size) + "))\n"
+            declaration = "(declare-fun " + dummy_name + "() (_ BitVec " + str(max_bit_size) + "))\n"
+            for decl in declaration_list:
+                declaration += decl + "\n"
             extended_sym_expr = extend_formula(declaration,
                                                sym_expr, dummy_name)
-        code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        code += "(assert (not (= {} {})))\n".format(prog_expr, extended_sym_expr)
         code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
         if combination_z3_code:
             combination_z3_code = "(bvadd {} {})".format(combination_z3_code, prog_expr)
@@ -302,7 +302,7 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
             combination_z3_code = prog_expr
 
     code += "(assert (= {} {}))\n".format(ref_name, ref_sym_expr)
-    code += "(assert (= {} {}))\n".format(combination_z3_code, ref_sym_expr)
+    code += "(assert (= {} {}))\n".format(combination_z3_code, ref_name)
     code += "(check-sat)\n"
     return code
 
@@ -327,8 +327,11 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
 
     if max_bit_size < ref_bit_size:
         max_bit_size = ref_bit_size
-    for decl in list(set(complete_decl_list)):
-        code += decl + "\n"
+    for dec in list(set(complete_decl_list)):
+        if ref_name in dec or "expr_" in dec:
+            bit_size = re.search(r'\(_ BitVec (.*)\)', dec).group(0)
+            dec = dec.replace(bit_size, "(_ BitVec {}))".format(max_bit_size))
+        code += dec + "\n"
 
     combination_z3_code = ""
     zero = "x0"
@@ -347,10 +350,10 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
             dummy_name = "__check__"
             declaration = "(declare-fun " + dummy_name + "() (_ BitVec " + str(max_bit_size) + "))\n"
             for decl in declaration_list:
-                declaration += decl
+                declaration += decl + "\n"
             extended_sym_expr = extend_formula(declaration,
                                                sym_expr, dummy_name)
-        code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        code += "(assert (not (= {} {})))\n".format(prog_expr, extended_sym_expr)
         code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
         if combination_z3_code:
             combination_z3_code = "(bvmul {} {})".format(combination_z3_code, prog_expr)
