@@ -294,8 +294,8 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
                 declaration += decl + "\n"
             extended_sym_expr = extend_formula(declaration,
                                                sym_expr, dummy_name)
-        code += "(assert (not (= {} {})))\n".format(prog_expr, extended_sym_expr)
-        code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
+        code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        # code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
         if combination_z3_code:
             combination_z3_code = "(bvadd {} {})".format(combination_z3_code, prog_expr)
         else:
@@ -353,8 +353,8 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
                 declaration += decl + "\n"
             extended_sym_expr = extend_formula(declaration,
                                                sym_expr, dummy_name)
-        code += "(assert (not (= {} {})))\n".format(prog_expr, extended_sym_expr)
-        code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
+        code += "(assert (= {} {}))\n".format(prog_expr, extended_sym_expr)
+        # code += "(assert  (not (= " + prog_expr + " #" + zero + ")))\n"
         if combination_z3_code:
             combination_z3_code = "(bvmul {} {})".format(combination_z3_code, prog_expr)
         else:
