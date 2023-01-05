@@ -166,7 +166,8 @@ def generate_source_declarations(sym_expr_a, sym_expr_b):
     source_def_str = ""
     source_list = list(set(source_list_a + source_list_b))
     unique_source_list = []
-    for source_name in source_list:
+    for source in source_list:
+        source_name = re.search(r'select  (.*) \(',source).group(1)
         if source_name in unique_source_list:
             continue
         unique_source_list.append(source_name)
