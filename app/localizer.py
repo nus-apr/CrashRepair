@@ -295,7 +295,7 @@ def synthesize_subset_expr(ref_var, ref_expr, ref_byte_list, expr_list):
         emitter.debug("\t\t\tSymbolic Expr:{}".format(var_expr))
 
     combination_depth = 3
-    l1 = list(combinations(expr_loc_list, 2))
+    l1 = list(combinations(reversed(expr_loc_list), 2))
     l2 = []
     l3 = []
     # if len(expr_loc_list) > 3:
