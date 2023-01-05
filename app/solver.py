@@ -4,6 +4,7 @@ from six.moves import cStringIO
 from pysmt.typing import BV32, BV8, ArrayType, BV64, BV16, BV8
 from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, reset_env
 import ctypes
+from pysmt.exceptions import UndefinedSymbolError, PysmtValueError,PysmtTypeError
 
 
 def get_offset(z3_code, bit_size):
@@ -29,6 +30,8 @@ def get_offset(z3_code, bit_size):
         if sym_def in model:
             x = model[sym_def].simplify()
             offset = int(str(x).split("_")[0])
+    except PysmtTypeError as ex:
+        return None
     except Exception as ex:
         logger.exception(ex, z3_code)
 
