@@ -10,34 +10,6 @@ from pysmt.smtlib.parser import SmtLibParser
 
 
 
-def extract_var_relationship(var_expr_map):
-    # preserve user-input : program variable relationship
-    # include program variable names for program specification
-    parser = SmtLibParser()
-    relationship = None
-    for expr_map in var_expr_map:
-        prog_var_name, prog_var_expr = expr_map[0]
-        angelic_var_name, angelic_var_expr = expr_map[1]
-        prog_dependent_var_list = set(re.findall("\(select (.+?) \(_ ", prog_var_expr))
-        angelic_dependent_var_list = set(re.findall("\(select (.+?) \(_ ", angelic_var_expr))
-        dependent_var_list = set(list(prog_dependent_var_list) + list(angelic_dependent_var_list))
-
-        str_script = "(set-logic QF_AUFBV )\n"
-        str_script += "(declare-fun " + prog_var_name + " () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
-        for var_d in dependent_var_list:
-            str_script += "(declare-fun " + var_d + " () (Array (_ BitVec 32) (_ BitVec 8) ) )\n"
-        str_script += "(assert (= " + prog_var_expr + " " + angelic_var_expr + " ))\n"
-        str_script += "(assert (= " + prog_var_name + " " + angelic_var_name + " ))\n"
-        str_script += "(exit)\n"
-        script = parser.get_script(cStringIO(str_script))
-        formula = script.get_last_formula()
-        if not relationship:
-            relationship = formula
-        else:
-            relationship = And(relationship, formula)
-    return relationship
-
-
 def extract_bit_vector(expression_str):
     bit_vector = dict()
     if "[" in expression_str:
