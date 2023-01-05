@@ -328,7 +328,7 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
     if max_bit_size < ref_bit_size:
         max_bit_size = ref_bit_size
     for decl in list(set(complete_decl_list)):
-        code += decl
+        code += decl + "\n"
 
     combination_z3_code = ""
     zero = "x0"
@@ -358,7 +358,7 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
             combination_z3_code = prog_expr
 
     code += "(assert (= {} {}))\n".format(ref_name, ref_sym_expr)
-    code += "(assert (= {} {}))\n".format(combination_z3_code, ref_sym_expr)
+    code += "(assert (= {} {}))\n".format(combination_z3_code, ref_name)
     code += "(check-sat)\n"
     return code
 
