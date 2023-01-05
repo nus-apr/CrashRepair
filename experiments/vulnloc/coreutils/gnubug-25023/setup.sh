@@ -47,7 +47,7 @@ cat <<EOF > $dir_name/bug.json
   "name": "$bug_id",
   "binary": "$dir_name/src/src/pr",
   "crash": {
-    "command": "\"-S\$(printf \"\t\t\t\")\" a -m \$POC",
+    "command": "\"-S\$(printf \"\\t\\t\\t\")\" a -m \$POC",
     "input": "$script_dir/tests/1.txt",
     "extra-klee-flags": "",
     "expected-exit-code": 1
