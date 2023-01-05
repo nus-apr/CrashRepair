@@ -414,7 +414,17 @@ def make_constraint_expression(c_symbol:ConstraintSymbol, l_val:ConstraintSymbol
 
 def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     constraint_expr = None
+    translated_map = dict()
+    token_num = 0
     try:
+        if any(c in expr_str for c in ["[", "]", ".", "->"]):
+            token_list = expr_str.split(" ")
+            for token in token_list:
+                if any(c in token for c in ["[", "]", ".", "->"]):
+                    token_name = "__token_{}".format(token_num)
+                    stripped_token = token.replace("(", "").replace(")", "")
+                    translated_map[token_name] = stripped_token
+                    expr_str = expr_str.replace(stripped_token, token_name)
         symbolized_expr = sympify(expr_str)
     except Exception as ex:
         constraint_symbol = make_constraint_symbol(expr_str, data_type)
@@ -461,7 +471,11 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
         binary_op_symbol = build_op_symbol(binary_op_str)
         constraint_expr = make_binary_expression(binary_op_symbol, left_child_expr, right_child_expr)
     else:
+        print(translated_map)
+        print(expr_str)
+        print(symbolized_expr.as_expr())
         utilities.error_exit("Unhandled execption in Constraints:generate_expr_for_str")
+    constraint_expr.update_symbols(translated_map)
     return constraint_expr
 
 
