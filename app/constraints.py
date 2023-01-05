@@ -451,6 +451,12 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
         binary_op_symbol = build_op_symbol(binary_op_str)
         right_child_expr = generate_expr_for_str(str(right_child.as_expr()), data_type)
         constraint_expr = make_binary_expression(binary_op_symbol, left_child_expr, right_child_expr)
+    elif symbolized_expr.as_expr().is_Pow:
+        base_expr =  symbolized_expr.as_base_exp()[0]
+        base_constraint_expr = generate_expr_for_str(str(base_expr.as_expr()), data_type)
+        binary_op_str = "*"
+        binary_op_symbol = build_op_symbol(binary_op_str)
+        constraint_expr = make_binary_expression(binary_op_symbol, base_constraint_expr, base_constraint_expr)
     elif symbolized_expr.as_expr().is_Mul:
         left_child = symbolized_expr.as_two_terms()[0]
         right_child = symbolized_expr.as_two_terms()[1]
