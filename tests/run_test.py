@@ -30,7 +30,7 @@ def scenario_directories() -> t.List[str]:
     for root, _, files in os.walk(dir_path):
         if "bug.json" in files:
             result.add(os.path.abspath(root))
-    return result
+    return sorted(result)
 
 
 def read_json(file_path):
@@ -49,7 +49,7 @@ def write_as_json(data, output_file_path):
 
 
 def run_analyze(test_dir: str) -> str:
-    analyze_command = "git clean -f && crepair --conf=repair.conf > analyze.log 2>&1"
+    analyze_command = "git clean -f; crepair --conf=repair.conf > analyze.log 2>&1"
     process = subprocess.Popen(analyze_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
     ret_code = process.returncode
@@ -67,7 +67,10 @@ def run_analyze(test_dir: str) -> str:
 
 
 def run_repair(test_dir: str) -> str:
-    repair_command = "git clean -f && rm -rf analysis; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
+    analysis_dir = os.path.join(test_dir, "analysis")
+    shutil.rmtree(analysis_dir, ignore_errors=True)
+
+    repair_command = "git clean -f; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
     process = subprocess.Popen(repair_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
     ret_code = process.returncode
@@ -119,32 +122,38 @@ def run_test(test_dir: str) -> ScenarioSummary:
     super_mutant_found = len(list(filter(re.compile(".*-mutated").match, generated_file_list)))
     patch_list = list(filter(re.compile(".*.patch").match, generated_file_list))
     repair_generated = len(patch_list)
-    repair_patched = 0
-    repair_compiled = 0
-    repair_pass_oracle = 0
+    repair_patched = False
+    repair_compiled = False
+    repair_pass_oracle = False
 
     # validate each candidate patch
     for patch_file_path in patch_list:
         with open(patch_file_path, "r") as p_file:
             buggy_file_path = p_file.readline().split(" ")[-1].replace("\n", "").strip()
-            patch_command = "patch " + buggy_file_path + " " + patch_file_path
-            process = subprocess.Popen(patch_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            patch_command = f"patch {buggy_file_path} {patch_file_path}"
+            process = subprocess.Popen(patch_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
             process.wait()
-            repair_patched = (int(process.returncode) == 0)
-            if repair_patched:
-                compile_command = "LLVM_COMPILER=clang CC=wllvm CXX=wllvm++ bash build.sh"
-                process = subprocess.Popen(compile_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-                process.wait()
-                repair_compiled = (int(process.returncode) == 0)
-                if repair_compiled:
-                    test_command = "bash test.sh"
-                    process = subprocess.Popen(test_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-                    process.wait()
-                    repair_pass_oracle = (int(process.returncode) == 0)
-                revert_command = "patch -R " + buggy_file_path + " " + patch_file_path
-                process = subprocess.Popen(revert_command, shell=True, stdout=subprocess.DEVNULL,
-                                           stderr=subprocess.STDOUT)
-                process.wait()
+            repair_patched = process.returncode == 0
+
+            if not repair_patched:
+                continue
+
+            compile_command = "LLVM_COMPILER=clang CC=wllvm CXX=wllvm++ bash build.sh"
+            process = subprocess.Popen(compile_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
+            process.wait()
+            repair_compiled = process.returncode == 0
+
+            if not repair_compiled:
+                continue
+
+            test_command = "bash test.sh"
+            process = subprocess.Popen(test_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
+            process.wait()
+            repair_pass_oracle = process.returncode == 0
+
+            revert_command = f"patch -R {buggy_file_path} {patch_file_path}"
+            process = subprocess.Popen(revert_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
+            process.wait()
 
     result_stat = (
         test_dir.replace(dir_path, "").split("/"),
@@ -158,7 +167,7 @@ def run_test(test_dir: str) -> ScenarioSummary:
         repair_compiled,
         repair_pass_oracle,
     )
-    clean_command = "git clean -f && git checkout HEAD -- {}".format(test_dir)
+    clean_command = "git clean -f; git checkout HEAD -- ."
     process = subprocess.Popen(clean_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
 
