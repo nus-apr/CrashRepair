@@ -10,7 +10,7 @@
 #include "Mutation.h"
 
 namespace crashrepairfix {
-  
+
 class ProgramMutator {
 public:
   ProgramMutator(FixLocalization &fixLocalization, std::string const &saveToFilename)
