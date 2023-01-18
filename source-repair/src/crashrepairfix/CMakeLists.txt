@@ -6,6 +6,7 @@ add_library(crashrepairlib
   DiffGenerator.cpp
   ProgramMutator.cpp
   ProgramStates.cpp
+  FixLocationLinter.cpp
   Utils.cpp
 )
 
@@ -18,6 +19,7 @@ add_executable(crashrepairfix
   DiffGenerator.cpp
   ProgramMutator.cpp
   ProgramStates.cpp
+  FixLocationLinter.cpp
   Utils.cpp
 )
 
@@ -30,6 +32,7 @@ add_executable(_crepairparse
   DiffGenerator.cpp
   ProgramMutator.cpp
   ProgramStates.cpp
+  FixLocationLinter.cpp
   Utils.cpp
 )
 
