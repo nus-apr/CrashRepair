@@ -39,6 +39,15 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
   //   return;
   // }
 
+  if (!location.validate()) {
+    spdlog::error(
+      "skipping illegal fix location [{}] with constraint: {}",
+      location.getLocation().toString(),
+      location.getConstraint()->toString()
+    );
+    return;
+  }
+
   if (location.isExprStmt()) {
     mutateExprStmt(location);
   } else {
