@@ -19,7 +19,7 @@ public:
 
   void validate(clang::ASTContext &context);
 
-  void save();
+  void save() const;
 
   bool hasFoundErrors() const;
 

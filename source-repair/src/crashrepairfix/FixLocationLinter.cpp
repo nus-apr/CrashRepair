@@ -38,7 +38,7 @@ bool FixLocationLinter::hasFoundErrors() const {
   return !badLocations.empty();
 }
 
-void FixLocationLinter::save() {
+void FixLocationLinter::save() const {
   spdlog::info("writing linter report to disk");
   json j = json::array();
   for (auto &location : badLocations) {

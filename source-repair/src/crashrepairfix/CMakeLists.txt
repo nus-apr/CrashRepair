@@ -23,6 +23,19 @@ add_executable(crashrepairfix
   Utils.cpp
 )
 
+add_executable(crashrepairlint
+  crashrepairlint.cpp
+  Expr/ClangToExprConverter.cpp
+  Expr/ExprGenerator.cpp
+  Expr/ExprToZ3Converter.cpp
+  Expr/Parser.cpp
+  DiffGenerator.cpp
+  ProgramMutator.cpp
+  ProgramStates.cpp
+  FixLocationLinter.cpp
+  Utils.cpp
+)
+
 add_executable(_crepairparse
   crashrepairparse.cpp
   Expr/ClangToExprConverter.cpp
@@ -132,8 +145,41 @@ target_include_directories(crashrepairfix
     ../../extern/dtl/include
 )
 
+set_target_properties(crashrepairlint
+  PROPERTIES
+    CXX_STANDARD 17
+    CMAKE_CXX_STANDARD_REQUIRED ON
+)
+target_link_libraries(crashrepairlint PRIVATE
+  ${Z3_LIBRARY}
+  ${CRASHREPAIRFIX_LLVM_LIBS}
+  ${CLANG_LIBS}
+  taocpp::pegtl
+  nlohmann_json::nlohmann_json
+  spdlog::spdlog
+)
+target_compile_options(crashrepairlint PRIVATE
+  -Wall -Werror -Wno-error=comment -fno-rtti
+)
+
+target_compile_definitions(crashrepairlint
+  PUBLIC ${CLANG_DEFINITIONS} ${LLVM_DEFINITIONS}
+)
+target_include_directories(crashrepairlint
+  PUBLIC
+    ${CLANG_INCLUDE_DIRS}
+    ${LLVM_INCLUDE_DIRS}
+    ${Z3_INCLUDE_DIRS}
+    taocpp::pegtl
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+    ../../include
+    ../../extern/dtl/include
+)
+
+
 install(
-  TARGETS crashrepairfix _crepairparse
+  TARGETS crashrepairfix crashrepairlint _crepairparse
   DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
