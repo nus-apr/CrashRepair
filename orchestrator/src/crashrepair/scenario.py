@@ -20,6 +20,22 @@ from .test import Test
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
 FUZZER_PATH = "/opt/fuzzer/code/fuzz"
 
+# _FUZZER_CONFIG_TEMPLATE = """
+# [{scenario_name}]
+# bin_path={binary_path}
+# folder={directory}
+# global_timeout={global_timeout}
+# local_timeout={local_timeout}
+# mutate_range=default
+# store_all_inputs=False
+# rand_seed={fuzz_seed}
+# combination_num={max_fuzzing_combinations}
+# trace_cmd=TODO
+# crash_cmd=TODO
+# poc={poc}
+# poc_fmt={poc_fmt}
+# """
+
 
 @attrs.define(slots=True, auto_attribs=True)
 class Scenario:
@@ -61,6 +77,8 @@ class Scenario:
         The optional path to the file that causes the binary to crash, if relevant.
     expected_exit_code_for_crashing_input: int
         The exit code that _should_ be produced by the program when the crashing input is provided (i.e., the oracle).
+    fuzz_seed: int
+        The RNG seed that should be used during fuzzing.
     """
     subject: str
     name: str
@@ -80,6 +98,7 @@ class Scenario:
     should_terminate_early: bool = attrs.field(default=True)
     skip_fuzzing: bool = attrs.field(default=False)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
+    fuzz_seed: int = attrs.field(default=0)
 
     @property
     def compile_commands_path(self) -> str:
@@ -139,6 +158,7 @@ class Scenario:
         expected_exit_code_for_crashing_input: int,
         skip_fuzzing: bool,
         additional_klee_flags: str,
+        fuzz_seed: int = 0,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -182,6 +202,7 @@ class Scenario:
             crash_test=crash_test,
             skip_fuzzing=skip_fuzzing,
             additional_klee_flags=additional_klee_flags,
+            fuzz_seed=fuzz_seed,
         )
         logger.info(f"loaded bug scenario: {scenario}")
         return scenario
@@ -192,6 +213,7 @@ class Scenario:
         filename: str,
         *,
         skip_fuzzing: bool = False,
+        fuzz_seed: int = 0,
     ) -> Scenario:
         if not os.path.exists(filename):
             raise ValueError(f"bug file not found: {filename}")
@@ -235,6 +257,7 @@ class Scenario:
             skip_fuzzing=skip_fuzzing,
             additional_klee_flags=additional_klee_flags,
             expected_exit_code_for_crashing_input=expected_exit_code_for_crashing_input,
+            fuzz_seed=fuzz_seed,
         )
 
     @classmethod
@@ -293,18 +316,6 @@ class Scenario:
         assert os.path.exists(self.fuzzer_config_path)
 
         # TODO generate config file based on bug.json contents
-        # - rand_seed={fuzzer_seed}
-        # - store_all_inputs=False
-        # - combination_num={max_fuzzing_combinations}
-
-        # [{scenario.name}]
-        # bin_path={}
-        # global_timeout={}
-        # local_timeout={}
-        # mutate_range=default
-        # folder={scenario.directory}
-        # rand_seed={fuzzer_seed}
-        # trace_cmd={}
 
         if self.fuzzer_outputs_exist():
             logger.info(f"skipping fuzzing: outputs already exist [{self.fuzzer_directory}]")
