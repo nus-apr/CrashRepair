@@ -455,7 +455,14 @@ class Scenario:
         self.generate()
         self.validate()
 
-    def lint(self) -> None:
+    def lint(self) -> bool:
+        """Lints the fix localization for this bug scenario.
+
+        Returns
+        -------
+        bool
+            :code:`True` if OK; :code:`False` if bad.
+        """
         self.analyze()
 
         implicated_files = self._determine_implicated_files()
@@ -470,5 +477,6 @@ class Scenario:
             " ".join(implicated_files),
             "-extra-arg=-I/opt/llvm11/lib/clang/11.1.0/include/",
         ))
-        self.shell(command, cwd=self.source_directory)
+        outcome = self.shell(command, cwd=self.source_directory, check_returncode=False)
         assert os.path.exists(self.linter_report_path)
+        return outcome.returncode == 0

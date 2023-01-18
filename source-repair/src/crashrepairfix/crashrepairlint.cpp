@@ -86,7 +86,7 @@ private:
 
 
 int main(int argc, const char **argv) {
-  spdlog::set_level(spdlog::level::error);
+  spdlog::set_level(spdlog::level::err);
 
   // TODO automatically inject correct include path for clang-packaged stdlib headers
   // https://stackoverflow.com/questions/51695806/clang-tool-include-path
@@ -104,5 +104,5 @@ int main(int argc, const char **argv) {
   auto retcode = tool.run(actionFactory.get());
   linter.save();
 
-  return retcode;
+  return linter.hasFoundErrors() ? 1 : 0;
 }

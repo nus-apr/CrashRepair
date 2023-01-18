@@ -44,6 +44,7 @@ void FixLocationLinter::save() const {
   for (auto &location : badLocations) {
     j.push_back(location->toJson());
   }
+  j = {{"bad-locations", j}};
 
   std::ofstream o(saveToFilename);
   o << std::setw(2) << j << std::endl;

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from .scenario import Scenario
 
@@ -17,7 +18,9 @@ def do_repair(args: argparse.Namespace) -> None:
 
 def do_lint(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
-    scenario.lint()
+    if not scenario.lint():
+        print(f"FAIL: bad fix localization for scenario: {scenario.directory}")
+        sys.exit(1)
 
 
 def parse_args() -> argparse.Namespace:
