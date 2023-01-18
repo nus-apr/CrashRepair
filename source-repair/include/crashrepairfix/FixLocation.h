@@ -50,6 +50,13 @@ public:
     return std::make_unique<FixLocation>(location, std::move(expr), states);
   }
 
+  nlohmann::json toJson() const {
+    return {
+      {"location", sourceLocation.toString()},
+      {"constraint", constraint->toString()}
+    };
+  }
+
   SourceLocation const & getLocation() const {
     return sourceLocation;
   }
