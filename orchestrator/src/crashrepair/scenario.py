@@ -18,6 +18,7 @@ from .test import Test
 
 # TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
+CRASHREPAIRLINT_PATH = "/opt/crashrepair/bin/crashrepairlint"
 FUZZER_PATH = "/opt/fuzzer/code/fuzz"
 
 # _FUZZER_CONFIG_TEMPLATE = """
@@ -124,6 +125,10 @@ class Scenario:
     @property
     def localization_path(self) -> str:
         return os.path.join(self.analysis_directory, "localization.json")
+
+    @property
+    def linter_report_path(self) -> str:
+        return os.path.join(self.directory, "linter-summary.json")
 
     @property
     def patch_candidates_path(self) -> str:
@@ -351,6 +356,18 @@ class Scenario:
             )
             self.fuzzer_tests.append(fuzzer_test)
 
+    def _determine_implicated_files(self) -> t.Set[str]:
+        """Determines the set of source files that are implicated by the fix localization."""
+        implicated_files: t.Set[str] = set()
+        with open(self.localization_path, "r") as fh:
+            localization: t.List[t.Dict[str, t.Any]] = json.load(fh)
+            for entry in localization:
+                if entry.get("ignore", False):
+                    continue
+                filename = entry["location"].split(":")[0]
+                implicated_files.add(filename)
+        return implicated_files
+
     def generate(self) -> None:
         """Generates candidate patches using the analysis results."""
         assert self.analysis_results_exist()
@@ -360,15 +377,7 @@ class Scenario:
         assert os.path.exists(self.compile_commands_path)
 
         # extract a list of implicated source files
-        implicated_files: t.Set[str] = set()
-        with open(self.localization_path, "r") as fh:
-            localization: t.List[t.Dict[str, t.Any]] = json.load(fh)
-            for entry in localization:
-                if entry.get("ignore", False):
-                    continue
-                filename = entry["location"].split(":")[0]
-                implicated_files.add(filename)
-
+        implicated_files = self._determine_implicated_files()
         logger.info(f"generating candidate repairs in implicated files: {implicated_files}")
 
         command = " ".join((
@@ -445,3 +454,21 @@ class Scenario:
         self.analyze()
         self.generate()
         self.validate()
+
+    def lint(self) -> None:
+        self.analyze()
+
+        implicated_files = self._determine_implicated_files()
+        command = " ".join((
+            CRASHREPAIRLINT_PATH,
+            "--output-to",
+            self.linter_report_path,
+            "--localization-filename",
+            self.localization_path,
+            "-p",
+            self.compile_commands_path,
+            " ".join(implicated_files),
+            "-extra-arg=-I/opt/llvm11/lib/clang/11.1.0/include/",
+        ))
+        self.shell(command, cwd=self.source_directory)
+        assert os.path.exists(self.linter_report_path)

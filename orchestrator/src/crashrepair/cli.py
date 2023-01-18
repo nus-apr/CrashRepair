@@ -15,6 +15,11 @@ def do_repair(args: argparse.Namespace) -> None:
     scenario.repair()
 
 
+def do_lint(args: argparse.Namespace) -> None:
+    scenario = Scenario.for_file(args.filename)
+    scenario.lint()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(DESCRIPTION)
     subparsers = parser.add_subparsers()
@@ -40,6 +45,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
     )
     parser_repair.set_defaults(func=do_repair)
+
+    parser_lint = subparsers.add_parser(
+        "lint",
+        help="lints the localization.json for a given bug scenario",
+    )
+    parser_lint.add_argument(
+        "filename",
+        help="the path to the bug.json file for the bug scenario",
+    )
+    parser_lint.set_defaults(func=do_lint)
 
     return parser.parse_args()
 

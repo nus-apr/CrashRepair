@@ -28,7 +28,7 @@ static llvm::cl::opt<std::string> outputFilename(
   "output-to",
   llvm::cl::desc("The name of file to which the linter report should be written."),
   llvm::cl::value_desc("filename"),
-  llvm::cl::init("crashrepair-linter-summary.json")
+  llvm::cl::init("linter-summary.json")
 );
 
 static llvm::cl::opt<std::string> localizationFilename(
@@ -86,7 +86,7 @@ private:
 
 
 int main(int argc, const char **argv) {
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::error);
 
   // TODO automatically inject correct include path for clang-packaged stdlib headers
   // https://stackoverflow.com/questions/51695806/clang-tool-include-path
