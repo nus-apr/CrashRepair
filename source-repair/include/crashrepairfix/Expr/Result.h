@@ -32,7 +32,7 @@ public:
 
   /** Writes this expression to a parsable string */
   virtual std::string toString() const override {
-    return "result()";
+    return fmt::format("@result({})", getResultTypeString());
   }
 
 protected:
