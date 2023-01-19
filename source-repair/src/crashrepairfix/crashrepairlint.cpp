@@ -101,7 +101,7 @@ int main(int argc, const char **argv) {
 
   FixLocationLinter linter(fixLocalization, outputFilename);
   auto actionFactory = std::make_unique<LintLocationsActionFactory>(linter);
-  auto retcode = tool.run(actionFactory.get());
+  tool.run(actionFactory.get());
   linter.save();
 
   return linter.hasFoundErrors() ? 1 : 0;

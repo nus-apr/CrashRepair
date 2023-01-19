@@ -20,6 +20,7 @@ using namespace tao::pegtl;
 
 namespace crashrepairfix {
 
+struct sign : one<'+', '-'> {};
 struct dot : one<'.'> {};
 struct plusplus : string<'+', '+'> {};
 struct arrow : string<'-', '>'> {};
@@ -38,7 +39,7 @@ struct var_name : seq<
   sor<identifier_first, plusplus>,
   star<sor<identifier_other, digit, dot, arrow, plusplus, open_square_bracket, closed_square_bracket>>
 > {};
-struct integer : plus<digit> {};
+struct integer : seq<opt<sign>, plus<digit>> {};
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
