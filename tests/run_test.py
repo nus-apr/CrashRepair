@@ -19,6 +19,7 @@ summary_path = os.path.join(dir_path, "summary.json")
 class ScenarioSummary:
     directory: str
     repair_outcome: str
+    linter_errors: int
     analysis_outcome: str
     # TODO this should be collapsed into a set of dataclass fields
     result_stat: t.Tuple[t.Any]
@@ -46,6 +47,28 @@ def write_as_json(data, output_file_path):
     content = json.dumps(data)
     with open(output_file_path, 'w') as out_file:
         out_file.writelines(content)
+
+
+def run_linter(test_dir: str) -> int:
+    """Runs the linter on the localization.json for a given bug scenario.
+
+    Returns
+    -------
+    int
+        The number of bad fix locations in the localization.json
+    """
+    command = "crashrepair lint bug.json > linter.log 2>&1"
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=test_dir)
+    process.wait()
+
+    linter_report_filename = os.path.join(test_dir, "linter-summary.json")
+
+    if not os.path.exists(linter_report_filename):
+        return 1
+
+    with open(linter_report_filename, "r") as fh:
+        report = json.load(fh)
+        return len(report["bad-locations"])
 
 
 def run_analyze(test_dir: str) -> str:
@@ -112,6 +135,7 @@ def getListOfFiles(dirName):
 
 def run_test(test_dir: str) -> ScenarioSummary:
     analyze_result = run_analyze(test_dir)
+    linter_errors = run_linter(test_dir)
     repair_result = run_repair(test_dir)
 
     generated_file_list = getListOfFiles(test_dir)
@@ -176,9 +200,12 @@ def run_test(test_dir: str) -> ScenarioSummary:
         repair_outcome=repair_result,
         analysis_outcome=analyze_result,
         result_stat=result_stat,
+        linter_errors=linter_errors,
     )
 
-    print(f"Test:{test_dir:100}\t analysis={summary.analysis_outcome} \t repair={summary.repair_outcome}")
+    linter_report = f"BAD ({summary.linter_errors})" if summary.linter_errors > 0 else "OK"
+
+    print(f"Test:{test_dir:100}\t analysis={summary.analysis_outcome} \tlinter={linter_report} \t repair={summary.repair_outcome}")
 
     return summary
 
