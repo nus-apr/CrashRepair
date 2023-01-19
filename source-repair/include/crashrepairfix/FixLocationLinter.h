@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include <clang/AST/ASTContext.h>
@@ -9,24 +10,61 @@
 
 namespace crashrepairfix {
 
+enum class LinterErrorType {
+  ResultAtTopLevelConstraint,
+  NonResultAtNonTopLevelConstraint,
+  UnableToLocateStatement
+};
+
+class LinterError {
+public:
+  LinterError(
+    FixLocation const *location,
+    LinterErrorType type
+  ) :
+    location(location),
+    type(type)
+  {}
+
+  std::string typeToString() const;
+  std::string message() const;
+  nlohmann::json toJson() const;
+
+  static LinterError ResultAtTopLevelConstraint(FixLocation const *location) {
+    return LinterError(location, LinterErrorType::ResultAtTopLevelConstraint);
+  }
+
+  static LinterError NonResultAtNonTopLevelConstraint(FixLocation const *location) {
+    return LinterError(location, LinterErrorType::NonResultAtNonTopLevelConstraint);
+  }
+
+  static LinterError UnableToLocateStatement(FixLocation const *location) {
+    return LinterError(location, LinterErrorType::UnableToLocateStatement);
+  }
+
+private:
+  FixLocation const *location;
+  LinterErrorType type;
+};
+
 class FixLocationLinter {
 public:
-  FixLocationLinter(FixLocalization &fixLocalization, std::string const &saveToFilename)
+  FixLocationLinter(FixLocalization &fixLocalization)
   : fixLocalization(fixLocalization),
-    badLocations(),
-    saveToFilename(saveToFilename)
+    errors()
   {}
 
   void validate(clang::ASTContext &context);
 
-  void save() const;
+  std::optional<LinterError> validate(AstLinkedFixLocation const &location);
+
+  void save(std::string const &saveToFilename) const;
 
   bool hasFoundErrors() const;
 
 private:
   FixLocalization &fixLocalization;
-  std::vector<FixLocation const *> badLocations;
-  std::string saveToFilename;
+  std::vector<LinterError> errors;
 };
 
 }

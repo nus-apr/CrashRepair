@@ -68,7 +68,7 @@ def run_linter(test_dir: str) -> int:
 
     with open(linter_report_filename, "r") as fh:
         report = json.load(fh)
-        return len(report["bad-locations"])
+        return len(report["errors"])
 
 
 def run_analyze(test_dir: str) -> str:
@@ -203,7 +203,7 @@ def run_test(test_dir: str) -> ScenarioSummary:
         linter_errors=linter_errors,
     )
 
-    linter_report = f"BAD ({summary.linter_errors})" if summary.linter_errors > 0 else "OK"
+    linter_report = f"BAD({summary.linter_errors})" if summary.linter_errors > 0 else "OK"
 
     print(f"Test:{test_dir:100}\t analysis={summary.analysis_outcome} \tlinter={linter_report} \t repair={summary.repair_outcome}")
 

@@ -99,10 +99,10 @@ int main(int argc, const char **argv) {
   ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
   // tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
 
-  FixLocationLinter linter(fixLocalization, outputFilename);
+  FixLocationLinter linter(fixLocalization);
   auto actionFactory = std::make_unique<LintLocationsActionFactory>(linter);
   tool.run(actionFactory.get());
-  linter.save();
+  linter.save(outputFilename);
 
   return linter.hasFoundErrors() ? 1 : 0;
 }

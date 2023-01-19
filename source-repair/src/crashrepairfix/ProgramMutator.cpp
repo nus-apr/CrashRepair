@@ -39,7 +39,7 @@ void ProgramMutator::mutate(AstLinkedFixLocation &location) {
   //   return;
   // }
 
-  if (!location.validate()) {
+  if (linter.validate(location).has_value()) {
     spdlog::error(
       "skipping illegal fix location [{}] with constraint: {}",
       location.getLocation().toString(),
