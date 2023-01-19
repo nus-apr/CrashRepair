@@ -4,12 +4,23 @@
 
 #include <crashrepairfix/StmtFinder.h>
 #include <crashrepairfix/Expr/Parser.h>
+#include <crashrepairfix/Expr/ExprToZ3Converter.h>
 
 #include <clang/Tooling/Tooling.h>
 
 namespace fs = std::filesystem;
 
 using namespace crashrepairfix;
+
+TEST(ParserTest, Issue45) {
+  // auto constraint = parse("((2147483647 >> @var(integer, x)) < @result(integer)) && ((0 < @var(integer, x)) && (@var(integer, x) < 4))");
+  auto constraint = parse("2147483647 >> @var(integer, x)");
+  ASSERT_NE(constraint, nullptr);
+
+  z3::context z3c;
+  ExprToZ3Converter converter(z3c);
+  auto z3Constraint = converter.convert(constraint.get());
+}
 
 TEST(ParserTest, VarLessEqConstant) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= 7"), nullptr);

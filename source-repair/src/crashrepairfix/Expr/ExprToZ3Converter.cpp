@@ -64,9 +64,9 @@ z3::expr ExprToZ3Converter::convert(BinOp const *expr) {
       return lhsZ3 != rhsZ3;
 
     case BinOp::Opcode::LEFT_SHIFT:
-      return z3::shl(lhsZ3, rhsZ3);
+      return z3::bv2int(z3::shl(z3::int2bv(64, lhsZ3), z3::int2bv(64, rhsZ3)), true);
     case BinOp::Opcode::RIGHT_SHIFT:
-      return z3::lshr(lhsZ3, rhsZ3);
+      return z3::bv2int(z3::ashr(z3::int2bv(64, lhsZ3), z3::int2bv(64, rhsZ3)), true);
   }
   assert (false);
 }
