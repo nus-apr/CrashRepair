@@ -12,8 +12,12 @@ std::vector<std::unique_ptr<Expr>> ExprGenerator::generate(size_t limit) const {
   // NOTE store this as a field?
   z3::context z3c;
   auto z3Converter = ExprToZ3Converter(z3c);
+  spdlog::debug("converting constraint to Z3: {}", constraint->toString());
   auto z3Constraint = z3Converter.convert(constraint);
+  spdlog::debug("converted constraint to Z3: {}", z3Constraint.to_string());
+  spdlog::debug("converting result reference to Z3: {}", resultReference->toString());
   auto z3ResultVar = z3Converter.convert(resultReference);
+  spdlog::debug("converted result reference to Z3: {}", z3ResultVar.to_string());
 
   std::function<bool(Expr const *)> satisfies = [&](Expr const *expr) -> bool {
     // NOTE we check each observation individually (rather than creating a single query)
