@@ -13,7 +13,9 @@ namespace crashrepairfix {
 enum class LinterErrorType {
   ResultAtTopLevelConstraint,
   NonResultAtNonTopLevelConstraint,
-  UnableToLocateStatement
+  UnableToLocateStatement,
+  ResultAtNonExprStatement,
+  ResultTypeDoesNotMatchExprType
 };
 
 class LinterError {
@@ -40,6 +42,14 @@ public:
 
   static LinterError UnableToLocateStatement(FixLocation const *location) {
     return LinterError(location, LinterErrorType::UnableToLocateStatement);
+  }
+
+  static LinterError ResultAtNonExprStatement(FixLocation const *location) {
+    return LinterError(location, LinterErrorType::ResultAtNonExprStatement);
+  }
+
+  static LinterError ResultTypeDoesNotMatchExprType(FixLocation const *location) {
+    return LinterError(location, LinterErrorType::ResultTypeDoesNotMatchExprType);
   }
 
 private:

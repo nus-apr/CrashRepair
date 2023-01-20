@@ -16,6 +16,13 @@
 
 namespace crashrepairfix {
 
+bool stmtIsBoolExpr(clang::Stmt const *stmt) {
+  auto binOp = clang::dyn_cast<clang::BinaryOperator>(stmt);
+  if (!binOp) {
+    return false;
+  }
+  return binOp->isLogicalOp() || binOp->isRelationalOp();
+}
 
 // Taken from https://clang.llvm.org/doxygen/Transforms_8cpp_source.html
 clang::SourceLocation findSemiAfterLocation(

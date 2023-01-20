@@ -17,6 +17,8 @@
 
 namespace crashrepairfix {
 
+bool stmtIsBoolExpr(clang::Stmt const *stmt);
+
 clang::SourceLocation findSemiAfterLocation(
   clang::SourceLocation loc,
   clang::ASTContext &Ctx
