@@ -45,19 +45,6 @@ public:
     );
   }
 
-  bool validate() const {
-    auto isResultExpr = getConstraint()->refersToResult();
-    if (isResultExpr && isTopLevelStmt()) {
-      spdlog::error("@result constraint is at a top-level statement: {}", getLocation().toString());
-      return false;
-    }
-    if (!isResultExpr && !isTopLevelStmt()) {
-      spdlog::error("non-@result constraint is not at a top-level statement: {}", getLocation().toString());
-      return false;
-    }
-    return true;
-  }
-
   clang::Stmt* getStmt() const {
     return stmt;
   }
