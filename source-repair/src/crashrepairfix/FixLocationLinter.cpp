@@ -48,7 +48,8 @@ nlohmann::json LinterError::toJson() const {
   return {
     {"location", location->getLocation().toString()},
     {"constraint", location->getConstraint()->toString()},
-    {"type", typeToString()}
+    {"type", typeToString()},
+    {"description", message()}
   };
 }
 
