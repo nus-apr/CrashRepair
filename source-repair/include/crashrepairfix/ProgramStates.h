@@ -25,6 +25,10 @@ public:
 
     Variable(std::string const &name, ResultType type)
     : name(name), type(type) {}
+    Variable(Variable const &other) noexcept
+    : name(other.name),
+      type(other.type)
+    {}
 
     std::string toString() const;
     std::string const & getName() const;
@@ -65,7 +69,17 @@ public:
     return variables;
   }
 
-  ProgramStates(ProgramStates const &other) = delete;
+  ProgramStates(ProgramStates const &other) noexcept :
+    valuesFilename(other.valuesFilename),
+    variables(),
+    values()
+  {
+    variables.reserve(other.variables.size());
+    for (auto &variable : other.variables) {
+      variables.push_back(std::make_unique<Variable>(variable->getName(), variable->getResultType()));
+    }
+    loadValues();
+  }
   ProgramStates(ProgramStates&& other) noexcept :
     valuesFilename(other.valuesFilename),
     variables(std::move(other.variables)),
