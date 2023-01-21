@@ -52,6 +52,8 @@ std::string convertAPFloatToString(llvm::APFloat const &floating);
 
 bool stmtBelongsToSubtree(clang::Stmt const *stmt, clang::Stmt const *subtree, clang::ASTContext &context);
 
+clang::Stmt const * findTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context);
+
 bool isTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context);
 bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context);
 

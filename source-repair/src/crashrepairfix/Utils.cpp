@@ -16,6 +16,18 @@
 
 namespace crashrepairfix {
 
+clang::Stmt const * findTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext &context) {
+  auto node = clang::DynTypedNode::create(*stmt);
+  while (auto stmt = node.get<clang::Stmt>()) {
+    if (isTopLevelStmt(node, context)) {
+      return stmt;
+    }
+    node = context.getParents(node)[0];
+  }
+  spdlog::error("unable to locate top-level statement");
+  abort();
+}
+
 bool stmtIsBoolExpr(clang::Stmt const *stmt) {
   auto binOp = clang::dyn_cast<clang::BinaryOperator>(stmt);
   if (!binOp) {
