@@ -68,6 +68,8 @@ public:
 
   std::optional<LinterError> validate(AstLinkedFixLocation const &location);
 
+  std::unique_ptr<FixLocation> repair(AstLinkedFixLocation const &location);
+
   void save(std::string const &saveToFilename) const;
 
   bool hasFoundErrors() const;

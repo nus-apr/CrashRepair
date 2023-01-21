@@ -63,6 +63,38 @@ nlohmann::json LinterError::toJson() const {
   };
 }
 
+std::unique_ptr<FixLocation> repair(AstLinkedFixLocation const &location) {
+  clang::ASTContext &context = const_cast<clang::ASTContext&>(location.getContext());
+
+  // repair is only applied to non-constraint fix locations
+  if (location.getConstraint()->refersToResult()) {
+    return {};
+  }
+
+  auto originalStmt = location.getStmt();
+  auto topLevelStmt = findTopLevelStmt(originalStmt, context);
+  if (topLevelStmt == originalStmt) {
+    return {};
+  }
+
+  // create a new fix location
+  // FIXME change (line, column) depending on stmt kind
+  auto stmtClangLocation = context.getFullLoc(topLevelStmt->getBeginLoc());
+  auto lineNumber = stmtClangLocation.getLineNumber();
+  auto columnNumber = stmtClangLocation.getColumnNumber();
+  auto sourceLocation = SourceLocation(
+    location.getLocation().file,
+    lineNumber,
+    columnNumber
+  );
+
+  return std::make_unique<FixLocation>(
+    sourceLocation,
+    location.getConstraint()->copy(),
+    ProgramStates(location.getStates())
+  );
+}
+
 std::optional<LinterError> FixLocationLinter::validate(AstLinkedFixLocation const &location) {
   auto constraint = location.getConstraint();
   auto isResultExpr = constraint->refersToResult();

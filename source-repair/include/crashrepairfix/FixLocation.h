@@ -21,12 +21,21 @@ private:
 
 public:
   FixLocation(
-    SourceLocation &sourceLocation,
+    SourceLocation const &sourceLocation,
     std::unique_ptr<Expr> constraint,
     ProgramStates &states
   ) : sourceLocation(sourceLocation),
       constraint(std::move(constraint)),
       states(std::move(states))
+  {}
+
+  FixLocation(
+    SourceLocation const &sourceLocation,
+    std::unique_ptr<Expr> constraint,
+    ProgramStates const &states
+  ) : sourceLocation(sourceLocation),
+      constraint(std::move(constraint)),
+      states(states)
   {}
 
   /** Returns a nullptr if unable to build fix location */
