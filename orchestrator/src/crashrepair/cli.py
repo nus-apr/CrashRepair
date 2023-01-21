@@ -18,7 +18,7 @@ def do_repair(args: argparse.Namespace) -> None:
 
 def do_lint(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
-    if not scenario.lint():
+    if not scenario.lint(fix=args.fix):
         print(f"FAIL: bad fix localization for scenario: {scenario.directory}")
         sys.exit(1)
 
@@ -52,6 +52,11 @@ def parse_args() -> argparse.Namespace:
     parser_lint = subparsers.add_parser(
         "lint",
         help="lints the localization.json for a given bug scenario",
+    )
+    parser_lint.add_argument(
+        "--fix",
+        help="attempts to automatically fix any issues with the fix localization",
+        action="store_true",
     )
     parser_lint.add_argument(
         "filename",

@@ -455,8 +455,13 @@ class Scenario:
         self.generate()
         self.validate()
 
-    def lint(self) -> bool:
+    def lint(self, fix: bool) -> bool:
         """Lints the fix localization for this bug scenario.
+
+        Arguments
+        ---------
+        fix: bool
+            Attempts to automatically fix any issues with the fix localization if :code:`True`
 
         Returns
         -------
@@ -465,9 +470,11 @@ class Scenario:
         """
         self.analyze()
 
+        fix_flag = "--fix" if fix else ""
         implicated_files = self._determine_implicated_files()
         command = " ".join((
             CRASHREPAIRLINT_PATH,
+            fix_flag,
             "--output-to",
             self.linter_report_path,
             "--localization-filename",

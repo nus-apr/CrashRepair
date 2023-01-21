@@ -31,6 +31,11 @@ static llvm::cl::opt<std::string> outputFilename(
   llvm::cl::init("linter-summary.json")
 );
 
+static llvm::cl::opt<bool> fixEnabled(
+  "fix",
+  llvm::cl::desc("Attempt to automatically fix any issues with the fix localization.")
+);
+
 static llvm::cl::opt<std::string> localizationFilename(
   "localization-filename",
   llvm::cl::desc("The name of file from which the fix localization should be read."),
@@ -98,6 +103,11 @@ int main(int argc, const char **argv) {
   FixLocalization fixLocalization = FixLocalization::load(localizationFilename);
   ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
   // tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
+
+  // TODO repair mode
+  if (fixEnabled) {
+    spdlog::info("TODO: attempt to repair fix localization");
+  }
 
   FixLocationLinter linter(fixLocalization);
   auto actionFactory = std::make_unique<LintLocationsActionFactory>(linter);
