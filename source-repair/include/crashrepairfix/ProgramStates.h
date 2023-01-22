@@ -86,6 +86,10 @@ public:
     values(std::move(other.values))
   {}
 
+  std::string getValuesFilename() const {
+    return valuesFilename;
+  }
+
 private:
   std::string valuesFilename;
   std::vector<std::unique_ptr<Variable>> variables;
