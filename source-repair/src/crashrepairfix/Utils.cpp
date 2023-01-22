@@ -24,7 +24,7 @@ clang::Stmt const * findTopLevelStmt(clang::Stmt const *stmt, clang::ASTContext 
     }
     node = context.getParents(node)[0];
   }
-  spdlog::error("unable to locate top-level statement");
+  spdlog::error("unable to locate top-level statement: {}", getSource(stmt, context));
   abort();
 }
 
@@ -243,6 +243,8 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
     } else if (nodeKind == "ForStmt") {
       return stmtBelongsToSubtree(stmt, parent.get<clang::ForStmt>()->getBody(), context);
     } else if (nodeKind == "CompoundStmt") {
+      return true;
+    } else if (parent.get<clang::Decl>()) {
       return true;
     }
   }
