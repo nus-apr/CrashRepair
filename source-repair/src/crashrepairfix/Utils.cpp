@@ -246,6 +246,8 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
       return true;
     } else if (parent.get<clang::Decl>()) {
       return true;
+    } else if (parent.get<clang::Stmt>() == nullptr) {
+      return true;
     }
   }
   return false;
