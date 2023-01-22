@@ -45,6 +45,19 @@ public:
     return localization;
   }
 
+  void save(std::string const &filename) const {
+    std::ofstream o(filename);
+    o << std::setw(2) << toJSON() << std::endl;
+  }
+
+  nlohmann::json toJSON() const {
+    auto j = nlohmann::json::array();
+    for (auto &location : locations) {
+      j.push_back(location->toJSON());
+    }
+    return j;
+  }
+
   std::vector<std::unique_ptr<FixLocation>>::iterator begin() {
     return locations.begin();
   }
