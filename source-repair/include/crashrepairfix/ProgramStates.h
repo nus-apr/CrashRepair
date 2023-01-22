@@ -23,20 +23,32 @@ public:
   public:
     static std::unique_ptr<Variable> fromJSON(nlohmann::json const &j);
 
-    Variable(std::string const &name, ResultType type)
-    : name(name), type(type) {}
+    Variable(std::string const &name, ResultType type, size_t line, size_t column)
+    : name(name),
+      type(type),
+      line(line),
+      column(column)
+    {}
     Variable(Variable const &other) noexcept
     : name(other.name),
-      type(other.type)
+      type(other.type),
+      line(other.line),
+      column(other.column)
     {}
 
     std::string toString() const;
     std::string const & getName() const;
+    size_t getLine() const;
+    size_t getColumn() const;
     ResultType getResultType() const;
+
+    nlohmann::json toJSON() const;
 
   private:
     std::string const name;
     ResultType const type;
+    size_t line;
+    size_t column;
 
     friend class Values;
   };
@@ -76,7 +88,12 @@ public:
   {
     variables.reserve(other.variables.size());
     for (auto &variable : other.variables) {
-      variables.push_back(std::make_unique<Variable>(variable->getName(), variable->getResultType()));
+      variables.push_back(std::make_unique<Variable>(
+        variable->getName(),
+        variable->getResultType(),
+        variable->getLine(),
+        variable->getColumn()
+      ));
     }
     loadValues();
   }

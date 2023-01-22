@@ -60,9 +60,14 @@ public:
   }
 
   nlohmann::json toJSON() const {
+    auto variablesJson = nlohmann::json::array();
+    for (auto &variable : states.getVariables()) {
+      variablesJson.push_back(variable->toJSON());
+    }
     return {
       {"location", sourceLocation.toString()},
       {"constraint", constraint->toString()},
+      {"variables", variablesJson},
       {"values-file", states.getValuesFilename()}
     };
   }

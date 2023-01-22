@@ -121,6 +121,14 @@ std::string ProgramStates::Variable::toString() const {
   return fmt::format("Variable({}, {})", name, Expr::resultTypeToString(type));
 }
 
+size_t ProgramStates::Variable::getLine() const {
+  return line;
+}
+
+size_t ProgramStates::Variable::getColumn() const {
+  return column;
+}
+
 ResultType ProgramStates::Variable::getResultType() const {
   return type;
 }
@@ -129,10 +137,22 @@ std::string const & ProgramStates::Variable::getName() const {
   return name;
 }
 
+nlohmann::json ProgramStates::Variable::toJSON() const {
+  return {
+    {"name", name},
+    {"type", Expr::resultTypeToString(type)},
+    {"line", line},
+    {"column", column}
+    // FIXME: add instruction-address
+  };
+}
+
 std::unique_ptr<ProgramStates::Variable> ProgramStates::Variable::fromJSON(nlohmann::json const &j) {
   std::string name = j["name"];
   auto type = Expr::resultTypeFromString(j["type"]);
-  auto variable = std::make_unique<Variable>(name, type);
+  size_t line = j["line"];
+  size_t column = j["column"];
+  auto variable = std::make_unique<Variable>(name, type, line, column);
   spdlog::debug("loaded variable: {}", variable->toString());
   return variable;
 }
