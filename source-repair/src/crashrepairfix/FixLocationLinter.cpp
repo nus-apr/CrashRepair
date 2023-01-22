@@ -88,8 +88,12 @@ std::unique_ptr<FixLocation> FixLocationLinter::repair(AstLinkedFixLocation cons
   }
 
   // create a new fix location
-  // FIXME change (line, column) depending on stmt kind
-  auto stmtClangLocation = context.getFullLoc(topLevelStmt->getBeginLoc());
+  clang::SourceLocation stmtClangRawLocation = topLevelStmt->getBeginLoc();
+  if (auto binOp = clang::dyn_cast<clang::BinaryOperator>(topLevelStmt)) {
+    stmtClangRawLocation = binOp->getOperatorLoc();
+  }
+  auto stmtClangLocation = context.getFullLoc(stmtClangRawLocation);
+
   auto lineNumber = stmtClangLocation.getLineNumber();
   auto columnNumber = stmtClangLocation.getColumnNumber();
   auto sourceLocation = SourceLocation(
