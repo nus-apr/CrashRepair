@@ -57,7 +57,7 @@ def run_linter(test_dir: str) -> int:
     int
         The number of bad fix locations in the localization.json
     """
-    command = "crashrepair lint bug.json > linter.log 2>&1"
+    command = "crashrepair lint --fix bug.json > linter.log 2>&1"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=test_dir)
     process.wait()
 
