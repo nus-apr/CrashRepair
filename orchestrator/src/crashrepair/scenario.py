@@ -452,6 +452,7 @@ class Scenario:
         # NOTE these two steps could be performed in parallel
         self.fuzz()
         self.analyze()
+        self.lint(fix=True)
         self.generate()
         self.validate()
 
