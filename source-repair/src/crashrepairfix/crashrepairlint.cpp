@@ -89,9 +89,15 @@ private:
   FixLocationLinter &linter;
 };
 
+void repair(FixLocalization &fixLocalization, ClangTool &tool) {
+  FixLocationLinter linter(fixLocalization, true);
+  auto actionFactory = std::make_unique<LintLocationsActionFactory>(linter);
+  tool.run(actionFactory.get());
+  // TODO remove duplicate entries
+}
 
 int main(int argc, const char **argv) {
-  spdlog::set_level(spdlog::level::err);
+  spdlog::set_level(spdlog::level::info);
 
   // TODO automatically inject correct include path for clang-packaged stdlib headers
   // https://stackoverflow.com/questions/51695806/clang-tool-include-path
@@ -104,12 +110,11 @@ int main(int argc, const char **argv) {
   ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
   // tool.setDiagnosticConsumer(new clang::IgnoringDiagConsumer());
 
-  // TODO repair mode
   if (fixEnabled) {
-    spdlog::info("TODO: attempt to repair fix localization");
+    repair(fixLocalization, tool);
   }
 
-  FixLocationLinter linter(fixLocalization);
+  FixLocationLinter linter(fixLocalization, false);
   auto actionFactory = std::make_unique<LintLocationsActionFactory>(linter);
   tool.run(actionFactory.get());
   linter.save(outputFilename);

@@ -59,11 +59,14 @@ private:
 
 class FixLocationLinter {
 public:
-  FixLocationLinter(FixLocalization &fixLocalization)
+  FixLocationLinter(FixLocalization &fixLocalization, bool shouldRepair)
   : fixLocalization(fixLocalization),
-    errors()
+    errors(),
+    shouldRepair(shouldRepair)
   {}
 
+  void run(clang::ASTContext &context);
+  void repair(clang::ASTContext &context);
   void validate(clang::ASTContext &context);
 
   std::optional<LinterError> validate(AstLinkedFixLocation const &location);
@@ -77,6 +80,7 @@ public:
 private:
   FixLocalization &fixLocalization;
   std::vector<LinterError> errors;
+  bool shouldRepair;
 };
 
 }

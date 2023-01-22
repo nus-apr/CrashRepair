@@ -15,7 +15,7 @@ namespace crashrepairfix {
 class ProgramMutator {
 public:
   ProgramMutator(FixLocalization &fixLocalization, std::string const &saveToFilename)
-  : diffGenerator(), linter(fixLocalization), fixLocalization(fixLocalization), saveToFilename(saveToFilename), mutations() {}
+  : diffGenerator(), linter(fixLocalization, false), fixLocalization(fixLocalization), saveToFilename(saveToFilename), mutations() {}
 
   void mutate(clang::ASTContext &context);
   void mutate(AstLinkedFixLocation &location);

@@ -63,7 +63,15 @@ nlohmann::json LinterError::toJson() const {
   };
 }
 
-std::unique_ptr<FixLocation> repair(AstLinkedFixLocation const &location) {
+void FixLocationLinter::run(clang::ASTContext &context) {
+  if (shouldRepair) {
+    repair(context);
+  } else {
+    validate(context);
+  }
+}
+
+std::unique_ptr<FixLocation> FixLocationLinter::repair(AstLinkedFixLocation const &location) {
   clang::ASTContext &context = const_cast<clang::ASTContext&>(location.getContext());
 
   // repair is only applied to non-constraint fix locations
@@ -134,6 +142,27 @@ std::optional<LinterError> FixLocationLinter::validate(AstLinkedFixLocation cons
   }
 
   return {};
+}
+
+void FixLocationLinter::repair(clang::ASTContext &context) {
+  for (auto &location : fixLocalization) {
+    auto stmtLocation = location->getLocation();
+    auto *stmt = StmtFinder::find(context, stmtLocation);
+    if (stmt == nullptr) {
+      continue;
+    }
+
+    AstLinkedFixLocation linkedLocation = AstLinkedFixLocation::create(*location, stmt, context);
+    auto fixedLocation = repair(linkedLocation);
+    if (fixedLocation) {
+      spdlog::info(
+        "applying repair to fix location [{}] -> [{}]",
+        location->getLocation().toString(),
+        fixedLocation->getLocation().toString()
+      );
+      location->setLocation(fixedLocation->getLocation());
+    }
+  }
 }
 
 void FixLocationLinter::validate(clang::ASTContext &context) {
