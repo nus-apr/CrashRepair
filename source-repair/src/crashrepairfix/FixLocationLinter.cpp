@@ -179,6 +179,7 @@ void FixLocationLinter::validate(clang::ASTContext &context) {
       auto error = LinterError::UnableToLocateStatement(location.get());
       spdlog::error(error.message());
       errors.push_back(error);
+      continue;
     }
 
     AstLinkedFixLocation linkedLocation = AstLinkedFixLocation::create(*location, stmt, context);
