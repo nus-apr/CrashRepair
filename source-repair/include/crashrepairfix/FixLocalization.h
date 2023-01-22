@@ -46,8 +46,10 @@ public:
   }
 
   void save(std::string const &filename) const {
+    spdlog::info("saving fix localization to disk: {}", filename);
     std::ofstream o(filename);
     o << std::setw(2) << toJSON() << std::endl;
+    spdlog::info("saved fix localization to disk: {}", filename);
   }
 
   nlohmann::json toJSON() const {

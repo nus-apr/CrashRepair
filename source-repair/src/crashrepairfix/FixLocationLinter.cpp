@@ -35,8 +35,10 @@ std::string LinterError::message() const {
   std::string message;
   switch (type) {
     case LinterErrorType::ResultAtTopLevelConstraint:
+      message = fmt::format("@result constraint at top-level statement [{}]", location->getConstraint()->toString());
+      break;
     case LinterErrorType::NonResultAtNonTopLevelConstraint:
-      message = fmt::format("illegal constraint at given location [{}]", location->getConstraint()->toString());
+      message = fmt::format("non-@result constraint at non-top-level statement [{}]", location->getConstraint()->toString());
       break;
     case LinterErrorType::UnableToLocateStatement:
       message = "unable to find statement";

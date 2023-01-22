@@ -49,7 +49,7 @@ public:
   explicit LintLocationsConsumer(FixLocationLinter &linter) : linter(linter) {}
 
   virtual void HandleTranslationUnit(clang::ASTContext &context) {
-    linter.validate(context);
+    linter.run(context);
   }
 
 private:
@@ -93,7 +93,11 @@ void repair(FixLocalization &fixLocalization, ClangTool &tool) {
   FixLocationLinter linter(fixLocalization, true);
   auto actionFactory = std::make_unique<LintLocationsActionFactory>(linter);
   tool.run(actionFactory.get());
+
   // TODO remove duplicate entries
+
+  // save to disk
+  fixLocalization.save(localizationFilename);
 }
 
 int main(int argc, const char **argv) {
