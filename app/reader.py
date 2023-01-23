@@ -450,7 +450,7 @@ def read_tainted_expressions(taint_log_path):
             for line in taint_file:
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
-                    source_loc, data_type, taint_value = line.split(": ")
+                    source_loc, data_type, taint_value = line.strip().split(": ")
                     # src_file, src_line, src_col, _ = source_loc.split(":")
                     # source_loc = ":".join(src_file, src_line, src_col)
                     if source_loc not in taint_map.keys():

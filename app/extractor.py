@@ -386,6 +386,27 @@ def extract_var_ref_list(ast_node, file_path):
     return sorted_var_list
 
 
+def extract_stmt_nodes(ast_node, black_list=None, white_list=None):
+    stmt_node_list = list()
+    if not ast_node:
+        return stmt_node_list
+    node_type = str(ast_node["kind"])
+    if "Stmt" in node_type:
+        if black_list:
+            if node_type not in black_list:
+                stmt_node_list.append(ast_node)
+        elif white_list:
+            if node_type in white_list:
+                stmt_node_list.append(ast_node)
+        else:
+            stmt_node_list.append(ast_node)
+    if "inner" in ast_node and len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
+            child_stmt_node_list = extract_stmt_nodes(child_node, black_list, white_list)
+            stmt_node_list = stmt_node_list + child_stmt_node_list
+    return stmt_node_list
+
+
 def extract_ast_var_list(ast_node, file_path):
     var_dec_list = extract_var_dec_list(ast_node, file_path)
     var_ref_list = extract_var_ref_list(ast_node, file_path)
@@ -950,6 +971,8 @@ def extract_line_range(file_path, ast_range):
 
 
 def extract_col_range(ast_loc_info):
+    if "expansionLoc" in ast_loc_info:
+        ast_loc_info = ast_loc_info["expansionLoc"]
     begin_col = ast_loc_info["col"]
     end_col = begin_col + int(ast_loc_info["tokLen"])
     return range(begin_col, end_col+1)
@@ -1010,21 +1033,21 @@ def extract_expression_list(ast_node, src_file):
 
 def extract_expression_string_list(ast_node, src_file):
     expression_list = dict()
-    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/"])
-    array_access_list = extract_array_subscript_node_list(ast_node)
+    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/", "="])
+    # array_access_list = extract_array_subscript_node_list(ast_node)
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node)
-    ref_node_list = extract_reference_node_list(ast_node)
-    for subscript_node in array_access_list:
-        index_node = subscript_node["inner"][1]
-        # expression_str = converter.convert_node_to_str(index_node)
-        expression_loc = extract_loc(src_file, index_node["range"]["begin"])
-        # data_type = index_node["type"]["qualType"]
-        if expression_loc is None:
-            continue
-        expression_index = (expression_loc[1], expression_loc[2])
+    # ref_node_list = extract_reference_node_list(ast_node)
+    # for subscript_node in array_access_list:
+    #     index_node = subscript_node["inner"][1]
+    #     # expression_str = converter.convert_node_to_str(index_node)
+    #     expression_loc = extract_loc(src_file, index_node["range"]["begin"])
+    #     # data_type = index_node["type"]["qualType"]
+    #     if expression_loc is None:
+    #         continue
+    #     expression_index = (expression_loc[1], expression_loc[2])
         # expression_list[expression_index] = expression_str
-    for ast_node in (binary_op_list + unary_op_list + initialize_op_list + ref_node_list):
+    for ast_node in (binary_op_list + unary_op_list + initialize_op_list ):
         op_code = None
         ast_type = ast_node["kind"]
         if ast_type in ["GotoStmt"]:
@@ -1038,11 +1061,16 @@ def extract_expression_string_list(ast_node, src_file):
         if "opcode" in ast_node:
             op_code = ast_node["opcode"]
             if op_code == "=":
-                ast_node = ast_node["inner"][1]
-                if "opcode" in ast_node:
-                    op_code = ast_node["opcode"]
-                else:
-                    op_code = None
+                lhs_node = ast_node["inner"][0]
+                rhs_node = ast_node["inner"][1]
+                loc_range = rhs_node["range"]["begin"]
+                if rhs_node["kind"] == "BinaryOperator":
+                    loc_range = rhs_node["inner"][0]["range"]["end"]
+                expression_loc = extract_loc(src_file, loc_range)
+                expression_str = converter.get_node_value(lhs_node)
+                expression_index = (expression_loc[1], expression_loc[2])
+                expression_list[expression_index] = (expression_str, result_type)
+                continue
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
             continue
         expression_str = converter.get_node_value(ast_node)

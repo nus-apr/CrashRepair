@@ -405,7 +405,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
     localized_cfc = None
     candidate_constraints = list()
     candidate_locations = set()
-    src_file, taint_line, taint_col = taint_loc.split(":")
+    src_file, taint_line, taint_col = taint_loc.strip().split(":")
     crash_loc = cfc_info["loc"]
     cfc_expr = cfc_info["expr"]
     cfc_var_info_list = cfc_info["var-info"]
@@ -487,6 +487,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
             localized_cfc.update_symbols(localized_tokens)
             candidate_constraints.append((localized_cfc, candidate_line, candidate_col))
 
+
     # identify potential expression replacements
     expression_string_list = extractor.extract_expression_string_list(function_ast, src_file)
     updated_candidate_constraints = list()
@@ -500,7 +501,65 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
                 updated_candidate_constraints.append((updated_cfc, candidate_line, candidate_col))
                 continue
         updated_candidate_constraints.append(candidate_constraint)
-    return candidate_constraints
+
+    # update top-level fix locations
+    stmt_node_list = extractor.extract_stmt_nodes(function_ast, black_list=["CompoundStmt", "IfStmt"])
+    assignment_op_list = ["=", "+=", "-=", "*=", "/=", "%=", "&=", "|="]
+    assignment_node_list = extractor.extract_binaryop_node_list(function_ast, src_file, assignment_op_list)
+    assignment_list = dict()
+    for assign_node in assignment_node_list:
+        left_side = assign_node['inner'][0]
+        right_side = assign_node['inner'][1]
+        op_code = assign_node['opcode']
+        begin_loc = extractor.extract_loc(src_file, assign_node["range"]["begin"])
+        data_type = extractor.extract_data_type(left_side)
+        _, line_number, col_number = begin_loc
+        if src_file not in values.SOURCE_LINE_MAP:
+            with open(src_file, "r") as s_file:
+                values.SOURCE_LINE_MAP[src_file] = s_file.readlines()
+        source_line = values.SOURCE_LINE_MAP[src_file][line_number - 1]
+        op_position = source_line.index(op_code, col_number - 1) + 1
+        op_loc = (int(line_number), int(op_position))
+        rhs_ast_loc = right_side["range"]["begin"]
+        rhs_begin_col = extractor.extract_col_range(rhs_ast_loc)[0]
+        rhs_loc = (int(line_number), int(rhs_begin_col))
+        assignment_list[op_loc] = rhs_loc
+
+    call_node_list = extractor.extract_call_node_list(function_ast)
+    top_level_node_list = stmt_node_list + assignment_node_list + call_node_list
+    fix_loc_updated_candidate_constraints = list()
+
+    for candidate_constraint in updated_candidate_constraints:
+        candidate_cfc, candidate_line, candidate_col = candidate_constraint
+        candidate_loc = (src_file, candidate_line, candidate_col)
+        top_level_line = 0
+        top_level_col = 0
+        for top_node in top_level_node_list:
+            loc_range = top_node["range"]
+            if oracle.is_loc_in_range(candidate_loc, loc_range):
+                top_node_line = extractor.extract_line_range(src_file, loc_range)[0]
+                top_node_col = extractor.extract_col_range(loc_range["begin"])[0]
+                if top_node_line > top_level_line:
+                    top_level_line = top_node_line
+                    top_level_col = 0
+                if top_node_line == top_level_line and top_node_col > top_level_col:
+                    top_level_col = top_node_col
+        top_level_loc = (top_level_line, top_level_col)
+        taint_loc = (int(taint_line), int(taint_col))
+        if top_level_line == 0 and top_level_col == 0:
+            emitter.warning(f"[warning] did not find top-level for {crash_loc}")
+            continue
+        if "@result" in candidate_cfc.to_string():
+            fix_loc_updated_candidate_constraints.append((candidate_cfc, top_level_loc, taint_loc))
+            if taint_loc in assignment_list:
+                shifted_loc = assignment_list[taint_loc]
+                fix_loc_updated_candidate_constraints.append((candidate_cfc, shifted_loc, taint_loc))
+            else:
+                fix_loc_updated_candidate_constraints.append((candidate_cfc, taint_loc, taint_loc))
+        else:
+            fix_loc_updated_candidate_constraints.append((candidate_cfc, top_level_loc, taint_loc))
+
+    return fix_loc_updated_candidate_constraints
 
 def update_result_nodes(cfc, expr_str, data_type):
     if cfc.is_leaf():
@@ -620,17 +679,23 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
         logger.track_localization("[constraints] {}".format(candidate_constraints))
         for candidate_info in candidate_constraints:
             localization_obj = collections.OrderedDict()
-            localized_cfc, localized_line, localized_col = candidate_info
-            localized_loc = ":".join([src_file, str(localized_line), str(localized_col)])
-            if localized_loc in localized_loc_list:
+            localized_cfc, localized_loc, taint_loc = candidate_info
+            localized_line, localized_col = localized_loc
+            taint_line, taint_col = taint_loc
+            localized_loc_str = ":".join([src_file, str(localized_line), str(localized_col)])
+            if localized_loc_str in localized_loc_list:
                 continue
-            localized_loc_list.append(localized_loc)
+            localized_loc_list.append(localized_loc_str)
+
             # location is not precise with assignments, hence avoid localization if location is not in taint map
-            if localized_loc not in taint_concrete:
-                continue
-            state_info_list_values = localize_state_info(localized_loc, taint_concrete)
-            emitter.sub_sub_title("[fix-loc] {}".format(localized_loc))
-            localization_obj["location"] = localized_loc
+            if localized_loc_str not in taint_concrete:
+                taint_loc_str = ":".join([src_file, str(taint_line), str(taint_col)])
+                state_info_list_values = localize_state_info(taint_loc_str, taint_concrete)
+            else:
+                state_info_list_values = localize_state_info(localized_loc_str, taint_concrete)
+
+            emitter.sub_sub_title("[fix-loc] {}".format(localized_loc_str))
+            localization_obj["location"] = localized_loc_str
             localization_obj["constraint"] = localized_cfc.to_string()
             # localization_obj["constraint-ast"] = localized_cfc.to_json()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
@@ -674,7 +739,7 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
 
             localization_obj["variables"] = variables
             values_directory = os.path.join(definitions.DIRECTORY_OUTPUT, "values")
-            rel_output_filename = f"{localized_loc.replace('/', '#')}.csv"
+            rel_output_filename = f"{localized_loc_str.replace('/', '#')}.csv"
             abs_output_filepath = os.path.join(values_directory, rel_output_filename)
             writer.write_as_csv(fieldnames, rows, abs_output_filepath)
             localization_obj["values-file"] = rel_output_filename
