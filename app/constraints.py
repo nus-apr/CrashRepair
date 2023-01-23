@@ -5,16 +5,17 @@ from sympy import sympify
 import os
 import typing as t
 
-from app import values, utilities, converter, extractor, analyzer
+from app import values, utilities, converter, extractor, analyzer, generator
 
 SymbolType = {
-    "INT_CONST": "",
     "PTR": "",
-    "INT_VAR": "",
-    "REAL_CONST": "",
-    "REAL_VAR": "",
+    "VAR_INT": "",
+    "VAR_REAL": "",
+    "CONST_INT": "",
+    "CONST_REAL": "",
     "RESULT_INT": "",
     "RESULT_PTR": "",
+    "RESULT_REAL": "",
 
     "OP_LT": "<",
     "OP_LTE": "<=",
@@ -69,14 +70,16 @@ class ConstraintSymbol:
     def __str__(self) -> str:
         if self._m_cons_type == "NULL_VAL":
             return "NULL"
-        if self._m_cons_type == "INT_VAR":
+        if self._m_cons_type == "VAR_INT":
             return f"@var(integer, {self._m_symbol})"
         if self._m_cons_type == "PTR":
             return f"@var(pointer, {self._m_symbol})"
-        if self._m_cons_type == "REAL_VAR":
+        if self._m_cons_type == "VAR_REAL":
             return f"@var(float, {self._m_symbol})"
         if self._m_cons_type == "RESULT_INT":
             return f"@result(integer)"
+        if self._m_cons_type == "RESULT_REAL":
+            return f"@result(float)"
         if self._m_cons_type == "RESULT_PTR":
             return f"@result(pointer)"
 
@@ -100,26 +103,29 @@ class ConstraintSymbol:
         operator_type_list = [x for x in SymbolType.keys() if "OP" in x]
         return self._m_cons_type in operator_type_list
 
-    def is_int_var(self):
-        return self._m_cons_type == "INT_VAR"
+    def is_var_int(self):
+        return self._m_cons_type == "VAR_INT"
 
     def is_result_int(self):
         return self._m_cons_type == "RESULT_INT"
 
+    def is_result_float(self):
+        return self._m_cons_type == "RESULT_REAL"
+
     def is_result_ptr(self):
         return self._m_cons_type == "RESULT_PTR"
 
-    def is_real_var(self):
-        return self._m_cons_type == "REAL_VAR"
+    def is_var_real(self):
+        return self._m_cons_type == "VAR_REAL"
 
-    def is_int_const(self):
-        return self._m_cons_type == "INT_CONST"
+    def is_const_int(self):
+        return self._m_cons_type == "CONST_INT"
 
     def is_ptr(self):
         return self._m_cons_type == "PTR"
 
-    def is_real_const(self):
-        return self._m_cons_type == "REAL_CONST"
+    def is_const_real(self):
+        return self._m_cons_type == "CONST_REAL"
 
     def is_var_name(self):
         return self._m_cons_type == "VAR_NAME"
@@ -220,7 +226,9 @@ class ConstraintExpression:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
 
-        if self._m_symbol.is_result_int() or self._m_symbol.is_result_ptr():
+        if self._m_symbol.is_result_int() or \
+                self._m_symbol.is_result_ptr() or\
+                self._m_symbol.is_result_float():
             return f"({expr_str})"
 
         if lhs_str and rhs_str:
@@ -257,7 +265,9 @@ class ConstraintExpression:
             return f"({expr_str} {rhs_str})"
 
 
-        if self._m_symbol.is_result_int() or self._m_symbol.is_result_ptr():
+        if self._m_symbol.is_result_int() or \
+                self._m_symbol.is_result_ptr() or \
+                self._m_symbol.is_result_float():
             return f"({expr_str})"
 
         if lhs_str and rhs_str:
@@ -270,7 +280,7 @@ class ConstraintExpression:
         symbol_list = []
         if self._m_symbol.is_null():
             return []
-        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
+        if self._m_symbol.is_var_int() or self._m_symbol.is_var_real() or self._m_symbol.is_ptr():
             symbol_list = [self.get_symbol()]
         elif self._m_symbol.is_sizeof():
             return [self.to_string()]
@@ -300,14 +310,14 @@ class ConstraintExpression:
                 mapping = symbolic_mapping[symbol_name]
                 # assumption: mapping is either constant or variable, not an expression i.e. a+b
                 if str(mapping).isnumeric():
-                    mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
+                    mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
                 elif isinstance(mapping, dict):
                     constant = str(int(mapping["size"]/ int(mapping["width"])))
-                    mapped_symbol = make_constraint_symbol(constant, "INT_CONST")
+                    mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
                     self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
                 else:
-                    self._m_sizeof_mapping = generate_expr_for_str(mapping, "INT_VAR")
+                    self._m_sizeof_mapping = generate_expr_for_str(mapping, "VAR_INT")
 
     def resolve_diff(self, symbolic_mapping):
         if self._m_symbol.is_diff():
@@ -316,14 +326,14 @@ class ConstraintExpression:
                 mapping = symbolic_mapping[symbol_name]
                 # assumption: mapping is either constant or variable, not an expression i.e. a+b
                 if str(mapping).isnumeric():
-                    mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
+                    mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
                     self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
                 elif isinstance(mapping, dict):
                     constant = str(int(mapping["size"]/ int(mapping["width"])))
-                    mapped_symbol = make_constraint_symbol(constant, "INT_CONST")
+                    mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
                     self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
                 else:
-                    self._m_diff_mapping = generate_expr_for_str(mapping, "INT_VAR")
+                    self._m_diff_mapping = generate_expr_for_str(mapping, "VAR_INT")
 
     def resolve_base(self, symbolic_mapping):
         if self._m_symbol.is_base():
@@ -332,14 +342,14 @@ class ConstraintExpression:
                 mapping = symbolic_mapping[symbol_name]
                 # assumption: mapping is either constant or variable, not an expression i.e. a+b
                 if str(mapping).isnumeric():
-                    mapped_symbol = make_constraint_symbol(mapping, "INT_CONST")
+                    mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
                     self._m_base_mapping = make_symbolic_expression(mapped_symbol)
                 else:
                     mapped_symbol = make_constraint_symbol(mapping, "PTR")
                     self._m_base_mapping = make_symbolic_expression(mapped_symbol)
 
     def update_symbols(self, symbol_mapping):
-        if self._m_symbol.is_int_var() or self._m_symbol.is_real_var() or self._m_symbol.is_ptr():
+        if self._m_symbol.is_var_int() or self._m_symbol.is_var_real() or self._m_symbol.is_ptr():
             symbol_str = self.get_symbol()
             if symbol_str in symbol_mapping:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
@@ -352,7 +362,7 @@ class ConstraintExpression:
 
         if self._m_lvalue:
             left_symbol = self._m_lvalue._m_symbol
-            if left_symbol.is_int_var() or left_symbol.is_real_var() or left_symbol.is_ptr():
+            if left_symbol.is_var_int() or left_symbol.is_var_real() or left_symbol.is_ptr():
                 left_symbol_str = str(left_symbol._m_symbol)
                 if left_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[left_symbol_str]
@@ -368,7 +378,7 @@ class ConstraintExpression:
                 self._m_lvalue.update_symbols(symbol_mapping)
         if self._m_rvalue:
             right_symbol = self._m_rvalue._m_symbol
-            if right_symbol.is_int_var() or right_symbol.is_real_var() or right_symbol.is_ptr():
+            if right_symbol.is_var_int() or right_symbol.is_var_real() or right_symbol.is_ptr():
                 right_symbol_str = str(right_symbol._m_symbol)
                 if right_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[right_symbol_str]
@@ -435,10 +445,10 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
         constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), data_type)
         constraint_expr =  make_symbolic_expression(constraint_symbol)
     elif symbolized_expr.as_expr().is_Integer:
-        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), "INT_CONST")
+        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), "CONST_INT")
         constraint_expr = make_symbolic_expression(constraint_symbol)
     elif symbolized_expr.as_expr().is_Float:
-        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), "REAL_CONST")
+        constraint_symbol = make_constraint_symbol(str(symbolized_expr.as_expr()), "CONST_REAL")
         constraint_expr = make_symbolic_expression(constraint_symbol)
     elif symbolized_expr.as_expr().is_Add:
         left_child = symbolized_expr.as_two_terms()[0]
@@ -510,9 +520,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
             else:
                 symbol_str = str(child_ast["referencedDecl"]["name"]) + op_symbol_str
             data_type = extractor.extract_data_type(ast_node)
-            op_type = "INT_VAR"
-            if "*" in data_type or "[" in data_type:
-                op_type = "PTR"
+            op_type = generator.generate_result_type(data_type)
             constraint_symbol = make_constraint_symbol(symbol_str, op_type)
             constraint_expr = make_symbolic_expression(constraint_symbol)
             return constraint_expr
@@ -520,9 +528,7 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
             child_ast = ast_node["inner"][0]
             symbol_str = op_symbol_str + converter.get_node_value(child_ast)
             data_type = extractor.extract_data_type(ast_node)
-            op_type = "INT_VAR"
-            if "*" in data_type or "[" in data_type:
-                op_type = "PTR"
+            op_type = generator.generate_result_type(data_type)
             constraint_symbol = make_constraint_symbol(symbol_str, op_type)
             constraint_expr = make_symbolic_expression(constraint_symbol)
             return constraint_expr
@@ -541,43 +547,35 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         return generate_expr_for_ast(child_node)
     elif node_type == "IntegerLiteral":
         symbol_str = str(ast_node["value"])
-        op_type = "INT_CONST"
+        op_type = "CONST_INT"
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["CStyleCastExpr"]:
         symbol_str = converter.get_node_value(ast_node)
         data_type = extractor.extract_data_type(ast_node)
-        op_type = "INT_VAR"
-        if "*" in data_type or "[" in data_type:
-            op_type = "PTR"
+        op_type = generator.generate_result_type(data_type)
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["DeclRefExpr"]:
         symbol_str = str(ast_node["referencedDecl"]["name"])
         data_type = extractor.extract_data_type(ast_node)
-        op_type = "INT_VAR"
-        if "*" in data_type or "[" in data_type:
-            op_type = "PTR"
+        op_type = generator.generate_result_type(data_type)
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["MemberExpr"]:
         symbol_str = converter.convert_member_expr(ast_node, True)
         data_type = extractor.extract_data_type(ast_node)
-        op_type = "INT_VAR"
-        if "*" in data_type or "[" in data_type:
-            op_type = "PTR"
+        op_type = generator.generate_result_type(data_type)
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
     elif node_type in ["ArraySubscriptExpr"]:
         symbol_str = converter.convert_array_subscript(ast_node, True)
         data_type = extractor.extract_data_type(ast_node)
-        op_type = "INT_VAR"
-        if "*" in data_type or "[" in data_type:
-            op_type = "PTR"
+        op_type = generator.generate_result_type(data_type)
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
@@ -592,7 +590,7 @@ def generate_div_zero_constraint(divisor_node):
     constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
     constraint_op = make_constraint_symbol(constraint_op_str, constraint_op_type)
     constraint_val_str = "0"
-    constraint_val_type = "INT_CONST"
+    constraint_val_type = "CONST_INT"
     constraint_val = make_constraint_symbol(constraint_val_str, constraint_val_type)
     right_expr = make_symbolic_expression(constraint_val)
     constraint_expr = make_binary_expression(constraint_op, left_expr, right_expr)
@@ -602,7 +600,7 @@ def generate_div_zero_constraint(divisor_node):
 def generate_type_underflow_constraint(ast_node):
     result_data_type = extractor.extract_data_type(ast_node)
     type_min, type_max = get_type_limits(result_data_type)
-    min_val_symbol = make_constraint_symbol(type_min, "INT_CONST")
+    min_val_symbol = make_constraint_symbol(type_min, "CONST_INT")
     min_val_expr = make_symbolic_expression(min_val_symbol)
     node_type = ast_node["kind"]
 
@@ -619,7 +617,7 @@ def generate_type_underflow_constraint(ast_node):
         expr_a = generate_expr_for_ast(binary_left_ast)
         expr_b = generate_expr_for_ast(binary_right_ast)
     elif node_type == "UnaryOperator":
-        const_one_symbol = make_constraint_symbol("1", "INT_CONST")
+        const_one_symbol = make_constraint_symbol("1", "CONST_INT")
         expr_b = make_symbolic_expression(const_one_symbol)
         expr_a = generate_expr_for_ast(ast_node)
     else:
@@ -634,7 +632,7 @@ def generate_type_underflow_constraint(ast_node):
 def generate_type_overflow_constraint(ast_node):
     result_data_type = extractor.extract_data_type(ast_node)
     type_min, type_max = get_type_limits(result_data_type)
-    max_val_symbol = make_constraint_symbol(type_max, "INT_CONST")
+    max_val_symbol = make_constraint_symbol(type_max, "CONST_INT")
     max_val_expr = make_symbolic_expression(max_val_symbol)
     node_type = ast_node["kind"]
 
@@ -650,7 +648,7 @@ def generate_type_overflow_constraint(ast_node):
         expr_a = generate_expr_for_ast(binary_left_ast)
         expr_b = generate_expr_for_ast(binary_right_ast)
     elif node_type == "UnaryOperator":
-        const_one_symbol = make_constraint_symbol("1", "INT_CONST")
+        const_one_symbol = make_constraint_symbol("1", "CONST_INT")
         expr_b = make_symbolic_expression(const_one_symbol)
         expr_a = generate_expr_for_ast(ast_node)
     else:
@@ -682,7 +680,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
 
         lte_op = build_op_symbol("<=")
-        zero_symbol = make_constraint_symbol("0", "INT_CONST")
+        zero_symbol = make_constraint_symbol("0", "CONST_INT")
         zero_expr = make_symbolic_expression(zero_symbol)
         lower_bound_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
         logic_and_op = build_op_symbol("&&")
@@ -748,7 +746,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                             sizeof_op = build_op_symbol("sizeof ")
                             ptr_expr = generate_expr_for_ast(ptr_node)
                             sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
-                            zero_symbol = make_constraint_symbol("0", "INT_CONST")
+                            zero_symbol = make_constraint_symbol("0", "CONST_INT")
                             zero_expr = make_symbolic_expression(zero_symbol)
                             gt_op = build_op_symbol("<")
                             constraint_expr = make_binary_expression(gt_op, zero_expr, sizeof_expr)
@@ -802,7 +800,7 @@ def generate_shift_overflow_constraint(shift_node):
     binary_right_expr = generate_expr_for_ast(binary_right_ast)
     result_data_type = extractor.extract_data_type(binary_left_ast)
     type_min, type_max = get_type_limits(result_data_type)
-    max_val_symbol = make_constraint_symbol(type_max, "INT_CONST")
+    max_val_symbol = make_constraint_symbol(type_max, "CONST_INT")
     max_val_expr = make_symbolic_expression(max_val_symbol)
 
     less_than_op = build_op_symbol("<")
@@ -813,9 +811,9 @@ def generate_shift_overflow_constraint(shift_node):
 
     # next generate the second constraint 0 < {} < bit width
     type_width = get_type_width(result_data_type)
-    width_val_symbol = make_constraint_symbol(str(type_width), "INT_CONST")
+    width_val_symbol = make_constraint_symbol(str(type_width), "CONST_INT")
     width_val_expr = make_symbolic_expression(width_val_symbol)
-    zero_symbol = make_constraint_symbol("0", "INT_CONST")
+    zero_symbol = make_constraint_symbol("0", "CONST_INT")
     zero_expr = make_symbolic_expression(zero_symbol)
     first_predicate_expr = make_binary_expression(less_than_op, zero_expr, binary_right_expr)
     second_predicate_expr = make_binary_expression(less_than_op, binary_right_expr, width_val_expr)
@@ -840,7 +838,7 @@ def generate_memset_constraint(call_node):
     size_expr = generate_expr_for_ast(size_node)
 
     # generate the first constraint 0 < size_value
-    zero_val_symbol = make_constraint_symbol("0", "INT_CONST")
+    zero_val_symbol = make_constraint_symbol("0", "CONST_INT")
     zero_val_expr = make_symbolic_expression(zero_val_symbol)
     less_than_op = build_op_symbol("<")
     first_constraint_expr = make_binary_expression(less_than_op, zero_val_expr, size_expr)
@@ -871,9 +869,9 @@ def generate_assertion_constraint(call_node, func_node, src_file):
         comp_op = build_op_symbol(comp_op_str)
         left_node_str = str_tokens[0]
         right_node_str = str_tokens[2]
-        left_node = make_constraint_symbol(left_node_str, "INT_VAR" if left_node_str in var_name_list else "INT_CONST")
+        left_node = make_constraint_symbol(left_node_str, "VAR_INT" if left_node_str in var_name_list else "CONST_INT")
         left_expr = make_symbolic_expression(left_node)
-        right_node = make_constraint_symbol(right_node_str, "INT_VAR" if right_node_str in var_name_list else "INT_CONST")
+        right_node = make_constraint_symbol(right_node_str, "VAR_INT" if right_node_str in var_name_list else "CONST_INT")
         right_expr = make_symbolic_expression(right_node)
         constraint_expr = make_binary_expression(comp_op, left_expr, right_expr)
     else:
@@ -924,7 +922,7 @@ def generate_memmove_constraint(call_node):
 
     # Generating second constraint of type
     # 0 < size
-    zero_symbol = make_constraint_symbol("0", "INT_CONST")
+    zero_symbol = make_constraint_symbol("0", "CONST_INT")
     zero_expr = make_symbolic_expression(zero_symbol)
     second_constraint = make_binary_expression(less_than_op, zero_expr, size_expr)
 

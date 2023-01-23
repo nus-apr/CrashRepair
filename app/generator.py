@@ -457,3 +457,12 @@ def generate_offset_to_line(src_file_path):
         offset_to_line[offset+1] = line
     return offset_to_line
 
+
+def generate_result_type(data_type):
+    result_type = "VAR_INT"
+    if "*" in data_type or "[" in data_type:
+        result_type = "PTR"
+    elif data_type in ["float", "double", "long double"]:
+        result_type = "VAR_REAL"
+    return result_type
+

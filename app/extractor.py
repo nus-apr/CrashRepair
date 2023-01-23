@@ -1033,6 +1033,8 @@ def extract_expression_string_list(ast_node, src_file):
         result_type = "RESULT_INT"
         if "*" in data_type or "[" in data_type:
             result_type = "RESULT_PTR"
+        elif data_type in ["float", "double", "long double"]:
+            result_type = "RESULT_REAL"
         if "opcode" in ast_node:
             op_code = ast_node["opcode"]
             if op_code == "=":
