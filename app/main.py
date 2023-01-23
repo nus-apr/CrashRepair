@@ -133,5 +133,5 @@ def main():
         logger.end(time_info, is_error)
         logger.store_logs()
         if is_error:
-            exit(1)
-        exit(0)
+            exit(-1)
+        exit(values.COUNT_FIX_LOC)

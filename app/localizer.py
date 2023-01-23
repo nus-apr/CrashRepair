@@ -683,6 +683,7 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
     if not localization_list:
         emitter.error("Unable to Localize a Crash Free Constraint")
         utilities.error_exit("Analysis Failed")
+    values.COUNT_FIX_LOC = len(localization_list)
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))
     emitter.success("\n\tstate values saved at {}{}".format(definitions.DIRECTORY_OUTPUT, '/values/'))
