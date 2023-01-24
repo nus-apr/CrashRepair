@@ -643,6 +643,8 @@ def extract_child_id_list(ast_node):
 
 def extract_call_node_list(ast_node, black_list=None, white_list=None):
     call_expr_list = list()
+    if not ast_node:
+        return call_expr_list
     node_type = str(ast_node["kind"])
     if node_type == "CallExpr":
         func_ref_node = ast_node["inner"][0]
