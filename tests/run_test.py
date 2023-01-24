@@ -75,7 +75,7 @@ def run_analyze(test_dir: str) -> str:
     analyze_command = "git clean -f; crepair --conf=repair.conf > analyze.log 2>&1"
     process = subprocess.Popen(analyze_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
-    ret_code = process.returncode
+    fix_loc_count = process.returncode
     result = "SUCCESS"
     analysis_log_filename = os.path.join(test_dir, "analyze.log")
     with open(analysis_log_filename, 'rb', 0) as f:
@@ -86,6 +86,8 @@ def run_analyze(test_dir: str) -> str:
                 result = "ERROR"
             if s.find(b'Runtime Error') != -1:
                 result = "ERROR"
+    if result == "SUCCESS":
+        result = f"{result}({fix_loc_count})"
     return result
 
 
@@ -239,12 +241,17 @@ def run(args: argparse.Namespace) -> None:
     total_tests = len(outcomes)
     total_analyzed = sum(1 for outcome in outcomes if outcome.analysis_outcome == "SUCCESS")
     total_repaired = sum(1 for outcome in outcomes if "SUCCESS" in outcome.repair_outcome)
+    total_linter_error_scenarios = sum(1 for outcome in outcomes
+                                       if outcome.linter_errors > 0)
+    total_linter_errors = sum(outcome.linter_errors for outcome in outcomes
+                              if "SUCCESS" in outcome.analysis_outcome)
     result_stat = [outcome.result_stat for outcome in outcomes]
 
     print("Test completed\n")
     print(f"Total tests executed: {total_tests}")
     print(f"Total tests analyzed: {total_analyzed}({total_tests - total_analyzed})")
     print(f"Total tests repaired: {total_repaired}({total_tests - total_repaired})")
+    print(f"Total linter errors: {total_linter_errors} in {total_linter_error_scenarios} scenarios")
     write_as_json(result_stat, summary_path)
 
     copy_logs()
