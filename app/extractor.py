@@ -650,9 +650,11 @@ def extract_call_node_list(ast_node, black_list=None, white_list=None):
         if black_list:
             if func_ref_name not in black_list:
                 call_expr_list.append(ast_node)
-        if white_list:
+        elif white_list:
             if func_ref_name in white_list:
                 call_expr_list.append(ast_node)
+        else:
+            call_expr_list.append(ast_node)
     else:
         if "inner" in ast_node and len(ast_node['inner']) > 0:
             for child_node in ast_node['inner']:
