@@ -82,7 +82,7 @@ class Analyzer:
         with self._generate_config() as config_filename:
             logger.debug(f"wrote analyzer config file to: {config_filename}")
             command = f"{PATH_ANALYZER} --conf={config_filename}"
-            shell(command, cwd=self.scenario.directory)
+            shell(command, cwd=self.scenario.directory, check_returncode=False)
 
         # ensure that the results exist!
         if not os.path.exists(localization_filename):
