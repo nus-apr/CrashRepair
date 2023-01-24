@@ -551,6 +551,12 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
+    elif node_type == "FloatingLiteral":
+        symbol_str = str(ast_node["value"])
+        op_type = "CONST_REAL"
+        constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+        return constraint_expr
     elif node_type in ["CStyleCastExpr"]:
         symbol_str = converter.get_node_value(ast_node)
         data_type = extractor.extract_data_type(ast_node)
