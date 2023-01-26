@@ -64,8 +64,6 @@ def run_linter(test_dir: str) -> int:
     int
         The number of bad fix locations in the localization.json
     """
-    clean(test_dir)
-
     command = "crashrepair lint --fix bug.json > linter.log 2>&1"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=test_dir)
     process.wait()
@@ -83,10 +81,11 @@ def run_linter(test_dir: str) -> int:
 def run_analyze(test_dir: str) -> str:
     clean(test_dir)
 
-    analyze_command = "git clean -f; crepair --conf=repair.conf > analyze.log 2>&1"
+    localization_filename = os.path.join(test_dir, "analysis/localization.json")
+
+    analyze_command = "git clean -f; crashrepair analyze bug.json > analyze.log 2>&1"
     process = subprocess.Popen(analyze_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
-    fix_loc_count = process.returncode
     result = "SUCCESS"
     analysis_log_filename = os.path.join(test_dir, "analyze.log")
     with open(analysis_log_filename, 'rb', 0) as f:
@@ -98,6 +97,9 @@ def run_analyze(test_dir: str) -> str:
             if s.find(b'Runtime Error') != -1:
                 result = "ERROR"
     if result == "SUCCESS":
+        with open(localization_filename, "r") as fh:
+            localization = json.load(fh)
+            fix_loc_count = len(localization)
         result = f"{result}({fix_loc_count})"
     return result
 
