@@ -49,6 +49,13 @@ def write_as_json(data, output_file_path):
         out_file.writelines(content)
 
 
+def clean(test_dir: str) -> None:
+    analysis_dir = os.path.join(test_dir, "analysis")
+    shutil.rmtree(analysis_dir, ignore_errors=True)
+
+    # TODO we could run git reset here
+
+
 def run_linter(test_dir: str) -> int:
     """Runs the linter on the localization.json for a given bug scenario.
 
@@ -57,6 +64,8 @@ def run_linter(test_dir: str) -> int:
     int
         The number of bad fix locations in the localization.json
     """
+    clean(test_dir)
+
     command = "crashrepair lint --fix bug.json > linter.log 2>&1"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=test_dir)
     process.wait()
@@ -72,6 +81,8 @@ def run_linter(test_dir: str) -> int:
 
 
 def run_analyze(test_dir: str) -> str:
+    clean(test_dir)
+
     analyze_command = "git clean -f; crepair --conf=repair.conf > analyze.log 2>&1"
     process = subprocess.Popen(analyze_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
     process.wait()
@@ -92,8 +103,7 @@ def run_analyze(test_dir: str) -> str:
 
 
 def run_repair(test_dir: str) -> str:
-    analysis_dir = os.path.join(test_dir, "analysis")
-    shutil.rmtree(analysis_dir, ignore_errors=True)
+    clean(test_dir)
 
     repair_command = "git clean -f; crashrepair repair --no-fuzz bug.json > repair.log 2>&1"
     process = subprocess.Popen(repair_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, cwd=test_dir)
