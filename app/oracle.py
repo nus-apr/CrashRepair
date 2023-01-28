@@ -288,6 +288,20 @@ def ndim_grid(start,stop):
     return np.hstack((np.meshgrid(*L))).swapaxes(0,1).reshape(ndims,-1).T
 
 
+def is_top_assertion(src_loc, call_node_list):
+    for call_node in call_node_list:
+        loc_range = call_node["range"]
+        if is_loc_in_range(src_loc, loc_range):
+            node_type = call_node["kind"]
+            if node_type == "CallExpr":
+                func_ref_node = call_node["inner"][0]
+                func_ref_name = func_ref_node["inner"][0]["referencedDecl"]["name"]
+                if func_ref_name in ["assert", "__assert_fail"]:
+                    return True
+    return False
+
+
+
 def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     file_path, c_line, c_col = check_loc
     end_loc = extractor.extract_loc(file_path, ast_range["end"])[2]

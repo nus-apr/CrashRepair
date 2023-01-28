@@ -432,7 +432,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
             candidate_list = candidate_mapping[c_t_lookup]
             for candidate in candidate_list:
                 c_mapping, c_line, c_col, _, is_dec = candidate
-                if int(c_line) != int(taint_line):
+                if int(c_line) > int(taint_line):
                     continue
                 if int(c_line) == int(taint_line) and is_dec:
                     continue
@@ -525,9 +525,15 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         rhs_loc = (int(line_number), int(rhs_begin_col))
         assignment_list[op_loc] = rhs_loc
 
-    call_node_list = extractor.extract_call_node_list(function_ast)
-    top_level_node_list = stmt_node_list + assignment_node_list + call_node_list
+
     fix_loc_updated_candidate_constraints = list()
+    call_node_list = extractor.extract_call_node_list(function_ast)
+    taint_src_loc = (src_file, int(taint_line), int(taint_col))
+    if oracle.is_top_assertion(taint_src_loc, call_node_list):
+        return fix_loc_updated_candidate_constraints
+
+    top_level_node_list = stmt_node_list + assignment_node_list + call_node_list
+
 
     for candidate_constraint in updated_candidate_constraints:
         candidate_cfc, candidate_line, candidate_col = candidate_constraint
@@ -541,9 +547,6 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                 if node_type == "CallExpr":
                     func_ref_node = top_node["inner"][0]
                     func_ref_name = func_ref_node["inner"][0]["referencedDecl"]["name"]
-                    taint_src_loc = (src_file, taint_line, taint_col)
-                    if oracle.is_loc_in_range(taint_src_loc, loc_range):
-                        return fix_loc_updated_candidate_constraints
                     if func_ref_name in ["assert", "__assert_fail"]:
                         top_level_line = -1
                         break
