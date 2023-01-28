@@ -798,32 +798,26 @@ def extract_decl_node_list_global(ast_tree):
     return dec_list
 
 
-def extract_enum_node_list(ast_tree):
-    dec_list = dict()
-    node_type = str(ast_tree["kind"])
-    if node_type in ["EnumConstantDecl"]:
-        identifier = str(ast_tree["name"])
-        dec_list[identifier] = ast_tree
-
-    if len(ast_tree['inner']) > 0:
-        for child_node in ast_tree['inner']:
-            child_dec_list = extract_enum_node_list(child_node)
-            dec_list.update(child_dec_list)
-    return dec_list
-
-def extract_var_decl_node_list(ast_node):
+def extract_custom_type_node_list(ast_node, white_list):
     node_list = []
     if not ast_node:
         return node_list
     node_type = str(ast_node["kind"])
-    if node_type in ["VarDecl"]:
+    if node_type in white_list:
         node_list.append(ast_node)
-
     if 'inner' in ast_node and len(ast_node['inner']) > 0:
         for child_node in ast_node['inner']:
-            child_list = extract_var_decl_node_list(child_node)
+            child_list = extract_custom_type_node_list(child_node, white_list)
             node_list = node_list + child_list
     return node_list
+
+def extract_var_decl_node_list(ast_node):
+    return extract_custom_type_node_list(ast_node, ["VarDecl"])
+def extract_enum_node_list(ast_tree):
+    return extract_custom_type_node_list(ast_tree, ["EnumConstantDecl"])
+
+def extract_member_node_list(ast_node):
+    return extract_custom_type_node_list(ast_node, ["MemberExpr"])
 
 def extract_global_var_node_list(ast_tree):
     dec_list = list()

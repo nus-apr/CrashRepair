@@ -300,6 +300,13 @@ def is_top_assertion(src_loc, call_node_list):
                     return True
     return False
 
+def is_loc_member_access(src_loc, function_ast):
+    member_node_list = extractor.extract_member_node_list(function_ast)
+    for member_node in member_node_list:
+        loc_range = member_node["range"]
+        if is_loc_in_range(src_loc, loc_range):
+            return True
+    return False
 
 
 def is_loc_in_range(check_loc, ast_range, is_arrow=False):
@@ -320,11 +327,19 @@ def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     return False
 
 
-def is_loc_match(check_loc, ast_range):
-    file_path, c_line, c_col = check_loc
-    begin_loc = extractor.extract_loc(file_path, ast_range["begin"])
-    if begin_loc[1] == c_line and begin_loc[2] == c_col:
-        return True
+def is_loc_match(check_loc, ref_loc):
+    if len(check_loc) == 2:
+        c_line, c_col = check_loc
+    else:
+        _, c_line, c_col = check_loc
+
+    if len(ref_loc) == 2:
+        r_line, r_col = ref_loc
+    else:
+        _, r_line, r_col = ref_loc
+
+    if int(c_line) == int(r_line) and int(c_col) == int(r_col):
+       return True
     return False
 
 

@@ -414,7 +414,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
     call_node_list = extractor.extract_call_node_list(function_ast)
     taint_src_loc = (src_file, int(taint_line), int(taint_col))
-    if oracle.is_top_assertion(taint_src_loc, call_node_list):
+    if oracle.is_top_assertion(taint_src_loc, call_node_list) or \
+            oracle.is_loc_member_access(taint_src_loc, function_ast):
         return []
 
     candidate_mapping = get_candidate_map_for_func(func_name, taint_symbolic, taint_concrete, src_file,
@@ -499,12 +500,13 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     for candidate_constraint in candidate_constraints:
         candidate_cfc, candidate_line, candidate_col = candidate_constraint
         candidate_loc = (candidate_line, candidate_col)
-        if candidate_loc in expression_string_list:
-            expression_str, data_type = expression_string_list[candidate_loc]
-            updated_cfc = update_result_nodes(candidate_cfc, expression_str, data_type)
-            if updated_cfc:
-                updated_candidate_constraints.append((updated_cfc, candidate_line, candidate_col))
-                continue
+        if oracle.is_loc_match(candidate_loc, taint_src_loc):
+            if candidate_loc in expression_string_list:
+                expression_str, data_type = expression_string_list[candidate_loc]
+                updated_cfc = update_result_nodes(candidate_cfc, expression_str, data_type)
+                if updated_cfc:
+                    updated_candidate_constraints.append((updated_cfc, candidate_line, candidate_col))
+                    continue
         updated_candidate_constraints.append(candidate_constraint)
 
     # update top-level fix locations
