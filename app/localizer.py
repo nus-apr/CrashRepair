@@ -542,8 +542,12 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         top_level_col = 0
         for top_node in top_level_node_list:
             loc_range = top_node["range"]
+            node_type = top_node["kind"]
             if oracle.is_loc_in_range(candidate_loc, loc_range):
-                node_type = top_node["kind"]
+                if node_type == "DeclStmt":
+                    top_level_line = extractor.extract_line_range(src_file, loc_range)[0]
+                    top_level_col = extractor.extract_col_range(loc_range["begin"])[0]
+                    break
                 if node_type == "CallExpr":
                     func_ref_node = top_node["inner"][0]
                     func_ref_name = func_ref_node["inner"][0]["referencedDecl"]["name"]
