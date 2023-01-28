@@ -1,12 +1,13 @@
 import json
 import pickle
 import re
-from app import emitter, definitions, values, extractor
+from app import emitter, definitions, values, extractor, solver
 from six.moves import cStringIO
 import os
 import io
 from pysmt.smtlib.parser import SmtLibParser
 from collections import OrderedDict
+import ctypes
 
 
 def read_json(file_path):
@@ -549,14 +550,20 @@ def read_state_values(taint_log_path):
                         current_src_loc = trimmed_src_loc
 
                     taint_str = taint_str.replace("\n", "")
+                    bit_size = 1
                     if "_ bv" in taint_str:
+                        bit_size = int(taint_str.split(" ")[2].strip().replace(")", ""))
                         taint_str = taint_str.split(" ")[1]
+
                     if "true" in taint_str:
                         taint_value = 1
                     elif "false" in taint_str:
                         taint_value = 0
                     else:
                         taint_value = int(taint_str.replace("\n", "").replace("bv", ""))
+
+                    if taint_value:
+                        taint_value = solver.solve_sign(taint_value, bit_size)
                     formatted_taint_value = "{}:{}".format(data_type.strip(), taint_value)
                     values_loc[source_loc] = formatted_taint_value
             

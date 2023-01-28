@@ -7,7 +7,6 @@ import operator
 import collections
 from app import emitter, oracle, definitions, generator, extractor, values, writer, solver, \
     utilities, logger, parallel, converter, constraints
-import ctypes
 import copy
 from itertools import chain, combinations, product
 
