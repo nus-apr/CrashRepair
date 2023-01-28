@@ -294,12 +294,12 @@ def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     if "tokLen" in ast_range["end"]:
         end_loc = end_loc + int(ast_range["end"]["tokLen"])
     line_range = extractor.extract_line_range(file_path, ast_range)
-    if c_line in line_range:
-        if c_line == line_range.stop - 1:
-            if c_col <= end_loc:
+    if int(c_line) in line_range:
+        if int(c_line) == line_range.stop - 1:
+            if int(c_col) <= end_loc:
                 return True
             elif is_arrow:
-                if c_col <= end_loc + 2:
+                if int(c_col) <= end_loc + 2:
                     return True
         else:
             return True
