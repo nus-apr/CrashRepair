@@ -401,11 +401,11 @@ def synthesize_constant_offset(var_sym_expr_code, crash_var_sym_expr_code, expr_
     return mapping
 
 
-def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
+def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     localized_cfc = None
     candidate_constraints = list()
     candidate_locations = set()
-    src_file, taint_line, taint_col = taint_loc.strip().split(":")
+    src_file, taint_line, taint_col = taint_loc_str.strip().split(":")
     crash_loc = cfc_info["loc"]
     cfc_expr = cfc_info["expr"]
     cfc_var_info_list = cfc_info["var-info"]
@@ -432,7 +432,7 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
             candidate_list = candidate_mapping[c_t_lookup]
             for candidate in candidate_list:
                 c_mapping, c_line, c_col, _, is_dec = candidate
-                if int(c_line) > int(taint_line):
+                if int(c_line) != int(taint_line):
                     continue
                 if int(c_line) == int(taint_line) and is_dec:
                     continue
@@ -537,6 +537,16 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
         for top_node in top_level_node_list:
             loc_range = top_node["range"]
             if oracle.is_loc_in_range(candidate_loc, loc_range):
+                node_type = top_node["kind"]
+                if node_type == "CallExpr":
+                    func_ref_node = top_node["inner"][0]
+                    func_ref_name = func_ref_node["inner"][0]["referencedDecl"]["name"]
+                    taint_src_loc = (src_file, taint_line, taint_col)
+                    if oracle.is_loc_in_range(taint_src_loc, loc_range):
+                        return fix_loc_updated_candidate_constraints
+                    if func_ref_name in ["assert", "__assert_fail"]:
+                        top_level_line = -1
+                        break
                 top_node_line = extractor.extract_line_range(src_file, loc_range)[0]
                 top_node_col = extractor.extract_col_range(loc_range["begin"])[0]
                 if top_node_line > top_level_line:
@@ -546,6 +556,9 @@ def localize_cfc(taint_loc, cfc_info, taint_symbolic, taint_concrete):
                     top_level_col = top_node_col
         top_level_loc = (top_level_line, top_level_col)
         taint_loc = (int(taint_line), int(taint_col))
+        if top_level_line == -1:
+            emitter.warning(f"[warning] skipping assertion for top-level statement for {crash_loc}")
+            continue
         if top_level_line == 0 and top_level_col == 0:
             emitter.warning(f"[warning] did not find top-level for {crash_loc}")
             continue
