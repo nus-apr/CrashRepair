@@ -70,18 +70,20 @@ def levenshtein_distance(s, t):
 
 
 def solve_sign(number, bit_size):
-    hex_string = "0x" + "F" * int(bit_size / 4)
-    _number = number & int(hex_string, 16)
-    signed_number = None
-    if bit_size == 8:
-        signed_number = ctypes.c_int8(_number).value
-    elif bit_size == 16:
-        signed_number = ctypes.c_short(_number).value
-    elif bit_size == 32:
-        signed_number = ctypes.c_int(_number).value
-    elif bit_size == 64:
-        signed_number = ctypes.c_long(_number).value
-    elif bit_size > 64:
-        signed_number = ctypes.c_longlong(_number).value
+    signed_number = number
+    if bit_size >= 4:
+        hex_string = "0x" + "F" * int(bit_size / 4)
+        _number = number & int(hex_string, 16)
+        if bit_size == 8:
+            signed_number = ctypes.c_int8(_number).value
+        elif bit_size == 16:
+            signed_number = ctypes.c_short(_number).value
+        elif bit_size == 32:
+            signed_number = ctypes.c_int(_number).value
+        elif bit_size == 64:
+            signed_number = ctypes.c_long(_number).value
+        elif bit_size > 64:
+            signed_number = ctypes.c_longlong(_number).value
+
     return signed_number
 
