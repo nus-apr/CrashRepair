@@ -510,25 +510,46 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     # update top-level fix locations
     stmt_node_list = extractor.extract_stmt_nodes(function_ast, black_list=["CompoundStmt", "IfStmt"])
     assignment_op_list = ["=", "+=", "-=", "*=", "/=", "%=", "&=", "|="]
-    assignment_node_list = extractor.extract_binaryop_node_list(function_ast, src_file, assignment_op_list)
+    binary_op_list = extractor.extract_binaryop_node_list(function_ast, src_file, assignment_op_list)
+    initialization_list = extractor.extract_var_decl_node_list(function_ast)
+    assignment_node_list = binary_op_list + initialization_list
     assignment_list = dict()
     for assign_node in assignment_node_list:
-        left_side = assign_node['inner'][0]
-        right_side = assign_node['inner'][1]
-        op_code = assign_node['opcode']
-        begin_loc = extractor.extract_loc(src_file, assign_node["range"]["begin"])
-        data_type = extractor.extract_data_type(left_side)
-        _, line_number, col_number = begin_loc
-        if src_file not in values.SOURCE_LINE_MAP:
-            with open(src_file, "r") as s_file:
-                values.SOURCE_LINE_MAP[src_file] = s_file.readlines()
-        source_line = values.SOURCE_LINE_MAP[src_file][line_number - 1]
-        op_position = source_line.index(op_code, col_number - 1) + 1
-        op_loc = (int(line_number), int(op_position))
-        rhs_ast_loc = right_side["range"]["begin"]
-        rhs_begin_col = extractor.extract_col_range(rhs_ast_loc)[0]
-        rhs_loc = (int(line_number), int(rhs_begin_col))
-        assignment_list[op_loc] = rhs_loc
+        node_type = assign_node["kind"]
+        if node_type == "VarDecl":
+            if "inner" not in assign_node:
+                continue
+            left_side = assign_node['inner'][0]
+            if "inner" in left_side and len(left_side["inner"]) > 0:
+                right_side =  left_side['inner'][0]
+                begin_loc = extractor.extract_loc(src_file, assign_node["loc"])
+                _, line_number, col_number = begin_loc
+                dec_loc = (int(line_number), int(col_number))
+                rhs_ast_loc = right_side["range"]["begin"]
+                rhs_begin_col = extractor.extract_col_range(rhs_ast_loc)[0]
+                rhs_loc = (int(line_number), int(rhs_begin_col))
+                assignment_list[dec_loc] = rhs_loc
+
+            else:
+                continue
+
+        else:
+            left_side = assign_node['inner'][0]
+            right_side = assign_node['inner'][1]
+            op_code = assign_node['opcode']
+            begin_loc = extractor.extract_loc(src_file, assign_node["range"]["begin"])
+            data_type = extractor.extract_data_type(left_side)
+            _, line_number, col_number = begin_loc
+            if src_file not in values.SOURCE_LINE_MAP:
+                with open(src_file, "r") as s_file:
+                    values.SOURCE_LINE_MAP[src_file] = s_file.readlines()
+            source_line = values.SOURCE_LINE_MAP[src_file][line_number - 1]
+            op_position = source_line.index(op_code, col_number - 1) + 1
+            op_loc = (int(line_number), int(op_position))
+            rhs_ast_loc = right_side["range"]["begin"]
+            rhs_begin_col = extractor.extract_col_range(rhs_ast_loc)[0]
+            rhs_loc = (int(line_number), int(rhs_begin_col))
+            assignment_list[op_loc] = rhs_loc
 
 
     fix_loc_updated_candidate_constraints = list()

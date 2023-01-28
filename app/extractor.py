@@ -811,6 +811,17 @@ def extract_enum_node_list(ast_tree):
             dec_list.update(child_dec_list)
     return dec_list
 
+def extract_var_decl_node_list(ast_node):
+    node_list = []
+    node_type = str(ast_node["kind"])
+    if node_type in ["VarDecl"]:
+        node_list.append(ast_node)
+
+    if 'inner' in ast_node and len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
+            child_list = extract_var_decl_node_list(child_node)
+            node_list = node_list + child_list
+    return node_list
 
 def extract_global_var_node_list(ast_tree):
     dec_list = list()
