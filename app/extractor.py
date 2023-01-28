@@ -813,6 +813,8 @@ def extract_enum_node_list(ast_tree):
 
 def extract_var_decl_node_list(ast_node):
     node_list = []
+    if not ast_node:
+        return node_list
     node_type = str(ast_node["kind"])
     if node_type in ["VarDecl"]:
         node_list.append(ast_node)
