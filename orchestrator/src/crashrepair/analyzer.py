@@ -21,7 +21,7 @@ PATH_ANALYZER = "crepair"
 
 _CONFIG_TEMPLATE = """
 dir_exp:{project_directory}
-tag_id:{bug_name}
+tag_id:{tag_id}
 src_directory:{source_directory}
 binary_path:{binary_path}
 config_command:CC=crepair-cc CXX=crepair-cxx {prebuild_command}
@@ -49,7 +49,7 @@ class Analyzer:
             poc_list = f"poc_list:{scenario.crashing_input}" if scenario.crashing_input else ""
             contents = _CONFIG_TEMPLATE.format(
                 project_directory=scenario.directory,
-                bug_name=scenario.name,
+                tag_id=scenario.tag_id,
                 source_directory=scenario.source_directory,
                 binary_path=scenario.binary_path,
                 prebuild_command=scenario.prebuild_command,
@@ -76,7 +76,7 @@ class Analyzer:
         shell = self.scenario.shell
 
         # destroy any existing contents of the analyzer output directory
-        output_directory = f"/CrashRepair/output/{self.scenario.name}"
+        output_directory = f"/CrashRepair/output/{self.scenario.tag_id}"
         localization_filename = os.path.join(output_directory, "localization.json")
 
         with self._generate_config() as config_filename:

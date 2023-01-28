@@ -86,6 +86,7 @@ class Scenario:
     directory: str
     build_directory: str
     source_directory: str
+    tag_id: str
     binary_path: str
     clean_command: str
     prebuild_command: str
@@ -152,6 +153,7 @@ class Scenario:
         filename: str,
         subject: str,
         name: str,
+        tag_id: str,
         build_directory: str,
         source_directory: str,
         binary_path: str,
@@ -194,6 +196,7 @@ class Scenario:
         scenario = Scenario(
             subject=subject,
             name=name,
+            tag_id=tag_id,
             directory=directory,
             build_directory=build_directory,
             source_directory=source_directory,
@@ -230,6 +233,7 @@ class Scenario:
             project_dict = bug_dict["project"]
             subject = project_dict["name"]
             name = bug_dict["name"]
+            tag_id = f"{subject}_{name}"
             binary_path = bug_dict["binary"]
             source_directory = bug_dict["source-directory"]
             build_dict = bug_dict["build"]
@@ -251,6 +255,7 @@ class Scenario:
             filename=filename,
             subject=subject,
             name=name,
+            tag_id=tag_id,
             binary_path=binary_path,
             build_directory=build_directory,
             source_directory=source_directory,
@@ -334,7 +339,7 @@ class Scenario:
                 "--config_file",
                 self.fuzzer_config_path,
                 "--tag",
-                self.name,
+                self.tag_id,
             ))
             self.shell(command, cwd=self.directory)
 
