@@ -412,6 +412,11 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     # cfc_expr.resolve_sizeof(cfc_var_info_list)
     cfc_expr_str = cfc_expr.to_string()
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
+    call_node_list = extractor.extract_call_node_list(function_ast)
+    taint_src_loc = (src_file, int(taint_line), int(taint_col))
+    if oracle.is_top_assertion(taint_src_loc, call_node_list):
+        return []
+
     candidate_mapping = get_candidate_map_for_func(func_name, taint_symbolic, taint_concrete, src_file,
                                                    function_ast, cfc_var_info_list)
 
@@ -527,11 +532,6 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
 
 
     fix_loc_updated_candidate_constraints = list()
-    call_node_list = extractor.extract_call_node_list(function_ast)
-    taint_src_loc = (src_file, int(taint_line), int(taint_col))
-    if oracle.is_top_assertion(taint_src_loc, call_node_list):
-        return fix_loc_updated_candidate_constraints
-
     top_level_node_list = stmt_node_list + assignment_node_list + call_node_list
 
 
