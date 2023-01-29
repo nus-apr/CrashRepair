@@ -545,6 +545,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                 with open(src_file, "r") as s_file:
                     values.SOURCE_LINE_MAP[src_file] = s_file.readlines()
             source_line = values.SOURCE_LINE_MAP[src_file][line_number - 1]
+            if op_code not in source_line:
+                continue
             op_position = source_line.index(op_code, col_number - 1) + 1
             op_loc = (int(line_number), int(op_position))
             rhs_ast_loc = right_side["range"]["begin"]

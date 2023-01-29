@@ -300,30 +300,40 @@ def is_top_assertion(src_loc, call_node_list):
                     return True
     return False
 
-def is_loc_member_access(src_loc, function_ast):
+def is_loc_member_access(check_loc, function_ast):
     member_node_list = extractor.extract_member_node_list(function_ast)
     for member_node in member_node_list:
-        loc_range = member_node["range"]
-        if is_loc_in_range(src_loc, loc_range):
-            return True
+        ast_range = member_node["range"]
+        file_path, c_line, c_col = check_loc
+        line_range = extractor.extract_line_range(file_path, ast_range)
+        expansion_col_range = extractor.extract_col_range(ast_range)
+        check_range = range(expansion_col_range[1], expansion_col_range[-1])
+        if int(c_line) in line_range:
+            if int(c_col) in check_range:
+                return True
     return False
 
 
 def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     file_path, c_line, c_col = check_loc
-    end_loc = extractor.extract_loc(file_path, ast_range["end"])[2]
-    if "tokLen" in ast_range["end"]:
-        end_loc = end_loc + int(ast_range["end"]["tokLen"])
+    # end_col = extractor.extract_loc(file_path, ast_range["end"])[2]
+    # if "tokLen" in ast_range["end"]:
+    #     end_col = end_col + int(ast_range["end"]["tokLen"])
     line_range = extractor.extract_line_range(file_path, ast_range)
+    col_range = extractor.extract_col_range(ast_range)
     if int(c_line) in line_range:
-        if int(c_line) == line_range.stop - 1:
-            if int(c_col) <= end_loc:
-                return True
-            elif is_arrow:
-                if int(c_col) <= end_loc + 2:
-                    return True
-        else:
+        if int(c_col) in col_range:
             return True
+
+    # if int(c_line) in line_range:
+    #     if int(c_line) == line_range.stop - 1:
+    #         if int(c_col) <= end_col:
+    #             return True
+    #         elif is_arrow:
+    #             if int(c_col) <= end_col + 2:
+    #                 return True
+    #     else:
+    #         return True
     return False
 
 

@@ -982,16 +982,26 @@ def extract_line_range(file_path, ast_range):
 
 
 def extract_col_range(ast_loc_info):
-    if "expansionLoc" in ast_loc_info:
-        ast_loc_info = ast_loc_info["expansionLoc"]
-    begin_col = ast_loc_info["col"]
-    end_col = begin_col + int(ast_loc_info["tokLen"])
+    if "begin" in ast_loc_info and "end" in ast_loc_info:
+        begin_tok_range = extract_col_range(ast_loc_info["begin"])
+        end_tok_range = extract_col_range(ast_loc_info["end"])
+        begin_col = begin_tok_range[0]
+        end_col = end_tok_range[-1]
+
+    else:
+        if "expansionLoc" in ast_loc_info:
+            ast_loc_info = ast_loc_info["expansionLoc"]
+        begin_col = ast_loc_info["col"]
+        end_col = begin_col + int(ast_loc_info["tokLen"])
     return range(begin_col, end_col+1)
 
 
 def extract_loc(file_path, ast_loc_info, op_code = None):
-    if "expansionLoc" in ast_loc_info:
+    if "spellingLoc" in ast_loc_info:
+        ast_loc_info = ast_loc_info["spellingLoc"]
+    elif "expansionLoc" in ast_loc_info:
         ast_loc_info = ast_loc_info["expansionLoc"]
+
     col_number = ast_loc_info["col"]
     line_number = extract_line(file_path, ast_loc_info)
     if op_code:
