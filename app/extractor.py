@@ -997,9 +997,7 @@ def extract_col_range(ast_loc_info):
 
 
 def extract_loc(file_path, ast_loc_info, op_code = None):
-    if "spellingLoc" in ast_loc_info:
-        ast_loc_info = ast_loc_info["spellingLoc"]
-    elif "expansionLoc" in ast_loc_info:
+    if "expansionLoc" in ast_loc_info:
         ast_loc_info = ast_loc_info["expansionLoc"]
 
     col_number = ast_loc_info["col"]
