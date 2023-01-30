@@ -238,14 +238,15 @@ bool isTopLevelStmt(clang::DynTypedNode const &node, clang::ASTContext &context)
   auto stmt = node.get<clang::Stmt>();
   for (auto const parent : context.getParents(node)) {
     std::string nodeKind = parent.getNodeKind().asStringRef().str();
+    // spdlog::debug("checking parent with NodeKind: {}", nodeKind);
     if (nodeKind == "WhileStmt") {
       return stmtBelongsToSubtree(stmt, parent.get<clang::WhileStmt>()->getBody(), context);
     } else if (nodeKind == "ForStmt") {
       return stmtBelongsToSubtree(stmt, parent.get<clang::ForStmt>()->getBody(), context);
     } else if (nodeKind == "CompoundStmt") {
       return true;
-    } else if (parent.get<clang::Decl>()) {
-      return true;
+    } else if (nodeKind == "VarDecl") {
+      return false;
     } else if (parent.get<clang::Stmt>() == nullptr) {
       return true;
     }
