@@ -322,7 +322,10 @@ def is_loc_in_range(check_loc, ast_range, is_arrow=False):
     line_range = extractor.extract_line_range(file_path, ast_range)
     col_range = extractor.extract_col_range(ast_range)
     if int(c_line) in line_range:
-        if int(c_col) in col_range:
+        if int(c_line) == line_range.stop - 1:
+            if int(c_col) in col_range:
+                return True
+        else:
             return True
 
     # if int(c_line) in line_range:
