@@ -133,7 +133,7 @@ def convert_binary_node_to_expr(ast_node, only_string=False):
     right_child = ast_node["inner"][1]
     # print(right_child)
     right_child_value = get_node_value(right_child)
-    var_name = left_child_value + " " + operation + " " + right_child_value
+    var_name = left_child_value + operation  + right_child_value
     if only_string:
         return var_name
     return var_name, list(set(var_list))
