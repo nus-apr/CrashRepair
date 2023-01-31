@@ -564,6 +564,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         candidate_loc = (src_file, candidate_line, candidate_col)
         top_level_line = 0
         top_level_col = 0
+        is_declaration = False
         for top_node in top_level_node_list:
             loc_range = top_node["range"]
             node_type = top_node["kind"]
@@ -571,6 +572,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                 if node_type == "DeclStmt":
                     top_level_line = extractor.extract_line_range(src_file, loc_range)[0]
                     top_level_col = extractor.extract_col_range(loc_range["begin"])[0]
+                    is_declaration = True
                     break
                 if node_type == "CallExpr":
                     func_ref_node = top_node["inner"][0]
@@ -594,7 +596,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
             emitter.warning(f"[warning] did not find top-level for {crash_loc}")
             continue
         if "@result" in candidate_cfc.to_string():
-            fix_loc_updated_candidate_constraints.append((candidate_cfc, top_level_loc, taint_loc))
+            if not is_declaration:
+                fix_loc_updated_candidate_constraints.append((candidate_cfc, top_level_loc, taint_loc))
             if taint_loc in assignment_list:
                 shifted_loc = assignment_list[taint_loc]
                 fix_loc_updated_candidate_constraints.append((candidate_cfc, shifted_loc, taint_loc))
