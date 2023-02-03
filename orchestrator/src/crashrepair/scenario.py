@@ -12,30 +12,13 @@ from loguru import logger
 
 from .analyzer import Analyzer
 from .candidate import PatchCandidate
-from .fuzzer import FuzzerConfig
+from .fuzzer import Fuzzer, FuzzerConfig
 from .shell import Shell
 from .test import Test
 
 # TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
 CRASHREPAIRLINT_PATH = "/opt/crashrepair/bin/crashrepairlint"
-FUZZER_PATH = "/opt/fuzzer/code/fuzz"
-
-# _FUZZER_CONFIG_TEMPLATE = """
-# [{scenario_name}]
-# bin_path={binary_path}
-# folder={directory}
-# global_timeout={global_timeout}
-# local_timeout={local_timeout}
-# mutate_range=default
-# store_all_inputs=False
-# rand_seed={fuzz_seed}
-# combination_num={max_fuzzing_combinations}
-# trace_cmd=TODO
-# crash_cmd=TODO
-# poc={poc}
-# poc_fmt={poc_fmt}
-# """
 
 
 @attrs.define(slots=True, auto_attribs=True)
@@ -78,8 +61,8 @@ class Scenario:
         The optional path to the file that causes the binary to crash, if relevant.
     expected_exit_code_for_crashing_input: int
         The exit code that _should_ be produced by the program when the crashing input is provided (i.e., the oracle).
-    fuzz_seed: int
-        The RNG seed that should be used during fuzzing.
+    fuzzer: t.Optional[Fuzzer]
+        The fuzzer, if any, that should be used to generate additional test cases.
     """
     subject: str
     name: str
@@ -100,7 +83,7 @@ class Scenario:
     should_terminate_early: bool = attrs.field(default=True)
     skip_fuzzing: bool = attrs.field(default=False)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
-    fuzz_seed: int = attrs.field(default=0)
+    fuzzer: t.Optional[Fuzzer] = attrs.field(default=None)
 
     @property
     def compile_commands_path(self) -> str:
@@ -139,10 +122,6 @@ class Scenario:
         """Determines whether the results of the analysis exist."""
         return os.path.exists(self.analysis_directory)
 
-    def fuzzer_outputs_exist(self) -> bool:
-        """Determines whether the outputs of the fuzzer exist."""
-        return os.path.exists(self.fuzzer_directory)
-
     def candidate_repairs_exist(self) -> bool:
         """Determines whether a set of candidate repairs exists."""
         return os.path.exists(self.patch_candidates_path)
@@ -163,9 +142,8 @@ class Scenario:
         crashing_command: str,
         crashing_input: t.Optional[str],
         expected_exit_code_for_crashing_input: int,
-        skip_fuzzing: bool,
         additional_klee_flags: str,
-        fuzz_seed: int = 0,
+        fuzzer_config: t.Optional[FuzzerConfig] = None,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -208,10 +186,12 @@ class Scenario:
             crashing_input=crashing_input,
             shell=shell,
             crash_test=crash_test,
-            skip_fuzzing=skip_fuzzing,
             additional_klee_flags=additional_klee_flags,
-            fuzz_seed=fuzz_seed,
         )
+
+        if fuzzer_config:
+            scenario.fuzzer = fuzzer_config.build(scenario)
+
         logger.info(f"loaded bug scenario: {scenario}")
         return scenario
 
@@ -228,6 +208,8 @@ class Scenario:
 
         with open(filename, "r") as fh:
             bug_dict = json.load(fh)
+
+        fuzzer_config: t.Optional[FuzzerConfig] = None
 
         try:
             project_dict = bug_dict["project"]
@@ -251,6 +233,9 @@ class Scenario:
         except KeyError as exc:
             raise ValueError(f"missing field in bug.json: {exc}")
 
+        if "fuzzer" in bug_dict and not skip_fuzzing:
+            fuzzer_config = FuzzerConfig.from_dict(bug_dict["fuzzer"])
+
         return Scenario.build(
             filename=filename,
             subject=subject,
@@ -264,10 +249,9 @@ class Scenario:
             build_command=build_command,
             crashing_command=crashing_command,
             crashing_input=crashing_input,
-            skip_fuzzing=skip_fuzzing,
             additional_klee_flags=additional_klee_flags,
             expected_exit_code_for_crashing_input=expected_exit_code_for_crashing_input,
-            fuzz_seed=fuzz_seed,
+            fuzzer_config=fuzzer_config,
         )
 
     @classmethod
@@ -318,48 +302,12 @@ class Scenario:
 
     def fuzz(self) -> None:
         """Generates additional test cases via concentrated fuzzing."""
-        if self.skip_fuzzing:
-            logger.info("skipping fuzzing: disabled by request")
+        if not self.fuzzer:
+            logger.info("skipping fuzzing: fuzzer disabled")
             return
 
-        # NOTE for now, use the provided config file
-        assert os.path.exists(self.fuzzer_config_path)
-
-        # TODO generate config file based on bug.json contents
-
-        if self.fuzzer_outputs_exist():
-            logger.info(f"skipping fuzzing: outputs already exist [{self.fuzzer_directory}]")
-        else:
-            # TODO build the program for fuzzing
-            # NOTE for now, we can use build-for-fuzzer, but going forward, we can
-            # generate the appropriate build call here (and save the need to write another script for each scenario!)
-            self.rebuild()
-            command = " ".join((
-                FUZZER_PATH,
-                "--config_file",
-                self.fuzzer_config_path,
-                "--tag",
-                self.tag_id,
-            ))
-            self.shell(command, cwd=self.directory)
-
-        # construct reproducible test cases from concentrated inputs
         # FIXME all of these tests should pass on the original program (optionally verify this assumption)
-        fuzzer_config = FuzzerConfig.load(self.fuzzer_config_path)
-        fuzzer_tests_directory = os.path.join(self.fuzzer_directory, "concentrated_inputs")
-        self.fuzzer_tests = []
-        for fuzzer_test_filename in os.listdir(fuzzer_tests_directory):
-            fuzzer_test_command = fuzzer_config.command_for_input(fuzzer_test_filename)
-            fuzzer_test_name = f"fuzzer-{os.path.basename(fuzzer_test_filename)}"
-            fuzzer_test = Test(
-                name=fuzzer_test_name,
-                command=fuzzer_test_command,
-                cwd=self.directory,
-                shell=self.shell,
-                # FIXME the expected exit code should be the same as the original program!
-                expected_exit_code=0,
-            )
-            self.fuzzer_tests.append(fuzzer_test)
+        self.fuzzer_tests = list(self.fuzzer.fuzz())
 
     def _determine_implicated_files(self) -> t.Set[str]:
         """Determines the set of source files that are implicated by the fix localization."""
