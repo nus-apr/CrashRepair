@@ -10,15 +10,19 @@ DESCRIPTION = "crashrepair: automated repair of C/C++ security bugs"
 
 
 def do_repair(args: argparse.Namespace) -> None:
-    scenario = Scenario.for_file(args.filename)
+    scenario = Scenario.for_file(args.filename, skip_fuzzing=args.no_fuzzing)
     scenario.should_terminate_early = args.should_terminate_early
-    scenario.skip_fuzzing = args.no_fuzzing
     scenario.repair()
 
 
 def do_analyze(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
     scenario.analyze()
+
+
+def do_fuzz(args: argparse.Namespace) -> None:
+    scenario = Scenario.for_file(args.filename)
+    scenario.fuzz()
 
 
 def do_lint(args: argparse.Namespace) -> None:
@@ -63,6 +67,16 @@ def parse_args() -> argparse.Namespace:
         help="the path to the bug.json file for the bug scenario",
     )
     parser_analyze.set_defaults(func=do_analyze)
+
+    parser_fuzz = subparsers.add_parser(
+        "fuzz",
+        help="fuzzes a given bug scenario",
+    )
+    parser_fuzz.add_argument(
+        "filename",
+        help="the path to the bug.json file for the bug scenario",
+    )
+    parser_fuzz.set_defaults(func=do_fuzz)
 
     parser_lint = subparsers.add_parser(
         "lint",

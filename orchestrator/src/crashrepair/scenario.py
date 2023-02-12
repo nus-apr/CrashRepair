@@ -81,7 +81,6 @@ class Scenario:
     additional_klee_flags: str = attrs.field(default="")
     expected_exit_code_for_crashing_input: int = attrs.field(default=0)
     should_terminate_early: bool = attrs.field(default=True)
-    skip_fuzzing: bool = attrs.field(default=False)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
     fuzzer: t.Optional[Fuzzer] = attrs.field(default=None)
 
