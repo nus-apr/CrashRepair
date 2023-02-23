@@ -449,6 +449,8 @@ def read_tainted_expressions(taint_log_path):
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
             for line in taint_file:
+                if "no debug info" in line:
+                    continue
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_value = line.strip().split(": ")
