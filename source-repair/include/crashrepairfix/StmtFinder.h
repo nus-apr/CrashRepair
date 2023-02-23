@@ -18,6 +18,9 @@ public:
   static clang::Stmt* find(clang::ASTContext &context, SourceLocation const &sourceLocation) {
     StmtFinder finder(context, sourceLocation);
     finder.TraverseAST(context);
+    if (!finder.foundFile) {
+      spdlog::warn("statement finder did not encounter an AST for the given file: {}", sourceLocation.file);
+    }
     return finder.result;
   }
 
@@ -63,6 +66,10 @@ public:
   }
 
 private:
+  // records whether or not this stmt finder has encountered a stmt in the same file as the expected location
+  // if this isn't the case, then we produce a warning
+  bool foundFile = false;
+
   /** Returns true if a given location matches the expected location. */
   bool checkLocation(clang::SourceLocation const &location) {
     if (!location.isValid()) {
@@ -73,6 +80,7 @@ private:
     if (locFilename != sourceLocation.file) {
       return false;
     }
+    foundFile = true;
 
     auto locLine = sourceManager.getSpellingLineNumber(location);
     auto locColumn = sourceManager.getSpellingColumnNumber(location);
