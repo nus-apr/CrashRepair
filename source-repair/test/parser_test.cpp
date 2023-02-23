@@ -112,6 +112,30 @@ int main(int argc, const char **argv) {
   ASSERT_TRUE(isTopLevelStmt(stmt, astContext));
 }
 
+TEST(UtilsTest, WhileLoopTopLevelStmt) {
+  auto filename = fs::absolute("test.cpp").string();
+
+  std::string code = R""""(
+int main(int argc, const char **argv) {
+  int x = 0;
+  while (x < 10)
+  {
+    x++;
+    {
+      x += 5;
+    };
+  }
+}
+  )"""";
+  std::unique_ptr<clang::ASTUnit> ast(clang::tooling::buildASTFromCode(code, filename));
+  auto &astContext = ast->getASTContext();
+
+  // while stmt
+  auto stmt = StmtFinder::find(astContext, SourceLocation(filename, 3, 3));
+  ASSERT_NE(stmt, nullptr);
+  ASSERT_TRUE(isTopLevelStmt(stmt, astContext));
+}
+
 TEST(UtilsTest, ResultConstraintAtValidLocation) {
   auto filename = fs::absolute("test.cpp").string();
   std::string code = R""""(
