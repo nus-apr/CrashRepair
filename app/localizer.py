@@ -509,7 +509,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         updated_candidate_constraints.append(candidate_constraint)
 
     # update top-level fix locations
-    stmt_node_list = extractor.extract_stmt_nodes(function_ast, black_list=["CompoundStmt", "IfStmt"])
+    stmt_node_list = extractor.extract_stmt_nodes(function_ast, black_list=["CompoundStmt"])
     assignment_op_list = ["=", "+=", "-=", "*=", "/=", "%=", "&=", "|="]
     binary_op_list = extractor.extract_binaryop_node_list(function_ast, src_file, assignment_op_list)
     initialization_list = extractor.extract_var_decl_node_list(function_ast)
