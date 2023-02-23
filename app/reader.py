@@ -532,6 +532,8 @@ def read_state_values(taint_log_path):
                 line_number = line_number + 1
                 if line_number >= values.DEFAULT_MAX_TAINT_VALUES:
                     break
+                if "no debug info" in line:
+                    continue
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_str = line.split(": ")
