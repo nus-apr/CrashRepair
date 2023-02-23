@@ -648,6 +648,8 @@ def extract_call_node_list(ast_node, black_list=None, white_list=None):
     node_type = str(ast_node["kind"])
     if node_type == "CallExpr":
         func_ref_node = ast_node["inner"][0]
+        if "referencedDecl" not in func_ref_node["inner"][0]:
+            return call_expr_list
         func_ref_name = func_ref_node["inner"][0]["referencedDecl"]["name"]
         if black_list:
             if func_ref_name not in black_list:
