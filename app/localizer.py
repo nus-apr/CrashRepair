@@ -662,6 +662,8 @@ def localize_state_info(fix_loc, taint_concrete):
     logger.information(f"computed variable list: {var_info_list}")
 
     state_info_list_values = dict()
+    if fix_loc not in taint_concrete:
+        return state_info_list_values
     taint_info_listed_occurences = taint_concrete[fix_loc]
     for occurence in range(len(taint_info_listed_occurences)):
         taint_info_list = taint_info_listed_occurences[occurence]
