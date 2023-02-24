@@ -284,7 +284,7 @@ class Scenario:
         }
         env = {**default_env, **env}
 
-        self.shell(self.clean_command, cwd=self.build_directory)
+        self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
         self.shell(self.prebuild_command, env=env, cwd=self.build_directory)
         self.shell(f"bear {self.build_command}", env=env, cwd=self.build_directory)
 
@@ -294,7 +294,7 @@ class Scenario:
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
 
-        self.shell(self.clean_command, cwd=self.build_directory)
+        self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
 
         analyzer = Analyzer.for_scenario(self)
         analyzer.run(write_to=self.analysis_directory)
@@ -422,6 +422,9 @@ class Scenario:
             :code:`True` if OK; :code:`False` if bad.
         """
         self.analyze()
+
+        # the project needs to be rebuilt to work with the same compiler toolchain as the repair module
+        self.rebuild()
 
         fix_flag = "--fix" if fix else ""
         implicated_files = self._determine_implicated_files()
