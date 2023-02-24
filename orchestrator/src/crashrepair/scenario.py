@@ -19,6 +19,9 @@ from .test import Test
 # TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
 CRASHREPAIRLINT_PATH = "/opt/crashrepair/bin/crashrepairlint"
+CREPAIR_LIB_PATH = "/CrashRepair/lib"
+CREPAIR_RUNTIME_HEADER_PATH = "/CrashRepair/lib/crepair_runtime.h"
+KLEE_LIB_PATH = "/klee/build/lib"
 
 
 @attrs.define(slots=True, auto_attribs=True)
@@ -277,10 +280,22 @@ class Scenario:
         if not env:
             env = {}
 
+        generic_cflags = "-g -O0"
+        klee_cflags = f"-L{KLEE_LIB_PATH} -lkleeRuntest"
+        crepair_cflags = (
+            f"-include {CREPAIR_RUNTIME_HEADER_PATH} "
+            f"-L{CREPAIR_LIB_PATH} "
+            "-lcrepair_runtime -lcrepair_proxy"
+        )
+        cflags = f"{generic_cflags} {klee_cflags} {crepair_cflags}"
+
         # if CC/CXX aren't specified, use LLVM/Clang 11
         default_env = {
             "CC": "/opt/llvm11/bin/clang",
             "CXX": "/opt/llvm11/bin/clang++",
+            "CFLAGS": cflags,
+            "CXXFLAGS": cflags,
+            "LDFLAGS": cflags,
         }
         env = {**default_env, **env}
 
