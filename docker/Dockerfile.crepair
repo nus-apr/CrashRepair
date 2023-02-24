@@ -54,21 +54,25 @@ COPY lib ./lib
 RUN cd /CrashRepair/lib \
  && KLEE_INCLUDE_PATH=/klee/source/include make
 
-COPY app ./app
-COPY bin ./bin
-COPY compiler ./compiler
-COPY experiments ./experiments
-COPY tests ./tests
-COPY Repair.py ./Repair.py
-
 ENV PATH="/opt/crashrepair/bin:/CrashRepair/compiler:/klee/build/bin:${PATH}"
 ENV CC=crepair-cc
 ENV CXX=crepair-cxx
 ENV LD_LIBRARY_PATH "/opt/crashrepair/lib:/CrashRepair/lib:/klee/build/lib:${LD_LIBRARY_PATH}"
 
+COPY compiler ./compiler
+
+# setup all of the experiments; uses four workers in parallel
+COPY experiments ./experiments
+RUN find ./experiments -name setup.sh | xargs -n 1 -P 4 bash
+
+COPY app ./app
+COPY bin ./bin
+COPY tests ./tests
+COPY Repair.py ./Repair.py
+
 RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
 
-RUN crepair --help && exit 0
+RUN crepair --help
 
 COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
 RUN rm /opt/crashrepair/lib/libz3.so

@@ -12,10 +12,6 @@ sourcerepair:
 z3: builder
 	docker build -f Dockerfile.z3 -t crepair:z3 .
 
-# note that the image below isn't hosted on DockerHub:
-# 	docker pull rshariffdeen/crepair:z3
-# 	docker tag rshariffdeen/crepair:z3 crepair:z3
-
 llvm-6: builder
 	# docker build -f Dockerfile.llvm-6 -t crepair:llvm-6 .
     docker pull rshariffdeen/crepair:llvm-6
@@ -29,10 +25,6 @@ llvm-11: builder
 
 klee: builder llvm-6 z3
 	docker build -f Dockerfile.klee -t crepair:klee .
-
-# note that the images below aren't hosted on DockerHub:
-# 	docker pull rshariffdeen/crepair:klee
-# 	docker tag rshariffdeen/crepair:klee crepair:klee
 
 fuzzer: builder
 	docker build -f Dockerfile.fuzzer -t crepair:fuzzer ..
