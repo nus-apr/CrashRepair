@@ -283,7 +283,7 @@ class Scenario:
         generic_cflags = "-g -O0"
         klee_cflags = f"-L{KLEE_LIB_PATH} -lkleeRuntest"
         crepair_cflags = (
-            f"-include {CREPAIR_RUNTIME_HEADER_PATH} "
+            f"-I{CREPAIR_LIB_PATH} "
             f"-L{CREPAIR_LIB_PATH} "
             "-lcrepair_runtime -lcrepair_proxy"
         )
