@@ -31,6 +31,16 @@ git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 git commit -m 'replace fabs with proxy function'
 
+# see #62
+find tools -name "*.c" | xargs -n1 sed -i 's@"tif_config.h"@"../libtiff/tif_config.h"@g'
+find tools -name "*.c" | xargs -n1 sed -i 's@"tiffio.h"@"../libtiff/tiffio.h"@g'
+find tools -name "*.h" | xargs -n1 sed -i 's@"tif_config.h"@"../libtiff/tif_config.h"@g'
+find tools -sed -i 's@"tiffio.h"@"./tiffio.h"@g' libtiff/tiffio.h
+sed -i 's@"tiffvers.h"@"./tiffvers.h"@g' libtiff/tiffio.h
+sed -i 's@"tiffio.h"@"./tiffio.h"@g' libtiff/tiffiop.h
+git add libtiff/*.h tools/*.c tools/*.h
+git commit -m "resolve ambiguity in includes"
+
 CC=crepair-cc ./configure CFLAGS="-g -O0" --enable-static --disable-shared
 make CC=crepair-cc CXX=crepair-cxx CFLAGS="-g -O0 -static" CXXFLAGS="-g -O0 -static" LDFLAGS="-static" -j`nproc`
 
@@ -65,9 +75,9 @@ cat <<EOF > $dir_name/bug.json
     "directory": "src",
     "binary": "$dir_name/src/tools/tiff2ps",
     "commands": {
-      "prebuild": "exit 0",
-      "clean": "make clean  > /dev/null 2>&1",
-      "build": "make CC=crepair-cc CXX=crepair-cxx CFLAGS='-g -O0 -static' CXXFLAGS='-g -O0 -static' LDFLAGS='-static' > /dev/null 2>&1 "
+      "prebuild": "./configure --enable-static --disable-shared",
+      "clean": "make clean",
+      "build": "make"
     }
   }
 }
