@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <unordered_set>
 
 #include <clang/AST/LexicallyOrderedRecursiveASTVisitor.h>
 
@@ -36,7 +37,8 @@ public:
       sourceManager(context.getSourceManager()),
       sourceLocation(sourceLocation),
       result(nullptr),
-      relativeToAbsoluteFilenames()
+      relativeToAbsoluteFilenames(),
+      visitedFiles()
     {}
 
   std::string getLocationFilename(clang::SourceLocation const &location) {
@@ -66,6 +68,9 @@ public:
   }
 
 private:
+  // the name of each file that has been visited
+  std::unordered_set<std::string> visitedFiles;
+
   // records whether or not this stmt finder has encountered a stmt in the same file as the expected location
   // if this isn't the case, then we produce a warning
   bool foundFile = false;
@@ -77,6 +82,12 @@ private:
     }
 
     std::string locFilename = getLocationFilename(location);
+
+    if (visitedFiles.find(locFilename) == visitedFiles.end()) {
+      visitedFiles.insert(locFilename);
+      spdlog::debug("StmtFinder: visiting file: {}", locFilename);
+    }
+
     if (locFilename != sourceLocation.file) {
       return false;
     }
