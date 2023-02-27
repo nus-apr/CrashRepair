@@ -487,7 +487,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     concrete_value = cfc_var_info_list[c_t_lookup]["concrete_value"]
                     localized_tokens[c_t_lookup] = str(concrete_value)
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
-        if len(localized_tokens.keys()) == len(sorted_cfc_tokens):
+        if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
             candidate_constraints.append((localized_cfc, candidate_line, candidate_col))
