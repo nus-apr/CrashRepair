@@ -294,6 +294,9 @@ def pointer_analysis(var_info, memory_track, pointer_track):
             #     sizeof_expr_list = {"width": 1, "con_size": var_info[var_name]["meta_data"]}
 
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            if not base_address:
+                symbolic_ptr = list(pointer_track.keys())[-1]
+                base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             sizeof_expr_list, concrete_value = get_sizeof_pointer(base_address, memory_track, static_size)
             updated_var_info[var_name] = {
                 "expr_list": sizeof_expr_list,
