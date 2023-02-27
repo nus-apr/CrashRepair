@@ -325,6 +325,8 @@ def is_loc_in_range(check_loc, ast_range, is_arrow=False):
         if int(c_line) == line_range.stop - 1:
             if int(c_col) in col_range:
                 return True
+            elif is_arrow and int(c_col) <= col_range.stop + 1:
+                return True
         else:
             return True
 
