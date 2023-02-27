@@ -96,8 +96,10 @@ std::unique_ptr<FixLocation> FixLocationLinter::repair(AstLinkedFixLocation cons
 
   auto lineNumber = stmtClangLocation.getLineNumber();
   auto columnNumber = stmtClangLocation.getColumnNumber();
+  // see #54
+  auto filename = std::filesystem::path(location.getLocation().file).lexically_normal().string();
   auto sourceLocation = SourceLocation(
-    location.getLocation().file,
+    filename,
     lineNumber,
     columnNumber
   );
@@ -147,6 +149,11 @@ std::optional<LinterError> FixLocationLinter::validate(AstLinkedFixLocation cons
     }
   }
 
+  // see #54
+  if (!location.getLocation().filenameIsNormal()) {
+    return LinterError::NonNormalFilename(&location.getFixLocation());
+  }
+
   return {};
 }
 
@@ -154,6 +161,15 @@ void FixLocationLinter::repair(clang::ASTContext &context) {
   for (auto &location : fixLocalization) {
     auto stmtLocation = location->getLocation();
     auto *stmt = StmtFinder::find(context, stmtLocation);
+
+    // see #53
+    if (!stmtLocation.filenameIsNormal()) {
+      stmtLocation = stmtLocation.normalize();
+      location->setLocation(stmtLocation);
+      spdlog::info("normalized fix location: {}", stmtLocation.toString());
+      stmt = StmtFinder::find(context, stmtLocation);
+    }
+
     if (stmt == nullptr) {
       continue;
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 #include <spdlog/fmt/fmt.h>
@@ -28,8 +29,18 @@ public:
     return file < rhs.file && line < rhs.line && column < rhs.column;
   }
 
+  /** Checks whether the filename is given in its normal form */
+  bool filenameIsNormal() const {
+    return file == normalize().file;
+  }
+
   std::string toString() const {
     return fmt::format("{}:{}:{}", file, line, column);
+  }
+
+  SourceLocation normalize() const {
+    auto normalizedFilename = std::filesystem::path(file).lexically_normal().string();
+    return SourceLocation(normalizedFilename, line, column);
   }
 
   static SourceLocation fromString(std::string const &str) {

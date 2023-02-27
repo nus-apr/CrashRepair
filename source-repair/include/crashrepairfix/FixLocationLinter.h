@@ -15,7 +15,8 @@ enum class LinterErrorType {
   NonResultAtNonTopLevelConstraint,
   UnableToLocateStatement,
   ResultAtNonExprStatement,
-  ResultTypeDoesNotMatchExprType
+  ResultTypeDoesNotMatchExprType,
+  NonNormalFilename
 };
 
 class LinterError {
@@ -50,6 +51,10 @@ public:
 
   static LinterError ResultTypeDoesNotMatchExprType(FixLocation const *location) {
     return LinterError(location, LinterErrorType::ResultTypeDoesNotMatchExprType);
+  }
+
+  static LinterError NonNormalFilename(FixLocation const *location) {
+    return LinterError(location, LinterErrorType::NonNormalFilename);
   }
 
 private:
