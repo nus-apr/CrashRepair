@@ -1,0 +1,23 @@
+{
+  "project": {
+    "name": "infinite-for-loop"
+  },
+  "name": "infinite-for-loop",
+  "binary": "src/test",
+  "crash": {
+    "command": "$POC",
+    "input": "./exploit",
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "test",
+    "commands": {
+      "prebuild": "exit 0",
+      "clean": "make clean",
+      "build": "make"
+    }
+  }
+}
