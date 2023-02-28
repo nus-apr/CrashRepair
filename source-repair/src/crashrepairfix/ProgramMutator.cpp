@@ -113,8 +113,8 @@ void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
   auto sourceRange = crashrepairfix::getRangeWithTokenEnd(condition, location.getContext());
   auto mutatedSource = fmt::format(
     "({}) && {}",
-    originalSource,
-    location.getConstraint()->toSource()
+    location.getConstraint()->toSource(),
+    originalSource
   );
   auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
   create(location, {replacement});
