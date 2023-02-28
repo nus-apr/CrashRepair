@@ -25,7 +25,7 @@ public:
   }
 
   virtual std::string toString() const override {
-    return "NULL";
+    return "0";
   }
 
 protected:
