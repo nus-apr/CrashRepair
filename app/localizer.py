@@ -596,8 +596,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
             emitter.warning(f"[warning] did not find top-level for {crash_loc}")
             continue
         if "@result" in candidate_cfc.to_string():
-            if not is_declaration:
-                fix_loc_updated_candidate_constraints.append((candidate_cfc, top_level_loc, taint_loc))
+            # if not is_declaration:
+            #     fix_loc_updated_candidate_constraints.append((candidate_cfc, top_level_loc, taint_loc))
             if taint_loc in assignment_list:
                 shifted_loc = assignment_list[taint_loc]
                 fix_loc_updated_candidate_constraints.append((candidate_cfc, shifted_loc, taint_loc))
