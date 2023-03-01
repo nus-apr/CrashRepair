@@ -108,16 +108,54 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
 
 void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
   spdlog::info("strengthening branch condition in statement: {}", location.getSource());
+  auto *stmt = location.getStmt();
   auto *condition = location.getBranchConditionExpression();
-  auto originalSource = crashrepairfix::getSource(condition, location.getSourceManager());
-  auto sourceRange = crashrepairfix::getRangeWithTokenEnd(condition, location.getContext());
-  auto mutatedSource = fmt::format(
-    "({}) && {}",
-    location.getConstraint()->toSource(),
-    originalSource
-  );
-  auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
-  create(location, {replacement});
+  auto &sourceManager = location.getSourceManager();
+  auto constraintSource = location.getConstraint()->toSource();
+
+  // #69: existing branch condition may be empty
+  if (!condition) {
+    if (auto *forStmt = clang::dyn_cast<clang::ForStmt>(stmt)) {
+      auto sourceRange = clang::SourceRange(
+        forStmt->getLParenLoc().getLocWithOffset(1),
+        forStmt->getRParenLoc().getLocWithOffset(-1)
+      );
+
+      std::string initSource = "";
+      if (auto initStmt = forStmt->getInit()) {
+        initSource = crashrepairfix::getSource(initStmt, sourceManager);
+        if (initSource.back() == ';') {
+          initSource.pop_back();
+        }
+      }
+
+      std::string incSource = "";
+      if (auto incStmt = forStmt->getInc()) {
+        incSource = crashrepairfix::getSource(incStmt, sourceManager);
+      }
+
+      auto mutatedSource = fmt::format(
+        "{}; {}; {}",
+        initSource,
+        constraintSource,
+        incSource
+      );
+      auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
+      create(location, {replacement});
+    } else {
+      spdlog::error("unable to handle empty branch condition in statement kind: {}", stmt->getStmtClassName());
+    }
+  } else {
+    auto originalSource = crashrepairfix::getSource(condition, sourceManager);
+    auto sourceRange = crashrepairfix::getRangeWithTokenEnd(condition, location.getContext());
+    auto mutatedSource = fmt::format(
+      "({}) && {}",
+      constraintSource,
+      originalSource
+    );
+    auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
+    create(location, {replacement});
+  }
 }
 
 void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &location) {
