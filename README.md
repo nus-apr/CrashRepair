@@ -1,21 +1,19 @@
 # CrashRepair
-C Repair tool for Program Crashes
 
-## Build and Dependencies
-We provide a ready-made container which includes all necessary environment set-up
-to deploy and run our tool. Dependencies include:
+A program repair tool for security vulnerabilities in C programs.
 
-* LLDB
-* LLVM/Clang
-* Klee
-* LibASAN/LibUBSAN
+## Installation
+
+To build and run a Docker image that contains only the tool and regression tests:
+
+    make -C docker crepair
+    docker run --rm -it crepair:tool
 
 
-Build and run a container:
+To build an run a Docker image that contains both the tool and benchmark:
 
-    docker build -t rshariffdeen/crepair .
-    docker run --rm -ti rshariffdeen/crepair /bin/bash
-
+    make -C docker aio
+    docker run --rm -it crepair:aio
 
 # Running Example
 This repository includes several getting-started examples covering different types of program crashes

@@ -30,14 +30,17 @@ fuzzer: builder
 	docker build -f Dockerfile.fuzzer -t crepair:fuzzer ..
 
 crepair: builder klee llvm-11 orchestrator sourcerepair
-	docker build -f Dockerfile.crepair -t crepair:tool ..
+	docker build -t crepair:tool -f Dockerfile.crepair --target tool ..
 
 orchestrator:
 	docker build -t crepair:orchestrator ../orchestrator
 
-install: experiments
+install: aio
 
-experiments: crepair
-	docker build -t crepair:experiments -f Dockerfile.vulnloc .
+benchmark: builder klee llvm-11 orchestrator sourcerepair
+	docker build -t crepair:benchmark -f Dockerfile.crepair --target benchmark ..
 
-.PHONY: builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install experiments
+aio: crepair benchmark
+	docker build -t crepair:aio -f Dockerfile.crepair --target aio ..
+
+.PHONY: benchmark builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install aio
