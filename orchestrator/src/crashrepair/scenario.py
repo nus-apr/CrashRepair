@@ -12,8 +12,17 @@ from loguru import logger
 
 from .analyzer import Analyzer
 from .candidate import PatchCandidate
+from .exceptions import CrashRepairException
 from .fuzzer import Fuzzer, FuzzerConfig
+from .report import (
+    AnalysisReport,
+    FuzzerReport,
+    GenerationReport,
+    Report,
+    ValidationReport,
+)
 from .shell import Shell
+from .stopwatch import Stopwatch
 from .test import Test
 
 # TODO allow these to be customized via environment variables
@@ -416,12 +425,42 @@ class Scenario:
 
     def repair(self) -> None:
         """Performs end-to-end repair of this bug scenario."""
-        # NOTE these two steps could be performed in parallel
-        self.fuzz()
-        self.analyze()
-        self.lint(fix=True)
-        self.generate()
-        self.validate()
+        report = Report()
+        report_filename = os.path.join(self.directory, "report.json")
+        timer_overall = Stopwatch()
+        timer_overall.start()
+        try:
+            with Stopwatch() as timer_fuzz:  # noqa: F841
+                self.fuzz()
+                report.fuzzer = FuzzerReport(
+                    duration_seconds=timer_fuzz.duration,
+                )
+
+            with Stopwatch() as timer_analyze:
+                self.analyze()
+                self.lint(fix=True)
+                report.analysis = AnalysisReport(
+                    duration_seconds=timer_analyze.duration,
+                )
+
+            with Stopwatch() as timer_generate:
+                self.generate()
+                report.generation = GenerationReport(
+                    duration_seconds=timer_generate.duration,
+                )
+
+            with Stopwatch() as timer_validate:
+                self.validate()
+                report.validation = ValidationReport(
+                    duration_seconds=timer_validate.duration,
+                )
+
+        except CrashRepairException as error:
+            report.error = error
+            print(f"FATAL ERROR: {error}")
+        finally:
+            report.duration_seconds = timer_overall.duration
+            report.save(report_filename)
 
     def lint(self, fix: bool) -> bool:
         """Lints the fix localization for this bug scenario.

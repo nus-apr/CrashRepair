@@ -14,6 +14,8 @@ import attrs
 
 from loguru import logger
 
+from .exceptions import AnalyzerCrashed
+
 if t.TYPE_CHECKING:
     from .scenario import Scenario
 
@@ -72,7 +74,13 @@ class Analyzer:
                 os.remove(filename)
 
     def run(self, write_to: str) -> None:
-        """Runs the analysis and writes its results to a given output directory."""
+        """Runs the analysis and writes its results to a given output directory.
+
+        Raises
+        ------
+        AnalyzerCrashed
+            If no localization file is produced by the analyzer.
+        """
         shell = self.scenario.shell
 
         # destroy any existing contents of the analyzer output directory
@@ -85,14 +93,14 @@ class Analyzer:
             shell(command, cwd=self.scenario.directory, check_returncode=False)
 
         # ensure that the results exist!
+        # FIXME grab the tail of the output from the analysis command line
         if not os.path.exists(localization_filename):
-            raise RuntimeError(
-                f"analysis failed: localization file wasn't produced [{localization_filename}]",
-            )
+            raise AnalyzerCrashed("TODO: grab tail of analysis output")
 
         if not os.path.exists(write_to):
             logger.warning(f"analysis output directory does not exist [{write_to}]: creating...")
 
+        # FIXME since the analysis results can be pretty big, we should move rather than copy
         # copy across the analysis results
         shutil.copytree(output_directory, write_to)
         shutil.rmtree(output_directory, ignore_errors=True)
