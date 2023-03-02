@@ -25,7 +25,7 @@ mkdir -p "${RESULTS_DIR}"
 crashrepair repair --no-fuzz bug.json 2>1 |& tee "${LOG_FILENAME}"
 
 if [[ -d patches ]]; then
-  cp patches "${RESULTS_DIR}"
+  cp -r patches "${RESULTS_DIR}"
 fi
 cp report.json "${RESULTS_DIR}"
 
