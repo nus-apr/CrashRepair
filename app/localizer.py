@@ -114,7 +114,29 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
             continue
         for expr_info in (var_info_list+expr_info_list):
             e_str, e_line, e_col, e_type, dec_or_ref = expr_info
-            if int(e_line) == int(line) and int(col) == int(e_col):
+            # e-col indicates the index of the parameter argument, not the column number in the source
+            if dec_or_ref == "param" and int(e_line) == int(line) and int(e_col) == int(col):
+                var_info_index = (e_str, e_line, e_col, 0)
+                if var_info_index not in expr_taint_list:
+                    filtered_taint_list = []
+                    arg_type = None
+                    if e_type in definitions.INTEGER_TYPES:
+                        arg_type = "integer"
+                    elif "*" in e_type or "[" in e_type:
+                        arg_type = "pointer"
+                    elif e_type in ["double", "float"]:
+                        arg_type = "double"
+                    for taint_expr in taint_expr_list:
+                        data_type, taint_expr = taint_expr.split(":")
+                        if data_type != "argument":
+                            continue
+                        filtered_taint_list.append(taint_expr)
+                    expr_taint_list[var_info_index] = {
+                        "expr_list": filtered_taint_list,
+                        "data_type": arg_type,
+                        "is_dec": True
+                    }
+            elif int(e_line) == int(line) and int(col) == int(e_col):
             # if int(e_line) == int(line) and int(col) in range(int(e_col), int(e_col) + len(e_str)):
                 # print(var_name, v_line, v_col, line, col, range(int(v_col), int(v_col) + len(var_name)))
                 var_info_index = (e_str, e_line, e_col, inst_add)

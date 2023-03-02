@@ -232,7 +232,7 @@ def extract_sanitizer_information(binary_path, argument_list, log_path):
     return src_path, var_list, cfc
 
 
-def extract_var_dec_list(ast_node, file_path):
+def extract_var_dec_list(ast_node, file_path, index=-1):
     var_list = list()
     child_count = 0
     if not ast_node:
@@ -245,7 +245,7 @@ def extract_var_dec_list(ast_node, file_path):
         var_type = extract_data_type(ast_node)
         begin_loc = extract_loc(file_path, ast_node["range"]["begin"])
         _, line_number, column_number = begin_loc
-        var_list.append((var_name, line_number, column_number, var_type, "dec"))
+        var_list.append((var_name, line_number, index, var_type, "param"))
         return var_list
 
     if node_type in ["VarDecl"]:
@@ -256,8 +256,10 @@ def extract_var_dec_list(ast_node, file_path):
         var_list.append((var_name, line_number, column_number, var_type, "dec"))
         return var_list
     if child_count:
+        child_index = 0
         for child_node in ast_node['inner']:
-            var_list = var_list + list(set(extract_var_dec_list(child_node, file_path)))
+            var_list = var_list + list(set(extract_var_dec_list(child_node, file_path, child_index)))
+            child_index = child_index + 1
     return list(set(var_list))
 
 
