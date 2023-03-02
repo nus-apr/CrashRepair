@@ -284,6 +284,9 @@ class Scenario:
         self,
         *,
         env: t.Optional[t.Dict[str, str]] = None,
+        clean: bool = True,
+        prebuild: bool = True,
+        record_compile_commands: bool = True,
     ) -> None:
         """Performs a clean rebuild of the program under test."""
         if not env:
@@ -308,9 +311,16 @@ class Scenario:
         }
         env = {**default_env, **env}
 
-        self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
-        self.shell(self.prebuild_command, env=env, cwd=self.build_directory)
-        self.shell(f"bear {self.build_command}", env=env, cwd=self.build_directory)
+        if clean:
+            self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
+
+        if prebuild:
+            self.shell(self.prebuild_command, env=env, cwd=self.build_directory)
+
+        build_command = self.build_command
+        if record_compile_commands:
+            build_command = f"bear {build_command}"
+        self.shell(build_command, env=env, cwd=self.build_directory)
 
     def analyze(self) -> None:
         """Analyzes the underlying cause of the bug and generates repair hints."""
@@ -380,6 +390,9 @@ class Scenario:
         candidates = PatchCandidate.load_all(self.patch_candidates_path)
         evaluations: t.List[PatchEvaluation] = []
 
+        # rebuild the whole project once before using incremental builds for each patch
+        self.rebuild(record_compile_commands=False)
+
         # TODO apply ranking of candidate patches prior to evaluation
 
         # TODO add resource limits
@@ -412,7 +425,7 @@ class Scenario:
 
             # TODO enable the appropriate sanitizers
             try:
-                self.rebuild()
+                self.rebuild(prebuild=False, clean=False, record_compile_commands=False)
             except subprocess.CalledProcessError:
                 logger.info(f"candidate patch #{candidate.id_} failed to compile")
                 return PatchEvaluation.failed_to_compile(candidate, timer_compile.duration)
@@ -508,6 +521,7 @@ class Scenario:
         self.analyze()
 
         # the project needs to be rebuilt to work with the same compiler toolchain as the repair module
+        # FIXME is this strictly true?
         self.rebuild()
 
         fix_flag = "--fix" if fix else ""
