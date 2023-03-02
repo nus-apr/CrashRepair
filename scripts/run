@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# This script runs CrashRepair on a single bug scenario from the dataset, specified by the name of
+# the program the scenario belongs to (e.g., libtiff) and the scenario (e.g., bugzilla-2611), each
+# given as separate arguments.
+#
+set -eu
+
+HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+ROOT_DIR="${HERE_DIR}/.."
+
+PROGRAM=$1
+SCENARIO=$2
+
+DOCKER_IMAGE=crepair:aio
+DOCKER_CONTAINER_NAME="crepair_${PROGRAM}_${SCENARIO}"
+docker run \
+  --name ${DOCKER_CONTAINER_NAME} \
+  -v "${ROOT_DIR}/results:/results" \
+  -v "${ROOT_DIR}/logs:/logs" \
+  -v "${HERE_DIR}/.runner.sh:/.runner.sh:ro" \
+  -e HOST_UID=$(id -u) \
+  -e HOST_GID=$(id -g) \
+  --rm \
+  -t ${DOCKER_IMAGE} \
+  bash /.runner.sh ${PROGRAM} ${SCENARIO}
