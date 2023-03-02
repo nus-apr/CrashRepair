@@ -16,9 +16,6 @@ RESULTS_DIR="/results/${PROGRAM}/${SCENARIO}"
 LOG_DIR="/logs/${PROGRAM}/${SCENARIO}"
 LOG_FILENAME="${LOG_DIR}/orchestrator.log"
 
-# FIXME workaround
-ln -s /CrashRepair/bin/crepair /usr/bin/crepair
-
 pushd "${WORKDIR}"
 mkdir -p "${LOG_DIR}"
 mkdir -p "${RESULTS_DIR}"
