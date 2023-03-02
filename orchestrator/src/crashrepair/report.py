@@ -11,12 +11,31 @@ from .exceptions import CrashRepairException
 
 @attrs.define(slots=True, auto_attribs=True)
 class GenerationReport:
-    duration_seconds: float = attrs.field(default=0)
+    duration_seconds: float
+    candidates_json: t.List[t.Dict[str, t.Any]]
+
+    @classmethod
+    def build(
+        cls,
+        duration_seconds: float,
+        candidates_filename: str,
+    ) -> GenerationReport:
+        with open(candidates_filename, "r") as fh:
+            candidates_json = json.load(fh)
+
+        return GenerationReport(
+            duration_seconds=duration_seconds,
+            candidates_json=candidates_json,
+        )
 
     def to_dict(self) -> t.Dict[str, t.Any]:
         duration_minutes = self.duration_seconds / 60
         output: t.Dict[str, t.Any] = {
-            "duration-minutes": duration_minutes,
+            "summary": {
+                "duration-minutes": duration_minutes,
+                "num-candidates": len(self.candidates_json),
+            },
+            "candidates": self.candidates_json,
         }
         return output
 

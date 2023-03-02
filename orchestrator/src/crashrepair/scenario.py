@@ -447,8 +447,9 @@ class Scenario:
 
             with Stopwatch() as timer_generate:
                 self.generate()
-                report.generation = GenerationReport(
+                report.generation = GenerationReport.build(
                     duration_seconds=timer_generate.duration,
+                    candidates_filename=self.patch_candidates_path,
                 )
 
             with Stopwatch() as timer_validate:
