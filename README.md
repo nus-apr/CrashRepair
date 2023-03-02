@@ -10,7 +10,7 @@ To build and run a Docker image that contains only the tool and regression tests
     docker run --rm -it crepair:tool
 
 
-To build an run a Docker image that contains both the tool and benchmark:
+To build and run a Docker image that contains both the tool and benchmark:
 
     make -C docker aio
     docker run --rm -it crepair:aio
