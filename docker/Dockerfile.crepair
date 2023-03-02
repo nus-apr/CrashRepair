@@ -93,3 +93,4 @@ COPY --from=tool /CrashRepair/lib /CrashRepair/lib
 COPY --from=tool /CrashRepair/Repair.py /CrashRepair/Repair.py
 COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
 COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
+RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
