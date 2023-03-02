@@ -1,2 +1,10 @@
 logs/*
 output/*
+results
+.vscode
+.gitignore
+.gitmodules
+activate
+container
+Repair.py
+README.md
