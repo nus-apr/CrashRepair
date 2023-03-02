@@ -14,6 +14,90 @@ from loguru import logger
 
 from .location import Location
 
+if t.TYPE_CHECKING:
+    from .test import Test
+
+
+@attrs.define(auto_attribs=True, slots=True)
+class PatchEvaluation:
+    patch_id: int
+    is_repair: bool
+    compiles: bool
+    compile_time_seconds: float
+    test_time_seconds: t.Optional[float] = attrs.field(default=None)
+    tests_passed: t.Collection[Test] = attrs.field(factory=list)
+    tests_failed: t.Collection[Test] = attrs.field(factory=list)
+
+    @classmethod
+    def failed_to_compile(
+        cls,
+        candidate: PatchCandidate,
+        time_taken: float,
+    ) -> PatchEvaluation:
+        return PatchEvaluation(
+            patch_id=candidate.id_,
+            is_repair=False,
+            compiles=False,
+            compile_time_seconds=time_taken,
+        )
+
+    @classmethod
+    def failed_tests(
+        cls,
+        candidate: PatchCandidate,
+        compile_time_seconds: float,
+        test_time_seconds: float,
+        tests_passed: t.Collection[Test],
+        tests_failed: t.Collection[Test],
+    ) -> PatchEvaluation:
+        return PatchEvaluation(
+            patch_id=candidate.id_,
+            is_repair=False,
+            compiles=True,
+            compile_time_seconds=compile_time_seconds,
+            test_time_seconds=test_time_seconds,
+            tests_passed=tests_passed,
+            tests_failed=tests_failed,
+        )
+
+    @classmethod
+    def repair_found(
+        cls,
+        candidate: PatchCandidate,
+        compile_time_seconds: float,
+        test_time_seconds: float,
+        tests_passed: t.Collection[Test],
+    ) -> PatchEvaluation:
+        return PatchEvaluation(
+            patch_id=candidate.id_,
+            is_repair=True,
+            compiles=True,
+            compile_time_seconds=compile_time_seconds,
+            test_time_seconds=test_time_seconds,
+            tests_passed=tests_passed,
+        )
+
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        total_time_seconds = self.compile_time_seconds + (self.test_time_seconds or 0)
+        return {
+            "patch-id": self.patch_id,
+            "is-repair": self.is_repair,
+            "compiles": self.compiles,
+            "time-taken-seconds": {
+                "total": total_time_seconds,
+                "compile": self.compile_time_seconds,
+                "tests": self.test_time_seconds,
+            },
+            "tests": {
+                "executed": len(self.tests_passed) + len(self.tests_failed),
+                "passed": len(self.tests_passed),
+                "failed": len(self.tests_failed),
+            },
+        }
+
+    def __bool__(self) -> bool:
+        return self.is_repair
+
 
 @attrs.define(auto_attribs=True, slots=True)
 class PatchCandidate:
@@ -38,6 +122,13 @@ class PatchCandidate:
             location=Location.from_string(dict_["location"]),
             diff=dict_["diff"],
         )
+
+    def to_dict(self) -> t.Dict[str, t.Any]:
+        return {
+            "id": self.id_,
+            "location": str(self.location),
+            "diff": self.diff,
+        }
 
     @property
     def filename(self) -> str:

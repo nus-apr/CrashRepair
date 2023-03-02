@@ -11,7 +11,7 @@ import attrs
 from loguru import logger
 
 from .analyzer import Analyzer
-from .candidate import PatchCandidate
+from .candidate import PatchCandidate, PatchEvaluation
 from .exceptions import CrashRepairException
 from .fuzzer import Fuzzer, FuzzerConfig
 from .report import (
@@ -371,20 +371,23 @@ class Scenario:
         self.shell(command, cwd=self.source_directory)
         assert os.path.exists(self.patch_candidates_path)
 
-    def validate(self) -> None:
+    def validate(self) -> ValidationReport:
         """Validates candidate patches."""
         assert self.candidate_repairs_exist()
 
+        timer = Stopwatch()
+        timer.start()
         candidates = PatchCandidate.load_all(self.patch_candidates_path)
+        evaluations: t.List[PatchEvaluation] = []
 
         # TODO apply ranking of candidate patches prior to evaluation
 
         # TODO add resource limits
 
-        # TODO evaluate candidates in parallel via worker queue
-        # note that doing so will require us to create copies of the scenario directory
         for candidate in candidates:
-            if self.evaluate(candidate):
+            outcome = self.evaluate(candidate)
+            evaluations.append(outcome)
+            if outcome:
                 logger.info(f"saving successful patch #{candidate.id_}...")
                 patch_filename = f"{candidate.id_}.diff"
                 patch_filename = os.path.join(self.patches_directory, patch_filename)
@@ -392,36 +395,63 @@ class Scenario:
 
                 if self.should_terminate_early:
                     logger.info("stopping search: patch was found")
-                    return
+                    break
 
-    def evaluate(self, candidate: PatchCandidate) -> bool:
+        return ValidationReport(
+            duration_seconds=timer.duration,
+            evaluations=evaluations,
+        )
+
+    def evaluate(self, candidate: PatchCandidate) -> PatchEvaluation:
         """Evaluates a candidate repair and returns :code:`True` if it passes all tests."""
         logger.info(f"evaluating candidate patch #{candidate.id_}:\n{candidate.diff}")
         try:
+            timer_compile = Stopwatch()
+            timer_compile.start()
             candidate.apply()
+
             # TODO enable the appropriate sanitizers
             try:
                 self.rebuild()
             except subprocess.CalledProcessError:
                 logger.info(f"candidate patch #{candidate.id_} failed to compile")
-                return False
+                return PatchEvaluation.failed_to_compile(candidate, timer_compile.duration)
+            timer_compile.stop()
 
             # run both the proof of exploit and the fuzzer-generated tests
+            timer_tests = Stopwatch()
+            timer_tests.start()
             all_tests: t.Sequence[Test] = [self.crash_test] + self.fuzzer_tests
+            tests_passed: t.List[Test] = []
+            tests_failed: t.List[Test] = []
             for test in all_tests:
                 logger.debug(f"testing candidate #{candidate.id_} against test #{test.name}...")
                 if test.run():
                     logger.info(f"candidate #{candidate.id_} passes test #{test.name}")
+                    tests_passed.append(test)
                 else:
                     logger.info(f"candidate #{candidate.id_} fails test #{test.name}")
-                    return False
+                    tests_failed.append(test)
+                    return PatchEvaluation.failed_tests(
+                        candidate=candidate,
+                        compile_time_seconds=timer_compile.duration,
+                        test_time_seconds=timer_tests.duration,
+                        tests_passed=tests_passed,
+                        tests_failed=tests_failed,
+                    )
 
+            timer_tests.stop()
             logger.info(f"repair found! candidate #{candidate.id_} passes all tests")
 
         finally:
             candidate.revert()
 
-        return True
+        return PatchEvaluation.repair_found(
+            candidate=candidate,
+            compile_time_seconds=timer_compile.duration,
+            test_time_seconds=timer_tests.duration,
+            tests_passed=tests_passed,
+        )
 
     def repair(self) -> None:
         """Performs end-to-end repair of this bug scenario."""
@@ -452,11 +482,7 @@ class Scenario:
                     candidates_filename=self.patch_candidates_path,
                 )
 
-            with Stopwatch() as timer_validate:
-                self.validate()
-                report.validation = ValidationReport(
-                    duration_seconds=timer_validate.duration,
-                )
+            report.validation = self.validate()
 
         except CrashRepairException as error:
             report.error = error

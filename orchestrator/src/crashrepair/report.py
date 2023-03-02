@@ -8,6 +8,9 @@ import attrs
 
 from .exceptions import CrashRepairException
 
+if t.TYPE_CHECKING:
+    from .candidate import PatchEvaluation
+
 
 @attrs.define(slots=True, auto_attribs=True)
 class GenerationReport:
@@ -42,12 +45,31 @@ class GenerationReport:
 
 @attrs.define(slots=True, auto_attribs=True)
 class ValidationReport:
-    duration_seconds: float = attrs.field(default=0)
+    duration_seconds: float
+    evaluations: t.List[PatchEvaluation]
 
     def to_dict(self) -> t.Dict[str, t.Any]:
         duration_minutes = self.duration_seconds / 60
+        num_evaluations = len(self.evaluations)
+        repairs_found = sum(1 for evaluation in self.evaluations if evaluation.is_repair)
+        duration_tests_minutes = sum(evaluation.test_time_seconds or 0 for evaluation in self.evaluations) / 60
+        duration_compilation_minutes = sum(evaluation.compile_time_seconds or 0 for evaluation in self.evaluations) / 60
         output: t.Dict[str, t.Any] = {
-            "duration-minutes": duration_minutes,
+            "summary": {
+                "duration-minutes": {
+                    "overall": duration_minutes,
+                    "tests": duration_tests_minutes,
+                    "compilation": duration_compilation_minutes,
+                },
+                "num-patches-evaluated": num_evaluations,
+                "num-repairs-found": repairs_found,
+            },
+            "evaluations": [
+                evaluation.to_dict() for evaluation in self.evaluations
+            ],
+            "repairs": [
+                evaluation.patch_id for evaluation in self.evaluations if evaluation.is_repair
+            ],
         }
         return output
 
@@ -59,7 +81,9 @@ class FuzzerReport:
     def to_dict(self) -> t.Dict[str, t.Any]:
         duration_minutes = self.duration_seconds / 60
         output: t.Dict[str, t.Any] = {
-            "duration-minutes": duration_minutes,
+            "summary": {
+                "duration-minutes": duration_minutes,
+            },
         }
         return output
 
