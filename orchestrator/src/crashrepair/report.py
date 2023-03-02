@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import json
 import typing as t
 
@@ -45,12 +47,40 @@ class FuzzerReport:
 
 @attrs.define(slots=True, auto_attribs=True)
 class AnalysisReport:
-    duration_seconds: float = attrs.field(default=0)
+    duration_seconds: float
+    fix_locations_json: t.List[t.Dict[str, t.Any]]
+    linter_errors_json: t.List[t.Dict[str, t.Any]]
+
+    @classmethod
+    def build(
+        cls,
+        duration_seconds: float,
+        localization_filename: str,
+        linter_filename: str,
+    ) -> AnalysisReport:
+        with open(localization_filename, "r") as fh:
+            fix_locations_json = json.load(fh)
+
+        with open(linter_filename, "r") as fh:
+            linter_errors_json = json.load(fh)
+            linter_errors_json = linter_errors_json["errors"]
+
+        return AnalysisReport(
+            duration_seconds=duration_seconds,
+            fix_locations_json=fix_locations_json,
+            linter_errors_json=linter_errors_json,
+        )
 
     def to_dict(self) -> t.Dict[str, t.Any]:
         duration_minutes = self.duration_seconds / 60
         output: t.Dict[str, t.Any] = {
-            "duration-minutes": duration_minutes,
+            "summary": {
+                "duration-minutes": duration_minutes,
+                "num-fix-locations": len(self.fix_locations_json),
+                "num-linter-errors": len(self.linter_errors_json),
+            },
+            "fix-locations": self.fix_locations_json,
+            "linter-errors": self.linter_errors_json,
         }
         return output
 

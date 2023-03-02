@@ -439,8 +439,10 @@ class Scenario:
             with Stopwatch() as timer_analyze:
                 self.analyze()
                 self.lint(fix=True)
-                report.analysis = AnalysisReport(
+                report.analysis = AnalysisReport.build(
                     duration_seconds=timer_analyze.duration,
+                    localization_filename=self.localization_path,
+                    linter_filename=self.linter_report_path,
                 )
 
             with Stopwatch() as timer_generate:
