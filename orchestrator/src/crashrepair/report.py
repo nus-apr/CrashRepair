@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import typing as t
 
 import attrs
@@ -10,6 +11,14 @@ from .exceptions import CrashRepairException
 
 if t.TYPE_CHECKING:
     from .candidate import PatchEvaluation
+
+
+def compute_disk_usage_in_bytes(directory: str) -> int:
+    usage = 0
+    for prefix, _subdirs, files in os.walk(directory):
+        usage += os.path.getsize(prefix)
+        usage += sum(os.path.getsize(os.path.join(prefix, file)) for file in files)
+    return usage
 
 
 @attrs.define(slots=True, auto_attribs=True)
@@ -93,11 +102,13 @@ class AnalysisReport:
     duration_seconds: float
     fix_locations_json: t.List[t.Dict[str, t.Any]]
     linter_errors_json: t.List[t.Dict[str, t.Any]]
+    disk_usage_megabytes: float
 
     @classmethod
     def build(
         cls,
         duration_seconds: float,
+        analysis_directory: str,
         localization_filename: str,
         linter_filename: str,
     ) -> AnalysisReport:
@@ -108,10 +119,14 @@ class AnalysisReport:
             linter_errors_json = json.load(fh)
             linter_errors_json = linter_errors_json["errors"]
 
+        disk_usage_bytes = compute_disk_usage_in_bytes(analysis_directory)
+        disk_usage_megabytes = disk_usage_bytes / 1000000
+
         return AnalysisReport(
             duration_seconds=duration_seconds,
             fix_locations_json=fix_locations_json,
             linter_errors_json=linter_errors_json,
+            disk_usage_megabytes=disk_usage_megabytes,
         )
 
     def to_dict(self) -> t.Dict[str, t.Any]:
@@ -121,6 +136,7 @@ class AnalysisReport:
                 "duration-minutes": duration_minutes,
                 "num-fix-locations": len(self.fix_locations_json),
                 "num-linter-errors": len(self.linter_errors_json),
+                "disk-usage-megabytes": self.disk_usage_megabytes,
             },
             "fix-locations": self.fix_locations_json,
             "linter-errors": self.linter_errors_json,

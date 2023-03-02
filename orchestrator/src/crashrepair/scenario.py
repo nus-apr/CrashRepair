@@ -471,6 +471,7 @@ class Scenario:
                 self.lint(fix=True)
                 report.analysis = AnalysisReport.build(
                     duration_seconds=timer_analyze.duration,
+                    analysis_directory=self.analysis_directory,
                     localization_filename=self.localization_path,
                     linter_filename=self.linter_report_path,
                 )
