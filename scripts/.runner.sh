@@ -11,6 +11,8 @@ umask 000
 PROGRAM=$1
 SCENARIO=$2
 
+REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT:-45}"
+
 WORKDIR="/data/vulnloc/${PROGRAM}/${SCENARIO}"
 RESULTS_DIR="/results/${PROGRAM}/${SCENARIO}"
 LOG_DIR="/logs/${PROGRAM}/${SCENARIO}"
@@ -19,7 +21,10 @@ LOG_FILENAME="${LOG_DIR}/orchestrator.log"
 pushd "${WORKDIR}"
 mkdir -p "${LOG_DIR}"
 mkdir -p "${RESULTS_DIR}"
-crashrepair repair --no-fuzz bug.json 2>1 |& tee "${LOG_FILENAME}"
+crashrepair repair \
+  --time-limit-minutes-validation "${REPAIR_TIME_LIMIT}" \
+  --no-fuzz bug.json \
+  2>1 |& tee "${LOG_FILENAME}"
 
 if [[ -d patches ]]; then
   cp -r patches "${RESULTS_DIR}"

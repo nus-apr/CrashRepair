@@ -9,6 +9,8 @@ set -eu
 MEMORY_LIMIT="${MEMORY_LIMIT:-16g}"
 CPU_LIMIT="${CPU_LIMIT:-8}"
 
+REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT:-45}"
+
 HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 ROOT_DIR="${HERE_DIR}/.."
 
@@ -24,6 +26,7 @@ docker run \
   -v "${HERE_DIR}/.runner.sh:/.runner.sh:ro" \
   -e HOST_UID=$(id -u) \
   -e HOST_GID=$(id -g) \
+  -e REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT}" \
   --memory ${MEMORY_LIMIT} \
   --cpus ${CPU_LIMIT} \
   --rm \

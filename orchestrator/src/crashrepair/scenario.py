@@ -95,6 +95,7 @@ class Scenario:
     should_terminate_early: bool = attrs.field(default=True)
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
     fuzzer: t.Optional[Fuzzer] = attrs.field(default=None)
+    time_limit_minutes_validation: t.Optional[int] = attrs.field(default=None)
 
     @property
     def compile_commands_path(self) -> str:
@@ -385,6 +386,15 @@ class Scenario:
         """Validates candidate patches."""
         assert self.candidate_repairs_exist()
 
+        logger.info(
+            "beginning candidate patch evaluation with time limit: "
+            f"{self.time_limit_minutes_validation} minutes",
+        )
+
+        time_limit_seconds: t.Optional[int] = None
+        if self.time_limit_minutes_validation:
+            time_limit_seconds = self.time_limit_minutes_validation * 60
+
         timer = Stopwatch()
         timer.start()
         candidates = PatchCandidate.load_all(self.patch_candidates_path)
@@ -395,9 +405,11 @@ class Scenario:
 
         # TODO apply ranking of candidate patches prior to evaluation
 
-        # TODO add resource limits
-
         for candidate in candidates:
+            if time_limit_seconds and timer.duration >= time_limit_seconds:
+                logger.info("reached candidate patch evaluation time limit")
+                break
+
             outcome = self.evaluate(candidate)
             evaluations.append(outcome)
             if outcome:

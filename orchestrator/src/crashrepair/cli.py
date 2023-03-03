@@ -12,6 +12,7 @@ DESCRIPTION = "crashrepair: automated repair of C/C++ security bugs"
 def do_repair(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename, skip_fuzzing=args.no_fuzzing)
     scenario.should_terminate_early = args.should_terminate_early
+    scenario.time_limit_minutes_validation = args.time_limit_minutes_validation
     scenario.repair()
 
 
@@ -43,6 +44,12 @@ def parse_args() -> argparse.Namespace:
     parser_repair.add_argument(
         "filename",
         help="the path to the bug.json file for the bug scenario",
+    )
+    parser_repair.add_argument(
+        "--time-limit-minutes-validation",
+        type=int,
+        help="enforces a limit on the maximum number of minutes that are spent on validating candidate patches",
+        required=False,
     )
     parser_repair.add_argument(
         "--stop-early",
