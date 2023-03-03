@@ -88,7 +88,7 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
   for (auto &replacementExpr : mutations) {
     auto replacementSource = replacementExpr->toSource();
     auto replacement = Replacement::replace(replacementSource, sourceRange, context);
-    create(location, {replacement});
+    create(Operator::ExpressionMutation, location, {replacement});
   }
 }
 
@@ -141,7 +141,7 @@ void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
         incSource
       );
       auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
-      create(location, {replacement});
+      create(Operator::StrengthenBranchCondition, location, {replacement});
     } else {
       spdlog::error("unable to handle empty branch condition in statement kind: {}", stmt->getStmtClassName());
     }
@@ -154,7 +154,7 @@ void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
       originalSource
     );
     auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
-    create(location, {replacement});
+    create(Operator::StrengthenBranchCondition, location, {replacement});
   }
 }
 
@@ -172,7 +172,7 @@ void ProgramMutator::addConditional(AstLinkedFixLocation &location, std::string 
   auto cfcSource = location.getConstraint()->toSource();
   auto insert = fmt::format("if (!({})) {{ {} }} ", cfcSource, bodySource);
   auto replacement = Replacement::prepend(insert, location);
-  create(location, {replacement});
+  create(Operator::InsertConditionalControlFlow, location, {replacement});
 }
 
 void ProgramMutator::addConditionalBreak(AstLinkedFixLocation &location) {
@@ -280,13 +280,17 @@ void ProgramMutator::guardStatement(AstLinkedFixLocation &location) {
   auto cfcSource = location.getConstraint()->toSource();
   auto mutatedSource = fmt::format("if ({}) {{ {} }}", cfcSource, source);
   auto replacement = Replacement::replace(mutatedSource, sourceRange, context);
-  create(location, {replacement});
+  create(Operator::GuardStatement, location, {replacement});
 }
 
-void ProgramMutator::create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements) {
+void ProgramMutator::create(
+  Operator op,
+  AstLinkedFixLocation &location,
+  std::vector<Replacement> const &replacements
+) {
   size_t mutantId = mutations.size();
   std::string diff = diffGenerator.diff(replacements);
-  mutations.emplace_back(mutantId, location.getLocation(), std::move(replacements), diff);
+  mutations.emplace_back(mutantId, op, location.getLocation(), std::move(replacements), diff);
 }
 
 void ProgramMutator::save() {

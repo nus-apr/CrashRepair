@@ -10,6 +10,13 @@
 
 namespace crashrepairfix {
 
+enum class Operator {
+  ExpressionMutation,
+  InsertConditionalControlFlow,
+  GuardStatement,
+  StrengthenBranchCondition
+};
+
 class Replacement {
 public:
   Replacement(
@@ -84,10 +91,24 @@ class Mutation {
 public:
   Mutation(
     size_t id,
+    Operator op,
     SourceLocation const &location,
     std::vector<Replacement> const &replacements,
     std::string const &diff
-  ) : id(id), location(location), replacements(replacements), diff(diff) {}
+  ) : id(id), op(op), location(location), replacements(replacements), diff(diff) {}
+
+  static std::string operatorToString(Operator op) {
+    switch (op) {
+      case Operator::ExpressionMutation:
+        return "expression-mutation";
+      case Operator::InsertConditionalControlFlow:
+        return "insert-conditional-control-flow";
+      case Operator::GuardStatement:
+        return "guard-statement";
+      case Operator::StrengthenBranchCondition:
+        return "strengthen-branch-condition";
+    }
+  }
 
   size_t getId() const {
     return id;
@@ -96,6 +117,7 @@ public:
   nlohmann::json toJson() const {
     nlohmann::json j = {
       {"id", id},
+      {"operator", operatorToString(op)},
       {"location", location.toString()},
       {"diff", diff}
     };
@@ -110,6 +132,7 @@ public:
 
 private:
   size_t id;
+  Operator op;
   SourceLocation location;
   std::vector<Replacement> replacements;
   std::string diff;

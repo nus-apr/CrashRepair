@@ -29,7 +29,7 @@ private:
   std::string saveToFilename;
   std::vector<Mutation> mutations;
 
-  void create(AstLinkedFixLocation &location, std::vector<Replacement> const &replacements);
+  void create(Operator op, AstLinkedFixLocation &location, std::vector<Replacement> const &replacements);
 
   void mutateExprStmt(AstLinkedFixLocation &location);
   void mutateConditionalStmt(AstLinkedFixLocation &location);
