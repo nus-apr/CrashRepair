@@ -718,6 +718,14 @@ def localize_state_info(fix_loc, taint_concrete):
                         dereference_prefix = "*" * num_asterixes
                         var_name = f"{dereference_prefix}{var_name}"
 
+                    if var_type == "argument":
+                        if v_type in definitions.INTEGER_TYPES:
+                            var_type = "integer"
+                        elif "*" in v_type or "[" in v_type:
+                            var_type = "pointer"
+                        elif v_type in ["double", "float"]:
+                            var_type = "double"
+
                     var_info_index = (var_name, v_line, v_col, var_type)
 
                     # We only want to to keep the last value for variable at a specific location (line+column).
