@@ -134,6 +134,7 @@ ARG_TEST_SUITE_ID_LIST = "--test-id-list="
 ARG_SEED_SUITE_ID_LIST = "--seed-id-list="
 ARG_PRESERVE_BC = "--preserve-bc"
 ARG_USE_CACHE = "--use-cache"
+ARG_CORE_LIMIT = "--cpus"
 
 
 # ----------------- TOOLS --------------------------------

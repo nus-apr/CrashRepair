@@ -88,6 +88,8 @@ def read_conf(arg_list):
                 values.CONF_ONLY_GEN = True
             elif definitions.ARG_ONLY_TEST in arg:
                 values.CONF_ONLY_TEST = True
+            elif definitions.ARG_CORE_LIMIT in arg:
+                values.CONF_CORE_LIMIT = int(arg.replace(definitions.ARG_CORE_LIMIT))
             elif definitions.ARG_TIME_DURATION in arg:
                 values.CONF_TIME_DURATION = int(arg.replace(definitions.ARG_TIME_DURATION, ""))
             elif definitions.ARG_CEGIS_TIME_SPLIT in arg:
@@ -339,28 +341,10 @@ def read_conf_file():
 
 
 def print_configuration():
-    # emitter.note("\tconfiguration.is_crash:" + str(values.IS_CRASH))
-    # assertion_formula = generator.generate_formula(values.SPECIFICATION_TXT[1])
-    # emitter.configuration("\t[config] program specification:", values.SPECIFICATION_TXT[1])
-    # emitter.configuration("path generation limit", values.DEFAULT_GEN_SEARCH_LIMIT)
-    # emitter.configuration("synthesis max bound", values.DEFAULT_PATCH_UPPER_BOUND)
-    # emitter.configuration("synthesis low bound", values.DEFAULT_PATCH_LOWER_BOUND)
     emitter.configuration("stack size", sys.getrecursionlimit())
-    # emitter.configuration("refine strategy", values.DEFAULT_REFINE_METHOD)
-    # emitter.configuration("patch type", values.DEFAULT_PATCH_TYPE)
-    # emitter.configuration("repair method", values.DEFAULT_REDUCE_METHOD)
-    # emitter.configuration("timeout for Repair", values.DEFAULT_TIME_DURATION)
-    # emitter.configuration("timeout for sat", values.DEFAULT_TIMEOUT_SAT)
-    # emitter.configuration("timeout for klee", values.DEFAULT_TIMEOUT_KLEE_CONCOLIC)
-    # emitter.configuration("distance metric", values.DEFAULT_DISTANCE_METRIC)
-    # emitter.configuration("operation mode", values.DEFAULT_OPERATION_MODE)
-    # emitter.configuration("iteration limit", values.DEFAULT_ITERATION_LIMIT)
     emitter.configuration("collecting stats", str(values.DEFAULT_COLLECT_STAT))
-    # emitter.configuration("number of seeds", str(len(values.LIST_SEED_INPUT)))
     emitter.configuration("number of tests", str(len(values.LIST_TEST_INPUT)))
-    # emitter.configuration("list of seed ids", str(values.LIST_SEED_ID_LIST))
-    # emitter.configuration("list of test ids", str(values.LIST_TEST_ID_LIST))
-    # emitter.configuration("masked input arg id list", values.CONF_MASK_ARG)
+    emitter.configuration("number of cores", str(values.CONF_CORE_LIMIT))
 
 
 def collect_test_list():
@@ -601,6 +585,8 @@ def update_configuration():
         values.DEFAULT_PATCH_TYPE = values.OPTIONS_PATCH_TYPE[0]
     if values.CONF_COLLECT_STAT:
         values.DEFAULT_COLLECT_STAT = True
+    if values.CONF_CORE_LIMIT:
+        values.DEFAULT_CORE_LIMIT = values.CONF_CORE_LIMIT
     if values.CONF_TIME_SPLIT:
         explore, refine = values.CONF_TIME_SPLIT.split(":")
         total = int(explore) + int(refine)

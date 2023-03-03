@@ -62,7 +62,7 @@ def generate_taint_sink_info(taint_symbolic, taint_memory_list, is_taint_influen
     logger.track_localization("generating taint map\n")
     emitter.highlight("\t\t[info] found " + str(len(taint_symbolic)) + " tainted locations")
     emitter.normal("\t\tstarting parallel computing")
-    pool = mp.Pool(mp.cpu_count(), initializer=mute)
+    pool = mp.Pool(values.DEFAULT_CORE_LIMIT, initializer=mute)
     count = 0
     for taint_info in reversed(taint_symbolic.keys()):
         count = count + 1
