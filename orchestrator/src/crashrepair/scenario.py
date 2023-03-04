@@ -75,6 +75,8 @@ class Scenario:
         The exit code that _should_ be produced by the program when the crashing input is provided (i.e., the oracle).
     fuzzer: t.Optional[Fuzzer]
         The fuzzer, if any, that should be used to generate additional test cases.
+    time_limit_seconds_single_test: int
+        The maximum number of seconds that the test is allowed to run before being considered a timeout.
     """
     subject: str
     name: str
@@ -96,6 +98,7 @@ class Scenario:
     fuzzer_tests: t.List[Test] = attrs.field(factory=list)
     fuzzer: t.Optional[Fuzzer] = attrs.field(default=None)
     time_limit_minutes_validation: t.Optional[int] = attrs.field(default=None)
+    time_limit_seconds_single_test: int = attrs.field(default=30)
 
     @property
     def compile_commands_path(self) -> str:
@@ -451,7 +454,7 @@ class Scenario:
             tests_failed: t.List[Test] = []
             for test in all_tests:
                 logger.debug(f"testing candidate #{candidate.id_} against test #{test.name}...")
-                if test.run():
+                if test.run(self.time_limit_seconds_single_test):
                     logger.info(f"candidate #{candidate.id_} passes test #{test.name}")
                     tests_passed.append(test)
                 else:

@@ -10,6 +10,7 @@ MEMORY_LIMIT="${MEMORY_LIMIT:-16g}"
 CPU_LIMIT="${CPU_LIMIT:-8}"
 
 REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT:-45}"
+TEST_TIME_LIMIT="${TEST_TIME_LIMIT:-30}"
 
 HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 ROOT_DIR="${HERE_DIR}/.."
@@ -27,6 +28,7 @@ docker run \
   -e HOST_UID=$(id -u) \
   -e HOST_GID=$(id -g) \
   -e REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT}" \
+  -e TEST_TIME_LIMIT="${TEST_TIME_LIMIT}" \
   --memory ${MEMORY_LIMIT} \
   --cpus ${CPU_LIMIT} \
   --rm \

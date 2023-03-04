@@ -13,6 +13,8 @@ def do_repair(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename, skip_fuzzing=args.no_fuzzing)
     scenario.should_terminate_early = args.should_terminate_early
     scenario.time_limit_minutes_validation = args.time_limit_minutes_validation
+    if args.time_limit_seconds_test:
+        scenario.time_limit_seconds_single_test = args.time_limit_seconds_test
     scenario.repair()
 
 
@@ -49,6 +51,12 @@ def parse_args() -> argparse.Namespace:
         "--time-limit-minutes-validation",
         type=int,
         help="enforces a limit on the maximum number of minutes that are spent on validating candidate patches",
+        required=False,
+    )
+    parser_repair.add_argument(
+        "--time-limit-seconds-test",
+        type=int,
+        help="enforces a limit on the maximum number of seconds spent executing a single test",
         required=False,
     )
     parser_repair.add_argument(

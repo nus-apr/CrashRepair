@@ -21,6 +21,7 @@ class Shell:
         cwd: t.Optional[str] = None,
         check_returncode: bool = True,
         capture_output: bool = False,
+        timeout_seconds: t.Optional[int] = None,
     ) -> subprocess.CompletedProcess:
         if not env:
             env = {}
@@ -38,6 +39,7 @@ class Shell:
             command,
             shell=True,
             cwd=cwd,
+            timeout=timeout_seconds,
             env={
                 **os.environ,
                 **env,

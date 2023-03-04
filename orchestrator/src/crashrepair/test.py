@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import subprocess
+
 import attrs
 
 from .shell import Shell
@@ -14,7 +16,15 @@ class Test:
     cwd: str = attrs.field(repr=False)
     _shell: Shell = attrs.field(repr=False)
 
-    def run(self) -> bool:
+    def run(self, timeout_seconds: int) -> bool:
         """Runs this test and returns :code:`True` if it passes."""
-        raw_test_outcome = self._shell(self.command, cwd=self.cwd, check_returncode=False)
+        try:
+            raw_test_outcome = self._shell(
+                self.command,
+                cwd=self.cwd,
+                check_returncode=False,
+                timeout_seconds=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            return False
         return raw_test_outcome.returncode == self.expected_exit_code
