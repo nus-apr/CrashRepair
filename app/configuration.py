@@ -344,7 +344,9 @@ def print_configuration():
     emitter.configuration("stack size", sys.getrecursionlimit())
     emitter.configuration("collecting stats", str(values.DEFAULT_COLLECT_STAT))
     emitter.configuration("number of tests", str(len(values.LIST_TEST_INPUT)))
-    emitter.configuration("number of cores", str(values.CONF_CORE_LIMIT))
+    emitter.configuration("number of cores", str(values.DEFAULT_CORE_LIMIT))
+    emitter.configuration("klee concrete execution timeout", str(values.DEFAULT_TIMEOUT_KLEE_CONCRETE))
+    emitter.configuration("klee concolic execution timeout", str(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC))
 
 
 def collect_test_list():
