@@ -65,7 +65,7 @@ cat <<EOF > $dir_name/bug.json
     "command": "\$POC out.tiff",
     "input": "$script_dir/tests/1.tif",
     "extra-klee-flags": "",
-    "expected-exit-code": 1
+    "expected-exit-code": 0
   },
   "source-directory": "src",
   "build": {
