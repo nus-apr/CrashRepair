@@ -382,7 +382,7 @@ class Scenario:
             " ".join(implicated_files),
             "-extra-arg=-I/opt/llvm11/lib/clang/11.1.0/include/",
         ))
-        self.shell(command, cwd=self.source_directory)
+        self.shell(command, cwd=self.source_directory, check_returncode=False)
         assert os.path.exists(self.patch_candidates_path)
 
     def validate(self) -> ValidationReport:
