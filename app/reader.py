@@ -509,6 +509,8 @@ def read_pointer_values(pointer_log_path):
                     if "BASE" in line:
                         pointer_stack.append(pointer)
                     else:
+                        if not pointer_stack:
+                            continue
                         base_address = pointer_stack.pop()
                         if base_address in pointer_map:
                             if pointer_map[base_address]["base"] == pointer:
