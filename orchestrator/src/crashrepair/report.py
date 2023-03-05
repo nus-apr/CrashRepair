@@ -60,6 +60,7 @@ class ValidationReport:
     def to_dict(self) -> t.Dict[str, t.Any]:
         duration_minutes = self.duration_seconds / 60
         num_evaluations = len(self.evaluations)
+        num_compilation_failures = sum(1 for evaluation in self.evaluations if not evaluation.compiles)
         repairs_found = sum(1 for evaluation in self.evaluations if evaluation.is_repair)
         duration_tests_minutes = sum(evaluation.test_time_seconds or 0 for evaluation in self.evaluations) / 60
         duration_compilation_minutes = sum(evaluation.compile_time_seconds or 0 for evaluation in self.evaluations) / 60
@@ -72,6 +73,7 @@ class ValidationReport:
                 },
                 "num-patches-evaluated": num_evaluations,
                 "num-repairs-found": repairs_found,
+                "num-compilation-failures": num_compilation_failures,
             },
             "evaluations": [
                 evaluation.to_dict() for evaluation in self.evaluations
