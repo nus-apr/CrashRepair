@@ -1,0 +1,32 @@
+#!/bin/bash
+set -eu
+
+HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+EXPERIMENTS_FILE="${HERE_DIR}/experiments.txt"
+RUN_SCRIPT="${HERE_DIR}/run"
+
+if ! which parallel; then
+  echo "ERROR: unable to locate parallel binary (https://www.gnu.org/software/parallel)"
+  exit 1
+fi
+
+if [ "$#" != "2" ]; then
+  echo "USAGE: $0 -j {number-of-workers}"
+  exit 1
+fi
+
+function run_scenario {
+  arg_string=$1
+  program="$(echo "${arg_string}" | cut -d" " -f1)"
+  scenario="$(echo "${arg_string}" | cut -d" " -f2)"
+  echo "running: ${program}/${scenario}"
+  ${RUN_SCRIPT} ${program} ${scenario}
+}
+export RUN_SCRIPT
+export -f run_scenario
+
+NUM_WORKERS="$2"
+
+echo "executing experiments across ${NUM_WORKERS} workers"
+parallel -j ${NUM_WORKERS} run_scenario {} < "${EXPERIMENTS_FILE}"
+echo "finished running experiments"
