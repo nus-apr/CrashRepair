@@ -14,7 +14,8 @@ enum class Operator {
   ExpressionMutation,
   InsertConditionalControlFlow,
   GuardStatement,
-  StrengthenBranchCondition
+  StrengthenBranchCondition,
+  WeakenBranchCondition
 };
 
 class Replacement {
@@ -107,6 +108,8 @@ public:
         return "guard-statement";
       case Operator::StrengthenBranchCondition:
         return "strengthen-branch-condition";
+      case Operator::WeakenBranchCondition:
+        return "weaken-branch-condition";
     }
   }
 

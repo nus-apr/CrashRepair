@@ -95,6 +95,8 @@ void ProgramMutator::mutateExprStmt(AstLinkedFixLocation &location) {
 void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
   spdlog::info("mutating conditional statement [{}]: {}", location.getStmtClassName(), location.getSource());
   strengthenBranchCondition(location);
+
+  // in some cases, we want to weaken an existing branch condition that's used for error checking (see #99)
 }
 
 void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
@@ -104,6 +106,29 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
     prependConditionalControlFlow(location);
     guardStatement(location);
   }
+}
+
+void ProgramMutator::weakenBranchCondition(AstLinkedFixLocation &location) {
+  spdlog::info("weakening branch condition in statement: {}", location.getSource());
+  auto *stmt = location.getStmt();
+  auto *condition = location.getBranchConditionExpression();
+  auto &sourceManager = location.getSourceManager();
+  auto constraintSource = location.getConstraint()->toSource();
+
+  // #69: existing branch condition may be empty
+  if (!condition) {
+    return;
+  }
+
+  auto originalSource = crashrepairfix::getSource(condition, sourceManager);
+  auto sourceRange = crashrepairfix::getRangeWithTokenEnd(condition, location.getContext());
+  auto mutatedSource = fmt::format(
+    "(!({})) || ({})",
+    constraintSource,
+    originalSource
+  );
+  auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
+  create(Operator::WeakenBranchCondition, location, {replacement});
 }
 
 void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
@@ -148,12 +173,23 @@ void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
   } else {
     auto originalSource = crashrepairfix::getSource(condition, sourceManager);
     auto sourceRange = crashrepairfix::getRangeWithTokenEnd(condition, location.getContext());
+
+    // add the constraint to the left of a short-circuited evaluation (see #99)
     auto mutatedSource = fmt::format(
-      "({}) && {}",
+      "({}) && ({})",
       constraintSource,
       originalSource
     );
     auto replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
+    create(Operator::StrengthenBranchCondition, location, {replacement});
+
+    // add the constraint to the right of a short-circuited evaluation (see #99)
+    mutatedSource = fmt::format(
+      "({}) && ({})",
+      originalSource,
+      constraintSource
+    );
+    replacement = Replacement::replace(mutatedSource, sourceRange, location.getContext());
     create(Operator::StrengthenBranchCondition, location, {replacement});
   }
 }

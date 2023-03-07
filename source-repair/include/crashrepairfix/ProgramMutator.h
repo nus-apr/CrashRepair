@@ -35,6 +35,7 @@ private:
   void mutateConditionalStmt(AstLinkedFixLocation &location);
   void mutateNonConditionalStmt(AstLinkedFixLocation &location);
   void prependConditionalControlFlow(AstLinkedFixLocation &location);
+  void weakenBranchCondition(AstLinkedFixLocation &location);
   void strengthenBranchCondition(AstLinkedFixLocation &location);
   void guardStatement(AstLinkedFixLocation &location);
   void addConditional(AstLinkedFixLocation &location, std::string const &bodySource);
