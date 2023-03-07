@@ -2,6 +2,8 @@
 import abc
 import typing as t
 
+import attr as _attr
+
 
 class CrashRepairException(Exception):
     """Used by all exceptions that are raised by the tool."""
@@ -10,6 +12,7 @@ class CrashRepairException(Exception):
         ...
 
 
+@_attr.s(frozen=True, auto_exc=True, auto_attribs=True)
 class AnalyzerCrashed(CrashRepairException):
     """Used to indicate that the analysis failed to produce a localization file.
 
