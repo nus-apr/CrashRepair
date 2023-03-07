@@ -13,6 +13,7 @@ def do_repair(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename, skip_fuzzing=args.no_fuzzing)
     scenario.should_terminate_early = args.should_terminate_early
     scenario.time_limit_minutes_validation = args.time_limit_minutes_validation
+    scenario.time_limit_minutes_analysis = args.time_limit_minutes_analysis
     if args.time_limit_seconds_test:
         scenario.time_limit_seconds_single_test = args.time_limit_seconds_test
     scenario.repair()
@@ -20,6 +21,7 @@ def do_repair(args: argparse.Namespace) -> None:
 
 def do_analyze(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
+    scenario.time_limit_minutes_analysis = args.time_limit_minutes
     scenario.analyze()
 
 
@@ -46,6 +48,12 @@ def parse_args() -> argparse.Namespace:
     parser_repair.add_argument(
         "filename",
         help="the path to the bug.json file for the bug scenario",
+    )
+    parser_repair.add_argument(
+        "--time-limit-minutes-analysis",
+        type=int,
+        help="enforces a limit on the maximum number of minutes required by the analysis",
+        default=60,
     )
     parser_repair.add_argument(
         "--time-limit-minutes-validation",
@@ -80,6 +88,12 @@ def parse_args() -> argparse.Namespace:
     parser_analyze.add_argument(
         "filename",
         help="the path to the bug.json file for the bug scenario",
+    )
+    parser_analyze.add_argument(
+        "--time-limit-minutes",
+        type=int,
+        help="enforces a limit on the maximum number of minutes required by the analysis",
+        default=60,
     )
     parser_analyze.set_defaults(func=do_analyze)
 

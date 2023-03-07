@@ -7,6 +7,7 @@ from __future__ import annotations
 import contextlib
 import os
 import shutil
+import subprocess
 import tempfile
 import typing as t
 
@@ -14,7 +15,10 @@ import attrs
 
 from loguru import logger
 
-from .exceptions import AnalyzerCrashed
+from .exceptions import (
+    AnalyzerCrashed,
+    AnalyzerTimedOut,
+)
 
 if t.TYPE_CHECKING:
     from .scenario import Scenario
@@ -37,10 +41,11 @@ klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca {extra_klee_fla
 @attrs.define(auto_attribs=True)
 class Analyzer:
     scenario: Scenario
+    timeout_minutes: int
 
     @classmethod
-    def for_scenario(cls, scenario: Scenario) -> Analyzer:
-        return Analyzer(scenario)
+    def for_scenario(cls, scenario: Scenario, timeout_minutes: int) -> Analyzer:
+        return Analyzer(scenario, timeout_minutes)
 
     @contextlib.contextmanager
     def _generate_config(self) -> t.Iterator[str]:
@@ -87,10 +92,21 @@ class Analyzer:
         output_directory = f"/CrashRepair/output/{self.scenario.tag_id}"
         localization_filename = os.path.join(output_directory, "localization.json")
 
+        logger.info(f"running analysis with timeout: {self.timeout_minutes} minutes")
+
         with self._generate_config() as config_filename:
+            timeout_seconds = self.timeout_minutes * 60
             logger.debug(f"wrote analyzer config file to: {config_filename}")
             command = f"{PATH_ANALYZER} --conf={config_filename}"
-            shell(command, cwd=self.scenario.directory, check_returncode=False)
+            try:
+                shell(
+                    command,
+                    cwd=self.scenario.directory,
+                    check_returncode=False,
+                    timeout_seconds=timeout_seconds,
+                )
+            except subprocess.TimeoutExpired:
+                raise AnalyzerTimedOut(self.timeout_minutes, "TODO: grab tail of analysis output")
 
         # ensure that the results exist!
         # FIXME grab the tail of the output from the analysis command line

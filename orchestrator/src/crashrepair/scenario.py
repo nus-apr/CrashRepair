@@ -77,6 +77,8 @@ class Scenario:
         The fuzzer, if any, that should be used to generate additional test cases.
     time_limit_seconds_single_test: int
         The maximum number of seconds that the test is allowed to run before being considered a timeout.
+    time_limit_minutes_analysis: int
+        The maximum number of minutes that the analysis can run before being considered a timeout.
     """
     subject: str
     name: str
@@ -99,6 +101,7 @@ class Scenario:
     fuzzer: t.Optional[Fuzzer] = attrs.field(default=None)
     time_limit_minutes_validation: t.Optional[int] = attrs.field(default=None)
     time_limit_seconds_single_test: int = attrs.field(default=30)
+    time_limit_minutes_analysis: int = attrs.field(default=3600)
 
     @property
     def compile_commands_path(self) -> str:
@@ -334,7 +337,10 @@ class Scenario:
 
         self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
 
-        analyzer = Analyzer.for_scenario(self)
+        analyzer = Analyzer.for_scenario(
+            self,
+            timeout_minutes=self.time_limit_minutes_analysis,
+        )
         analyzer.run(write_to=self.analysis_directory)
 
     def fuzz(self) -> None:
