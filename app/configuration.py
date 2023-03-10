@@ -32,6 +32,8 @@ def read_conf(arg_list):
                 values.CONF_MAX_BOUND = bound_value
             elif definitions.ARG_RANK_LIMIT in arg:
                 values.CONF_RANK_LIMIT = int(arg.replace(definitions.ARG_RANK_LIMIT, ""))
+            elif definitions.ARG_SYNTHESIZE_EXPR in arg:
+                values.CONF_SYNTHESIZE_SUBSET_EXPR = True
             elif definitions.ARG_SELECTION_METHOD in arg:
                 option = int(arg.replace(definitions.ARG_SELECTION_METHOD, ''))
                 if option not in values.OPTIONS_SELECT_METHOD:
@@ -347,6 +349,7 @@ def print_configuration():
     emitter.configuration("number of cores", str(values.DEFAULT_CORE_LIMIT))
     emitter.configuration("klee concrete execution timeout", str(values.DEFAULT_TIMEOUT_KLEE_CONCRETE))
     emitter.configuration("klee concolic execution timeout", str(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC))
+    emitter.configuration("synthesize subset expressions", str(values.DEFAULT_SYNTHESIZE_SUBSET_EXPR))
 
 
 def collect_test_list():
@@ -589,6 +592,8 @@ def update_configuration():
         values.DEFAULT_COLLECT_STAT = True
     if values.CONF_CORE_LIMIT:
         values.DEFAULT_CORE_LIMIT = values.CONF_CORE_LIMIT
+    if values.CONF_SYNTHESIZE_SUBSET_EXPR:
+        values.DEFAULT_SYNTHESIZE_SUBSET_EXPR = True
     if values.CONF_TIME_SPLIT:
         explore, refine = values.CONF_TIME_SPLIT.split(":")
         total = int(explore) + int(refine)

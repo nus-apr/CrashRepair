@@ -270,7 +270,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                         logger.track_localization("Subset Match for {} and {}: {} <= {}".format(crash_var_name, expr_str, var_input_byte_list, crash_var_input_byte_list))
                         subset_expr_list.append((expr_str, var_expr, e_line, e_col, e_addr, is_exp_dec, var_input_byte_list))
 
-        if crash_var_name not in candidate_mapping:
+        if values.DEFAULT_SYNTHESIZE_SUBSET_EXPR and crash_var_name not in candidate_mapping:
             if subset_expr_list:
                 unique_byte_list = set()
                 for subset_var in subset_expr_list:

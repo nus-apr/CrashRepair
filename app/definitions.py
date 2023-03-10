@@ -135,6 +135,7 @@ ARG_SEED_SUITE_ID_LIST = "--seed-id-list="
 ARG_PRESERVE_BC = "--preserve-bc"
 ARG_USE_CACHE = "--use-cache"
 ARG_CORE_LIMIT = "--cpus"
+ARG_SYNTHESIZE_EXPR = "--synthesize-expr"
 
 
 # ----------------- TOOLS --------------------------------
