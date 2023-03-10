@@ -1,10 +1,10 @@
 #!/bin/bash
 BASEDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-IMAGE_NAME="crepair:experiments"
+IMAGE_NAME="crepair:aio"
 CONTAINER_NAME="crepair_container"
 
 if [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == ""  ]]; then
-  echo "Docker Image crepair:experiments not found"
+  echo "Docker Image crepair:aio not found"
   exit 1
 fi
 
