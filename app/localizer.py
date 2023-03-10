@@ -750,6 +750,12 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     localization_list = list()
     localized_loc_list = list()
+    trace_list = []
+    for taint_loc in taint_symbolic:
+        taint_loc = ":".join(taint_loc.split(":")[:-1])
+        if taint_loc not in trace_list:
+            trace_list.append(taint_loc)
+
     emitter.sub_title("Localizing Constraints")
     for func_name, tainted_fix_loc in tainted_fix_locations:
         src_file = tainted_fix_loc.split(":")[0]
@@ -761,6 +767,15 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
             localized_cfc, localized_loc, taint_loc = candidate_info
             localized_line, localized_col = localized_loc
             taint_line, taint_col = taint_loc
+            taint_src_loc = f"{src_file}:{taint_line}:{taint_col}"
+            localized_src_loc = f"{src_file}:{localized_line}:{localized_col}"
+
+            if localized_src_loc in trace_list:
+                distance = len(trace_list) - trace_list.index(localized_src_loc)
+            else:
+                distance = len(trace_list) - trace_list.index(taint_src_loc) + (
+                int(taint_line) - int(localized_line))
+
             localized_loc_str = ":".join([src_file, str(localized_line), str(localized_col)])
             if localized_loc_str in localized_loc_list:
                 continue
@@ -775,6 +790,7 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
 
             emitter.sub_sub_title("[fix-loc] {}".format(localized_loc_str))
             localization_obj["location"] = localized_loc_str
+            localization_obj["distance"] = distance
             localization_obj["constraint"] = localized_cfc.to_string()
             # localization_obj["constraint-ast"] = localized_cfc.to_json()
             emitter.highlight("\t[constraint] {}".format(localized_cfc.to_string()))
