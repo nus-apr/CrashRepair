@@ -47,7 +47,7 @@ cat <<EOF > $dir_name/bug.json
     "command": "15",
     "input": "",
     "extra-klee-flags": "",
-    "expected-exit-code": 1
+    "expected-exit-code": 0
   },
   "source-directory": "src",
   "build": {
