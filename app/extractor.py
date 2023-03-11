@@ -1184,4 +1184,6 @@ def get_var_list(ast_var_list, cfc, crash_loc):
                 var_name = var_node[0]
                 if var_name == symbol:
                     var_list.append(var_node)
+                elif f"++{symbol}" == var_name or f"--{symbol}" or f"{symbol}++" == var_name or f"{symbol}--"  :
+                    var_list.append((symbol, var_node[1], var_node[2], var_node[3], var_node[4]))
     return var_list
