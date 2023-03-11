@@ -515,14 +515,24 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
             is_prefix = True
             if "isPostfix" in ast_node:
                 is_prefix = not ast_node["isPostfix"]
-            if is_prefix:
-                symbol_str = op_symbol_str + str(child_ast["referencedDecl"]["name"])
-            else:
-                symbol_str = str(child_ast["referencedDecl"]["name"]) + op_symbol_str
             data_type = extractor.extract_data_type(ast_node)
             op_type = generator.generate_result_type(data_type)
-            constraint_symbol = make_constraint_symbol(symbol_str, op_type)
-            constraint_expr = make_symbolic_expression(constraint_symbol)
+            symbol_str = str(child_ast["referencedDecl"]["name"])
+            ast_symbol = make_constraint_symbol(symbol_str, op_type)
+            ast_expr = make_symbolic_expression(ast_symbol)
+            arithmetic_op_str = "+"
+            if op_symbol_str == "--":
+                arithmetic_op_str = "-"
+            if is_prefix:
+                arithmetic_op_type = next(key for key, value in SymbolType.items() if value == arithmetic_op_str)
+                arithmetic_op = make_constraint_symbol(arithmetic_op_str, arithmetic_op_type)
+                constant_val_str = "1"
+                constant_val_type = "CONST_INT"
+                constant_val_sym = make_constraint_symbol(constant_val_str, constant_val_type)
+                constant_val_expr = make_symbolic_expression(constant_val_sym)
+                constraint_expr = make_binary_expression(arithmetic_op, ast_expr, constant_val_expr)
+            else:
+                constraint_expr = ast_expr
             return constraint_expr
         elif op_symbol_str in ["&"]:
             child_ast = ast_node["inner"][0]
