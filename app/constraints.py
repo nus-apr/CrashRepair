@@ -937,10 +937,16 @@ def generate_memmove_constraint(call_node):
     first_constraint = make_binary_expression(less_than_op, diff_expr, size_expr)
 
     # Generating second constraint of type
+    # check if the size constraint is a diff operator
+    if size_expr.get_type() == "OP_ARITH_MINUS":
+        rhs_size_expr = size_expr.get_r_expr()
+        lhs_size_expr = size_expr.get_l_expr()
+        second_constraint = make_binary_expression(less_than_op, rhs_size_expr, lhs_size_expr)
     # 0 < size
-    zero_symbol = make_constraint_symbol("0", "CONST_INT")
-    zero_expr = make_symbolic_expression(zero_symbol)
-    second_constraint = make_binary_expression(less_than_op, zero_expr, size_expr)
+    else:
+        zero_symbol = make_constraint_symbol("0", "CONST_INT")
+        zero_expr = make_symbolic_expression(zero_symbol)
+        second_constraint = make_binary_expression(less_than_op, zero_expr, size_expr)
 
     # Final constraint is a concatenation
     logical_and_op = build_op_symbol("&&")
