@@ -516,23 +516,31 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
             if "isPostfix" in ast_node:
                 is_prefix = not ast_node["isPostfix"]
             data_type = extractor.extract_data_type(ast_node)
+            is_pointer =  "*" in data_type or "[" in data_type
             op_type = generator.generate_result_type(data_type)
             symbol_str = str(child_ast["referencedDecl"]["name"])
-            ast_symbol = make_constraint_symbol(symbol_str, op_type)
-            ast_expr = make_symbolic_expression(ast_symbol)
-            arithmetic_op_str = "+"
-            if op_symbol_str == "--":
-                arithmetic_op_str = "-"
-            if is_prefix:
-                arithmetic_op_type = next(key for key, value in SymbolType.items() if value == arithmetic_op_str)
-                arithmetic_op = make_constraint_symbol(arithmetic_op_str, arithmetic_op_type)
-                constant_val_str = "1"
-                constant_val_type = "CONST_INT"
-                constant_val_sym = make_constraint_symbol(constant_val_str, constant_val_type)
-                constant_val_expr = make_symbolic_expression(constant_val_sym)
-                constraint_expr = make_binary_expression(arithmetic_op, ast_expr, constant_val_expr)
+            if is_pointer:
+                if is_prefix:
+                    symbol_str = op_symbol_str + symbol_str
+                else:
+                    symbol_str = symbol_str + op_symbol_str
+                constraint_expr = make_constraint_symbol(symbol_str, op_type)
             else:
-                constraint_expr = ast_expr
+                ast_symbol = make_constraint_symbol(symbol_str, op_type)
+                ast_expr = make_symbolic_expression(ast_symbol)
+                arithmetic_op_str = "+"
+                if op_symbol_str == "--":
+                    arithmetic_op_str = "-"
+                if is_prefix:
+                    arithmetic_op_type = next(key for key, value in SymbolType.items() if value == arithmetic_op_str)
+                    arithmetic_op = make_constraint_symbol(arithmetic_op_str, arithmetic_op_type)
+                    constant_val_str = "1"
+                    constant_val_type = "CONST_INT"
+                    constant_val_sym = make_constraint_symbol(constant_val_str, constant_val_type)
+                    constant_val_expr = make_symbolic_expression(constant_val_sym)
+                    constraint_expr = make_binary_expression(arithmetic_op, ast_expr, constant_val_expr)
+                else:
+                    constraint_expr = ast_expr
             return constraint_expr
         elif op_symbol_str in ["&"]:
             child_ast = ast_node["inner"][0]
