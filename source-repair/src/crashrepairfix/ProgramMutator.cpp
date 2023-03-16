@@ -97,6 +97,7 @@ void ProgramMutator::mutateConditionalStmt(AstLinkedFixLocation &location) {
   strengthenBranchCondition(location);
 
   // in some cases, we want to weaken an existing branch condition that's used for error checking (see #99)
+  weakenBranchCondition(location);
 }
 
 void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
