@@ -524,7 +524,8 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
                     symbol_str = op_symbol_str + symbol_str
                 else:
                     symbol_str = symbol_str + op_symbol_str
-                constraint_expr = make_constraint_symbol(symbol_str, op_type)
+                constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+                constraint_expr = make_symbolic_expression(constraint_symbol)
             else:
                 ast_symbol = make_constraint_symbol(symbol_str, op_type)
                 ast_expr = make_symbolic_expression(ast_symbol)
