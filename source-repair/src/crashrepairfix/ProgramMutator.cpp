@@ -196,6 +196,8 @@ void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
 }
 
 void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &location) {
+  addConditionalExit(location);
+
   if (location.isInsideFunction()) {
     addConditionalReturn(location);
   }
@@ -233,6 +235,12 @@ void ProgramMutator::addConditionalReturn(AstLinkedFixLocation &location) {
 void ProgramMutator::addConditionalVoidReturn(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional void return before statement: {}", location.getSource());
   addConditional(location, "return;");
+}
+
+void ProgramMutator::addConditionalExit(AstLinkedFixLocation &location) {
+  spdlog::info("inserting conditional exit before statement: {}", location.getSource());
+  // FIXME implement sophisticated version of this operator (see #106)
+  addConditional(location, "exit(1);");
 }
 
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {

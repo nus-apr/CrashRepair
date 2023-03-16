@@ -44,6 +44,7 @@ private:
   void addConditionalReturn(AstLinkedFixLocation &location);
   void addConditionalVoidReturn(AstLinkedFixLocation &location);
   void addConditionalNonVoidReturn(AstLinkedFixLocation &location);
+  void addConditionalExit(AstLinkedFixLocation &location);
 };
 
 }
