@@ -22,6 +22,8 @@ LOG_FILENAME="${LOG_DIR}/orchestrator.log"
 pushd "${WORKDIR}"
 mkdir -p "${LOG_DIR}"
 mkdir -p "${RESULTS_DIR}"
+stty cols 100
+stty rows 100
 crashrepair repair \
   --time-limit-minutes-validation "${REPAIR_TIME_LIMIT}" \
   --time-limit-seconds-test "${TEST_TIME_LIMIT}" \
