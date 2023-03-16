@@ -782,9 +782,12 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
 
             if localized_src_loc in trace_list:
                 distance = len(trace_list) - trace_list.index(localized_src_loc)
-            else:
+            elif taint_src_loc in trace_list:
                 distance = len(trace_list) - trace_list.index(taint_src_loc) + (
                 int(taint_line) - int(localized_line))
+            else:
+                distance = 0
+                emitter.warning("\t\t[warning] location not found in taint trace {}".format(taint_src_loc))
 
             localized_loc_str = ":".join([src_file, str(localized_line), str(localized_col)])
             if localized_loc_str in localized_loc_list:
