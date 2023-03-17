@@ -81,6 +81,10 @@ public:
     return fixLocation;
   }
 
+  size_t getDistance() const {
+    return fixLocation.getDistance();
+  }
+
   Expr const * getConstraint() const {
     return fixLocation.getConstraint();
   }

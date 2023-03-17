@@ -107,7 +107,8 @@ std::unique_ptr<FixLocation> FixLocationLinter::repair(AstLinkedFixLocation cons
   return std::make_unique<FixLocation>(
     sourceLocation,
     location.getConstraint()->copy(),
-    ProgramStates(location.getStates())
+    ProgramStates(location.getStates()),
+    location.getDistance()
   );
 }
 
