@@ -14,6 +14,8 @@ int main(int argc, char *argv[]) {
   b += buffer[0] - 65;
   a = buffer[1];
   switch (a){
+    case 70:
+         res = b + 1;
     case 78:
         if (a > 1)
             res = 100 / (b - 6);
