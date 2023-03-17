@@ -106,6 +106,31 @@ class PatchCandidate:
     diff: str
 
     @classmethod
+    def rank(
+        cls,
+        candidates: t.Collection[PatchCandidate],
+        localization_filename: str,
+    ) -> t.Sequence[PatchCandidate]:
+        """Sorts a list of patches by their estimated likelihood of correctness."""
+        location_to_crash_distance: t.Dict[str, int] = {}
+        with open(localization_filename, "r") as fh:
+            localization = json.load(fh)
+        for entry in localization:
+            location = entry["location"]
+            distance = entry["distance"]
+            if location in location_to_crash_distance:
+                logger.warning(f"found duplicate fix location: {location}")
+            else:
+                location_to_crash_distance[location] = distance
+
+        def score(candidate: PatchCandidate) -> float:
+            distance = location_to_crash_distance[str(candidate.location)]
+            return float(distance)
+
+        # for now, we simply rank based on crash distance
+        return sorted(candidates, key=score)
+
+    @classmethod
     def load_all(cls, filename: str) -> t.Collection[PatchCandidate]:
         """Loads a set of patch candidates from disk."""
         with open(filename, "r") as fh:

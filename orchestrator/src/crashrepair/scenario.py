@@ -407,6 +407,7 @@ class Scenario:
         timer = Stopwatch()
         timer.start()
         candidates = PatchCandidate.load_all(self.patch_candidates_path)
+        candidates = PatchCandidate.rank(candidates, self.localization_path)
         evaluations: t.List[PatchEvaluation] = []
 
         # rebuild the whole project once before using incremental builds for each patch
