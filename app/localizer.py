@@ -600,6 +600,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         for top_node in top_level_node_list:
             loc_range = top_node["range"]
             node_type = top_node["kind"]
+            if node_type == "CaseStmt":
+                continue
             if oracle.is_loc_in_range(candidate_loc, loc_range):
                 if node_type == "DeclStmt":
                     top_level_line = extractor.extract_line_range(src_file, loc_range)[0]
