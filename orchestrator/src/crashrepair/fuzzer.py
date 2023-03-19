@@ -133,7 +133,11 @@ class Fuzzer:
         return [self._load_test_from_file(filename) for filename in os.listdir(self.tests_directory)]
 
     def fuzz(self, *, force: bool = False) -> t.Sequence[Test]:
-        if os.path.exists(self.tests_directory):
+        # the fuzzer requires that the output directory exists
+        os.makedirs(self.tests_directory, exist_ok=True)
+
+        # are there any generated tests?
+        if os.listdir(self.tests_directory):
             logger.info(f"skipping fuzzing: outputs already exist [{self.tests_directory}]")
             return self._load_tests()
 
@@ -152,5 +156,9 @@ class Fuzzer:
                 self.scenario.tag_id,
             ))
             self.scenario.shell(command, cwd=self.scenario.directory)
+
+        # how many tests did we generate?
+        num_generated_tests = len(os.listdir(self.tests_directory))
+        logger.info(f"fuzzer generated: {num_generated_tests} tests")
 
         return self._load_tests()
