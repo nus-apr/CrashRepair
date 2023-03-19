@@ -23,6 +23,7 @@ folder={directory}
 global_timeout={global_timeout}
 local_timeout={local_timeout}
 mutate_range={mutate_range}
+crash_tag={crash_tag}
 store_all_inputs=False
 rand_seed={fuzz_seed}
 combination_num={max_combinations}
@@ -100,16 +101,18 @@ class Fuzzer:
             mutate_range=config.mutate_range,
             poc=poc,
             poc_fmt=poc_fmt,
-            scenario_name=self.scenario.name,
+            scenario_name=self.scenario.tag_id,
             trace_cmd=trace_command,
         )
 
     @contextlib.contextmanager
     def _generate_config_file(self) -> t.Iterator[str]:
         _, filename = tempfile.mkstemp(suffix="crashrepair.fuzzer.", prefix=".cfg", text=True)
+        contents = self._generate_config_file_contents()
+        logger.debug(f"fuzzer configuration:\n{contents}")
         try:
             with open(filename, "w") as fh:
-                fh.write(self._generate_config_file_contents())
+                fh.write(contents)
             yield filename
         finally:
             os.remove(filename)
