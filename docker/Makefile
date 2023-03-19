@@ -40,7 +40,7 @@ install: aio
 benchmark: builder klee llvm-11 orchestrator sourcerepair
 	docker build -t crepair:benchmark -f Dockerfile.crepair --target benchmark ..
 
-aio: crepair benchmark
+aio: crepair benchmark fuzzer
 	docker build -t crepair:aio -f Dockerfile.crepair --target aio ..
 
 .PHONY: benchmark builder llvm-6 llvm-11 orchestrator z3 klee crepair fuzzer install aio

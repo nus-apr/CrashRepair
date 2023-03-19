@@ -86,6 +86,7 @@ COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
 
 # creates an all-in-one image with the tool and benchmark
 FROM benchmark AS aio
+COPY --from=crepair:fuzzer /opt/fuzzer /opt/fuzzer
 COPY --from=tool /CrashRepair/app /CrashRepair/app
 COPY --from=tool /CrashRepair/bin /CrashRepair/bin
 COPY --from=tool /CrashRepair/tests /CrashRepair/tests
