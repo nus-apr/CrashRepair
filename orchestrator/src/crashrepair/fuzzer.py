@@ -89,6 +89,7 @@ class Fuzzer:
         trace_command = ";".join(config.trace_command_template)
         crash_command = ";".join(config.crash_command_template)
         return _FUZZER_CONFIG_TEMPLATE.format(
+            binary_path=self.scenario.binary_path,
             crash_cmd=crash_command,
             crash_tag=config.crash_tag,
             directory=self.scenario.directory,
