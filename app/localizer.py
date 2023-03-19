@@ -769,7 +769,8 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
             trace_list.append(taint_loc)
 
     emitter.sub_title("Localizing Constraints")
-    for func_name, tainted_fix_loc in tainted_fix_locations:
+    loc_limit = values.DEFAULT_MAX_FIX_LOCATIONS
+    for func_name, tainted_fix_loc in tainted_fix_locations[:loc_limit]:
         src_file = tainted_fix_loc.split(":")[0]
         logger.track_localization("[taint-loc] {}:{}".format(func_name, tainted_fix_loc))
         candidate_constraints = localize_cfc(tainted_fix_loc, cfc_info, taint_symbolic, taint_concrete)
