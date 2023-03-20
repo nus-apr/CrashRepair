@@ -38,6 +38,7 @@ poc_fmt={poc_fmt}
 class FuzzerConfig:
     crash_command_template: t.Sequence[str]
     crash_tag: str
+    binary_path: str
     poc_format: t.Sequence[str]
     poc_values: t.Sequence[t.Union[str, int, float]]
     trace_command_template: t.Sequence[str]
@@ -51,6 +52,7 @@ class FuzzerConfig:
     def from_dict(cls, dict_: t.Dict[str, t.Any]) -> FuzzerConfig:
         config = FuzzerConfig(
             crash_tag=dict_["crash-tag"],
+            binary_path=dict_["binary-path"],
             crash_command_template=dict_["proof-of-crash"]["commands"]["crash"],
             trace_command_template=dict_["proof-of-crash"]["commands"]["trace"],
             poc_format=dict_["proof-of-crash"]["format"],
@@ -93,6 +95,7 @@ class Fuzzer:
             binary_path=self.scenario.binary_path,
             crash_cmd=crash_command,
             crash_tag=config.crash_tag,
+            binary_path=config.binary_path,
             directory=self.scenario.directory,
             fuzz_seed=config.seed,
             global_timeout=config.timeout_global,
