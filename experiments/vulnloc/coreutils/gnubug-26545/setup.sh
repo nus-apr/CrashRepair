@@ -54,15 +54,16 @@ cat <<EOF > $dir_name/bug.json
   "build": {
     "directory": "src",
     "binary": "$dir_name/src/src/shred",
+    "sanitizerflags": "-fsanitize=address",
     "commands": {
-      "prebuild": "exit 0",
-      "clean": "make clean  > /dev/null 2>&1",
-      "build": "make CC=crepair-cc CXX=crepair-cxx CFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' CXXFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' LDFLAGS='-static' src/shred > /dev/null 2>&1 "
+      "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure CFLAGS=\"-ggdb -fPIC -fPIE \${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE \${CXXFLAGS:-}\"",
+      "clean": "make clean",
+      "build": "make CFLAGS=\"-ggdb -fPIC -fPIE \${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE \${CXXFLAGS:-}\" LDFLAGS=\"\${LDFLAGS:-}\" src/make-prime-list"
     }
   },
    "fuzzer": {
     "seed": 3,
-    "crash-tag": "asab;1;src/shred.c:293",
+    "crash-tag": "asan;1;src/shred.c:293",
     "binary-path": "$dir_name/src/shred",
     "mutate-range": "0~1000;0~1000",
     "timeout": {
