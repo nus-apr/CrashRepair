@@ -59,6 +59,24 @@ cat <<EOF > $dir_name/bug.json
       "clean": "make clean  > /dev/null 2>&1",
       "build": "make CC=crepair-cc CXX=crepair-cxx CFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' CXXFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' LDFLAGS='-static' src/shred > /dev/null 2>&1 "
     }
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "asab;1;src/shred.c:293",
+    "binary-path": "$dir_name/src/shred",
+    "mutate-range": "0~1000;0~1000",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["int", "int"],
+      "values": ["4", "7"],
+      "commands": {
+        "crash": ["$dir_name/src/pr", "-n***", "-s***", "abc2"],
+        "trace": ["$dir_name/src/pr", "-n***", "-s***", "abc2"]
+      }
+    }
   }
 }
 EOF

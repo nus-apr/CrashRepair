@@ -58,6 +58,24 @@ cat <<EOF > $dir_name/bug.json
       "clean": "make clean  > /dev/null 2>&1",
       "build": "make CC=crepair-cc CXX=crepair-cxx CFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' CXXFLAGS='-ggdb -fPIC -fPIE -g -O0 -Wno-error' LDFLAGS='-static' src/make-prime-list > /dev/null 2>&1 "
     }
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "asan;0;src/make-prime-list.c:214",
+    "binary-path": "$dir_name/src/make-prime-list",
+    "mutate-range": "-1000~1000",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["int"],
+      "values": ["5"],
+      "commands": {
+        "crash": ["$dir_name/src/make-prime-list", "***"],
+        "trace": ["$dir_name/src/make-prime-list", "***"]
+      }
+    }
   }
 }
 EOF
