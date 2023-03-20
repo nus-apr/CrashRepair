@@ -79,6 +79,8 @@ class Scenario:
         The maximum number of seconds that the test is allowed to run before being considered a timeout.
     time_limit_minutes_analysis: int
         The maximum number of minutes that the analysis can run before being considered a timeout.
+    sanitizer_flags: str
+        Additional CFLAGS/CXXFLAGS that should be used to enable the relevant sanitizers.
     """
     subject: str
     name: str
@@ -94,6 +96,7 @@ class Scenario:
     crashing_input: t.Optional[str]
     shell: Shell
     crash_test: Test
+    sanitizer_flags: str = attrs.field(default="")
     additional_klee_flags: str = attrs.field(default="")
     expected_exit_code_for_crashing_input: int = attrs.field(default=0)
     should_terminate_early: bool = attrs.field(default=True)
@@ -161,6 +164,7 @@ class Scenario:
         crashing_input: t.Optional[str],
         expected_exit_code_for_crashing_input: int,
         additional_klee_flags: str,
+        sanitizer_flags: str,
         fuzzer_config: t.Optional[FuzzerConfig] = None,
     ) -> Scenario:
         directory = os.path.dirname(filename)
@@ -205,6 +209,7 @@ class Scenario:
             shell=shell,
             crash_test=crash_test,
             additional_klee_flags=additional_klee_flags,
+            sanitizer_flags=sanitizer_flags,
         )
 
         if fuzzer_config:
@@ -242,6 +247,7 @@ class Scenario:
             clean_command = build_commands["clean"]
             prebuild_command = build_commands["prebuild"]
             build_command = build_commands["build"]
+            sanitizer_flags = build_dict.get("sanitizerflags", "")
 
             crash_dict = bug_dict["crash"]
             crashing_command = crash_dict["command"]
@@ -269,6 +275,7 @@ class Scenario:
             crashing_input=crashing_input,
             additional_klee_flags=additional_klee_flags,
             expected_exit_code_for_crashing_input=expected_exit_code_for_crashing_input,
+            sanitizer_flags=sanitizer_flags,
             fuzzer_config=fuzzer_config,
         )
 
@@ -294,12 +301,13 @@ class Scenario:
         clean: bool = True,
         prebuild: bool = True,
         record_compile_commands: bool = True,
+        use_sanitizers: bool = True,
     ) -> None:
         """Performs a clean rebuild of the program under test."""
         if not env:
             env = {}
 
-        generic_cflags = "-g -O0"
+        generic_cflags = "-g -O0 -Wno-error"
         klee_cflags = f"-L{KLEE_LIB_PATH} -lkleeRuntest"
         crepair_cflags = (
             f"-I{CREPAIR_LIB_PATH} "
@@ -307,6 +315,9 @@ class Scenario:
             "-lcrepair_runtime -lcrepair_proxy"
         )
         cflags = f"{generic_cflags} {klee_cflags} {crepair_cflags}"
+
+        if use_sanitizers:
+            cflags = f"{cflags} {self.sanitizer_flags}"
 
         # if CC/CXX aren't specified, use LLVM/Clang 11
         default_env = {
@@ -335,7 +346,7 @@ class Scenario:
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
 
-        self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
+        self.rebuild(use_sanitizers=False)
 
         analyzer = Analyzer.for_scenario(
             self,
