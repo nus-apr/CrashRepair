@@ -74,12 +74,32 @@ cat <<EOF > $dir_name/bug.json
   "build": {
     "directory": "src",
     "binary": "$dir_name/src/tools/tiff2ps",
+    "sanitizerflags": "-fsanitize=address",
     "commands": {
       "prebuild": "./configure --enable-static --disable-shared",
       "clean": "make clean",
       "build": "make"
     }
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "asan;0;tools/tiff2ps.c:2470",
+    "binary-path": "$dir_name/src/tools/tiff2ps",
+    "mutate-range": "default",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["bfile"],
+      "values": ["$script_dir/tests/1.tif"],
+      "commands": {
+        "crash": ["$dir_name/src/tools/tiff2ps", "***"],
+        "trace": ["$dir_name/src/tools/tiff2ps", "***"]
+      }
+    }
   }
+
 }
 EOF
 

@@ -75,6 +75,25 @@ cat <<EOF > $dir_name/bug.json
       "prebuild": "./configure --enable-static --disable-shared",
       "clean": "make clean",
       "build": "make"
+    },
+    "sanitizerflags": "-fsanitize=integer-divide-by-zero"
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "runtime;tif_ojpeg.c:816",
+    "mutate-range": "default",
+    "binary-path": "$dir_name/src/tools/tiffmedian",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["bfile"],
+      "values": ["$script_dir/tests/1.tif"],
+      "commands": {
+        "crash": ["$dir_name/src/tools/tiffmedian", "***", "out1.tiff"],
+        "trace": ["$dir_name/src/tools/tiffmedian", "***", "out2.tiff"]
+      }
     }
   }
 }
