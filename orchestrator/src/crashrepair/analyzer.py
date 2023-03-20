@@ -30,8 +30,8 @@ dir_exp:{project_directory}
 tag_id:{tag_id}
 src_directory:{source_directory}
 binary_path:{binary_path}
-config_command:CC=crepair-cc CXX=crepair-cxx CFLAGS="-g -O0 ${{CFLAGS:-}}" CXXFLAGS="-g -O0 ${{CXXFLAGS:-}}" LDFLAGS="-g -O0 ${{LDFLAGS:-}}" {prebuild_command}
-build_command:CC=crepair-cc CXX=crepair-cxx CFLAGS="-g -O0 ${{CFLAGS:-}}" CXXFLAGS="-g -O0 ${{CXXFLAGS:-}}" LDFLAGS="-g -O0 ${{LDFLAGS:-}}" {build_command}
+config_command:CC=crepair-cc CXX=crepair-cxx CFLAGS="-g -O0 -static ${{CFLAGS:-}}" CXXFLAGS="-g -O0 -static ${{CXXFLAGS:-}}" LDFLAGS="-g -O0 -static ${{LDFLAGS:-}}" {prebuild_command}
+build_command:CC=crepair-cc CXX=crepair-cxx CFLAGS="-g -O0 -static ${{CFLAGS:-}}" CXXFLAGS="-g -O0 -static ${{CXXFLAGS:-}}" LDFLAGS="-g -O0 -static ${{LDFLAGS:-}}" {build_command}
 test_input_list:{crashing_input}
 {poc_list}
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca {extra_klee_flags}
