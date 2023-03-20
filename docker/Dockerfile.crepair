@@ -4,6 +4,7 @@ COPY --from=crepair:llvm-6 /opt/llvm-6/ /opt/llvm-6/
 COPY --from=crepair:llvm-11 /opt/llvm/ /opt/llvm11/
 COPY --from=crepair:klee /klee/ /klee
 COPY --from=crepair:klee /klee-uclibc /klee-uclibc
+COPY --from=crepair:fuzzer /opt/fuzzer /opt/fuzzer
 
 RUN add-apt-repository -y ppa:pypy/ppa
 RUN apt-get update -qq \

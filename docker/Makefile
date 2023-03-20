@@ -29,7 +29,7 @@ klee: builder llvm-6 z3
 fuzzer: builder
 	docker build -f Dockerfile.fuzzer -t crepair:fuzzer ..
 
-crepair: builder klee llvm-11 orchestrator sourcerepair
+crepair: builder klee llvm-11 orchestrator sourcerepair fuzzer
 	docker build -t crepair:tool -f Dockerfile.crepair --target tool ..
 
 orchestrator:
