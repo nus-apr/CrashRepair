@@ -63,7 +63,6 @@ cat <<EOF > $dir_name/bug.json
    "fuzzer": {
     "seed": 3,
     "crash-tag": "asan;0;src/make-prime-list.c:214",
-    "binary-path": "$dir_name/src/make-prime-list",
     "mutate-range": "-1000~1000",
     "timeout": {
       "local": 300,

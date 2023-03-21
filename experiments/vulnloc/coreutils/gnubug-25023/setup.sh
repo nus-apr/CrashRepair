@@ -66,7 +66,6 @@ cat <<EOF > $dir_name/bug.json
    "fuzzer": {
     "seed": 3,
     "crash-tag": "asan;0;src/pr.c:2241",
-    "binary-path": "$dir_name/src/pr",
     "mutate-range": "default;default;default;default;default;default",
     "timeout": {
       "local": 300,

@@ -84,7 +84,6 @@ cat <<EOF > $dir_name/bug.json
    "fuzzer": {
     "seed": 3,
     "crash-tag": "asan;0;tools/tiff2ps.c:2470",
-    "binary-path": "$dir_name/src/tools/tiff2ps",
     "mutate-range": "default",
     "timeout": {
       "local": 300,

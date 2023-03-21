@@ -82,7 +82,6 @@ cat <<EOF > $dir_name/bug.json
     "seed": 3,
     "crash-tag": "runtime;tif_ojpeg.c:816",
     "mutate-range": "default",
-    "binary-path": "$dir_name/src/tools/tiffmedian",
     "timeout": {
       "local": 300,
       "global": 300

@@ -64,7 +64,6 @@ cat <<EOF > $dir_name/bug.json
    "fuzzer": {
     "seed": 3,
     "crash-tag": "asan;1;src/shred.c:293",
-    "binary-path": "$dir_name/src/shred",
     "mutate-range": "0~1000;0~1000",
     "timeout": {
       "local": 300,

@@ -63,7 +63,6 @@ cat <<EOF > $dir_name/bug.json
    "fuzzer": {
     "seed": 3,
     "crash-tag": "asan;1;src/split.c:987",
-    "binary-path": "$dir_name/src/split",
     "mutate-range": "1~1000;1~1000",
     "timeout": {
       "local": 300,
