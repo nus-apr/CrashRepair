@@ -31,7 +31,7 @@ tag_id:{tag_id}
 src_directory:{source_directory}
 binary_path:{binary_path}
 config_command:CC=crepair-cc CXX=crepair-cxx {prebuild_flags} {prebuild_command}
-build_command:CC=crepair-cc CXX=crepair-cxx CFLAGS="-g -O0 -static ${{CFLAGS:-}}" CXXFLAGS="-g -O0 -static ${{CXXFLAGS:-}}" LDFLAGS="-g -O0 -static ${{LDFLAGS:-}}" {build_command}
+build_command:CC=crepair-cc CXX=crepair-cxx {build_flags} {build_command}
 test_input_list:{crashing_input}
 {poc_list}
 klee_flags:--link-llvm-lib=/CrashRepair/lib/libcrepair_proxy.bca {extra_klee_flags}
@@ -52,27 +52,38 @@ class Analyzer:
         """Generates a temporary configuration file for the analyzer."""
         scenario = self.scenario
 
-        prebuild_flags = (
-            "CFLAGS=\"-g -O0 -static ${{CFLAGS:-}}\" "
-            "CXXFLAGS=\"-g -O0 -static ${{CXXFLAGS:-}}\" "
-            "LDFLAGS=\"-g -O0 -static ${{LDFLAGS:-}}\""
+        cflags = (
+            "CFLAGS=\"-g -O0 -static -Wno-error ${CFLAGS:-}\" "
+            "CXXFLAGS=\"-g -O0 -static -Wno-error ${CXXFLAGS:-}\" "
+            "LDFLAGS=\"-g -O0 -static -Wno-error ${LDFLAGS:-}\""
         )
+        prebuild_flags = cflags
+        build_flags = cflags
+
+        build_command = scenario.build_command
 
         # this is a bit of an unfortunate project-specific workaround
         # for this particular scenario in libarchive, we can't pass the flags above to configure
         if scenario.name == "CVE-2016-5844":
+            cflags = (
+                "CFLAGS=\"-fsanitize=signed-integer-overflow -g -O0 -static -Wno-error ${CFLAGS:-}\" "
+                "LDFLAGS=\"-g -O0 -static -Wno-error ${LDFLAGS:-}\""
+            )
             prebuild_flags = ""
+            build_command = f"{build_command} {cflags}"
+            build_flags = ""
 
         def write_config_to_file(filename: str) -> None:
             poc_list = f"poc_list:{scenario.crashing_input}" if scenario.crashing_input else ""
             contents = _CONFIG_TEMPLATE.format(
                 project_directory=scenario.directory,
+                build_flags=build_flags,
                 prebuild_flags=prebuild_flags,
                 tag_id=scenario.tag_id,
                 source_directory=scenario.source_directory,
                 binary_path=scenario.binary_path,
                 prebuild_command=scenario.prebuild_command,
-                build_command=scenario.build_command,
+                build_command=build_command,
                 crashing_input=scenario.crashing_command,
                 # FIXME it isn't clear how this works when positional arguments are used
                 poc_list=poc_list,
