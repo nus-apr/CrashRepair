@@ -73,7 +73,7 @@ cat <<EOF > $dir_name/bug.json
     },
     "proof-of-crash": {
       "format": ["str", "str", "str", "str", "str", "str"],
-      "values": ["\\", "t", "\\", "t", "\\", "t"],
+      "values": ["\\\\", "t", "\\\\", "t", "\\\\", "t"],
       "commands": {
         "crash": ["$dir_name/src/pr", "-S$(printf "***")", "tmp2", "-m", "tmp2"],
         "trace": ["$dir_name/src/pr", "-S$(printf "***")", "tmp2", "-m", "tmp2"]
