@@ -15,14 +15,10 @@ To build and run a Docker image that contains both the tool and benchmark:
     make -C docker aio
     docker run --rm -it crepair:aio
 
-# Running Example
-This repository includes several getting-started examples covering different types of program crashes
+# Example
 
-## Division by Zero
-    crepair --conf=tests/bug-types/div-zero/div-zero-1/repair.conf
+To run the tool on an example from the benchmark:
 
-## Integer Overflow
-    crepair --conf=tests/bug-types/int-overflow/int-overflow-1/repair.conf
+    cd /data/vulnloc/jasper/CVE-2016-8691
+    crashrepair repair --no-fuzz bug.json
 
-## Null-Pointer Dereference
-    crepair --conf=tests/bug-types/null-ptr/null-ptr-1/repair.conf
