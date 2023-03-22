@@ -8,6 +8,7 @@
     "command": "15",
     "input": "",
     "extra-klee-flags": "",
+    "bad_output": "SUMMARY: AddressSanitizer: heap-buffer-overflow",
     "expected-exit-code": 0
   },
   "source-directory": "src",

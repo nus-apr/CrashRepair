@@ -8,6 +8,7 @@
     "command": "-n7/75 /dev/null",
     "input": "",
     "extra-klee-flags": "",
+    "bad_output": "SUMMARY: AddressSanitizer",
     "expected-exit-code": 0
   },
   "source-directory": "src",
