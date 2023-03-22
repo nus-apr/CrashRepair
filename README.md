@@ -15,7 +15,7 @@ To build and run a Docker image that contains both the tool and benchmark:
     make -C docker aio
     docker run --rm -it crepair:aio
 
-# Example
+## Example
 
 To run the tool on an example from the benchmark:
 
