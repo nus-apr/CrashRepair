@@ -1,0 +1,41 @@
+{
+  "project": {
+    "name": "coreutils"
+  },
+  "name": "gnubug-25023",
+  "binary": "/data/vulnloc/coreutils/gnubug-25023/src/src/pr",
+  "crash": {
+    "command": "\"-S$(printf \"\t\t\t\")\" a -m $POC",
+    "input": "/CrashRepair/experiments/vulnloc/coreutils/gnubug-25023/tests/1.txt",
+    "extra-klee-flags": "",
+    "expected-exit-code": 1
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "/data/vulnloc/coreutils/gnubug-25023/src/src/pr",
+    "sanitizerflags": "-fsanitize=address",
+    "commands": {
+      "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\"",
+      "clean": "make clean",
+      "build": "make CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\" LDFLAGS=\"${LDFLAGS:-}\" src/make-prime-list"
+    }
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "asan;0;src/pr.c:2241",
+    "mutate-range": "default;default;default;default;default;default",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["str", "str", "str", "str", "str", "str"],
+      "values": ["\\", "t", "\\", "t", "\\", "t"],
+      "commands": {
+        "crash": ["/data/vulnloc/coreutils/gnubug-25023/src/pr", "-S***", "tmp2", "-m", "tmp2"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-25023/src/pr", "-S***", "tmp2", "-m", "tmp2"]
+      }
+    }
+  }
+}

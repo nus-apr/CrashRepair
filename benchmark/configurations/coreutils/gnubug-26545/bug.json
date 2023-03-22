@@ -1,0 +1,41 @@
+{
+  "project": {
+    "name": "coreutils"
+  },
+  "name": "gnubug-26545",
+  "binary": "/data/vulnloc/coreutils/gnubug-26545/src/src/shred",
+  "crash": {
+    "command": "-n4 -s7 $POC",
+    "input": "/CrashRepair/experiments/vulnloc/coreutils/gnubug-26545/tests/1.txt",
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "/data/vulnloc/coreutils/gnubug-26545/src/src/shred",
+    "sanitizerflags": "-fsanitize=address",
+    "commands": {
+      "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\"",
+      "clean": "make clean",
+      "build": "make CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\" LDFLAGS=\"${LDFLAGS:-}\" src/make-prime-list"
+    }
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "asan;1;src/shred.c:293",
+    "mutate-range": "0~1000;0~1000",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["int", "int"],
+      "values": ["4", "7"],
+      "commands": {
+        "crash": ["/data/vulnloc/coreutils/gnubug-26545/src/pr", "-n***", "-s***", "abc2"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-26545/src/pr", "-n***", "-s***", "abc2"]
+      }
+    }
+  }
+}

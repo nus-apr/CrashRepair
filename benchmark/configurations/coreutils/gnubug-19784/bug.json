@@ -1,0 +1,41 @@
+{
+  "project": {
+    "name": "coreutils"
+  },
+  "name": "gnubug-19784",
+  "binary": "/data/vulnloc/coreutils/gnubug-19784/src/src/make-prime-list",
+  "crash": {
+    "command": "15",
+    "input": "",
+    "extra-klee-flags": "",
+    "expected-exit-code": 0
+  },
+  "source-directory": "src",
+  "build": {
+    "directory": "src",
+    "binary": "/data/vulnloc/coreutils/gnubug-19784/src/src/make-prime-list",
+    "sanitizerflags": "-fsanitize=address",
+    "commands": {
+      "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\"",
+      "clean": "make clean",
+      "build": "make CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\" LDFLAGS=\"${LDFLAGS:-}\" src/make-prime-list"
+    }
+  },
+   "fuzzer": {
+    "seed": 3,
+    "crash-tag": "asan;0;src/make-prime-list.c:214",
+    "mutate-range": "-1000~1000",
+    "timeout": {
+      "local": 300,
+      "global": 300
+    },
+    "proof-of-crash": {
+      "format": ["int"],
+      "values": ["5"],
+      "commands": {
+        "crash": ["/data/vulnloc/coreutils/gnubug-19784/src/make-prime-list", "***"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-19784/src/make-prime-list", "***"]
+      }
+    }
+  }
+}
