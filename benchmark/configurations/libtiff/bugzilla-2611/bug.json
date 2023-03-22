@@ -6,7 +6,7 @@
   "binary": "/data/vulnloc/libtiff/bugzilla-2611/src/tools/tiffmedian",
   "crash": {
     "command": "$POC out.tiff",
-    "input": "/CrashRepair/experiments/vulnloc/libtiff/bugzilla-2611/tests/1.tif",
+    "input": "/CrashRepair/benchmark/setup/libtiff/bugzilla-2611/tests/1.tif",
     "extra-klee-flags": "",
     "expected-exit-code": 0
   },
@@ -31,7 +31,7 @@
     },
     "proof-of-crash": {
       "format": ["bfile"],
-      "values": ["/CrashRepair/experiments/vulnloc/libtiff/bugzilla-2611/tests/1.tif"],
+      "values": ["/CrashRepair/benchmark/setup/libtiff/bugzilla-2611/tests/1.tif"],
       "commands": {
         "crash": ["/data/vulnloc/libtiff/bugzilla-2611/src/tools/tiffmedian", "***", "out1.tiff"],
         "trace": ["/data/vulnloc/libtiff/bugzilla-2611/src/tools/tiffmedian", "***", "out2.tiff"]
