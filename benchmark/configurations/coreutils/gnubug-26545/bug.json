@@ -6,7 +6,7 @@
   "binary": "/data/vulnloc/coreutils/gnubug-26545/src/src/shred",
   "crash": {
     "command": "-n4 -s7 $POC",
-    "input": "/CrashRepair/benchmark/setup/coreutils/gnubug-26545/tests/1.txt",
+    "input": "/CrashRepair/experiments/vulnloc/coreutils/gnubug-26545/tests/1.txt",
     "bad_output": "SUMMARY: AddressSanitizer",
     "extra-klee-flags": "",
     "expected-exit-code": 0
