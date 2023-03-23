@@ -166,6 +166,7 @@ class Scenario:
         additional_klee_flags: str,
         sanitizer_flags: str,
         fuzzer_config: t.Optional[FuzzerConfig] = None,
+        bad_output: t.Optional[str] = None,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -191,6 +192,7 @@ class Scenario:
             expected_exit_code=expected_exit_code_for_crashing_input,
             cwd=directory,
             shell=shell,
+            bad_output=bad_output,
         )
 
         scenario = Scenario(
@@ -252,6 +254,7 @@ class Scenario:
             crash_dict = bug_dict["crash"]
             crashing_command = crash_dict["command"]
             crashing_input = crash_dict.get("input")
+            bad_output = crash_dict.get("bad_output")
             additional_klee_flags = crash_dict.get("extra-klee-flags", "")
             expected_exit_code_for_crashing_input = crash_dict.get("expected-exit-code", 0)
         except KeyError as exc:
@@ -277,6 +280,7 @@ class Scenario:
             expected_exit_code_for_crashing_input=expected_exit_code_for_crashing_input,
             sanitizer_flags=sanitizer_flags,
             fuzzer_config=fuzzer_config,
+            bad_output=bad_output,
         )
 
     @classmethod
