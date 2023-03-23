@@ -424,8 +424,8 @@ class Scenario:
 
         # rebuild the whole project once before using incremental builds for each patch
         # don't bother rebuilding if we don't use additional sanitizer flags
-        if self.sanitizer_flags:
-            self.rebuild(record_compile_commands=False)
+        if self.sanitizer_flags or not os.path.exists(self.compile_commands_path):
+            self.rebuild(record_compile_commands=True)
 
         for candidate in candidates:
             if time_limit_seconds and timer.duration >= time_limit_seconds:
@@ -553,7 +553,9 @@ class Scenario:
         """
         self.analyze()
 
-        # self.rebuild()
+        # ensure that compile_commands.json exists
+        if not os.path.exists(self.compile_commands_path):
+            self.rebuild(record_compile_commands=True)
 
         fix_flag = "--fix" if fix else ""
         implicated_files = self._determine_implicated_files()
