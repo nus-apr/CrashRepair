@@ -20,3 +20,5 @@ git checkout $bug_commit_id
 touch src/a
 
 ./bootstrap
+
+FORCE_UNSAFE_CONFIGURE=1 ./configure

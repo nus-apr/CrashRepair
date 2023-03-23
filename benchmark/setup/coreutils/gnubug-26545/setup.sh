@@ -21,3 +21,5 @@ git format-patch -1 $fix_commit_id
 cp *.patch $dir_name/dev-patch/fix.patch
 
 ./bootstrap
+
+FORCE_UNSAFE_CONFIGURE=1 ./configure

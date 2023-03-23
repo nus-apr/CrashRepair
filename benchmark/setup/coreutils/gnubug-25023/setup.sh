@@ -22,3 +22,5 @@ cp *.patch $dir_name/dev-patch/fix.patch
 
 ./bootstrap
 echo "a" > $dir_name/src/src/a
+
+FORCE_UNSAFE_CONFIGURE=1 ./configure

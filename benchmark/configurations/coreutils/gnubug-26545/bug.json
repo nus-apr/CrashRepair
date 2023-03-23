@@ -17,7 +17,7 @@
     "binary": "/data/vulnloc/coreutils/gnubug-26545/src/src/shred",
     "sanitizerflags": "-fsanitize=address",
     "commands": {
-      "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\"",
+      "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure",
       "clean": "make clean",
       "build": "make CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\" LDFLAGS=\"${LDFLAGS:-}\" src/make-prime-list"
     }
