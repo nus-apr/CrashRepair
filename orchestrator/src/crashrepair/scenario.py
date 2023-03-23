@@ -299,7 +299,7 @@ class Scenario:
         *,
         env: t.Optional[t.Dict[str, str]] = None,
         clean: bool = True,
-        prebuild: bool = True,
+        prebuild: bool = False,
         record_compile_commands: bool = True,
         use_sanitizers: bool = True,
     ) -> None:
@@ -380,7 +380,8 @@ class Scenario:
         assert self.analysis_results_exist()
 
         # generate a compile_commands.json file
-        self.rebuild()
+        # self.rebuild()
+        # assumes that bear has produced a compilation database previously
         assert os.path.exists(self.compile_commands_path)
 
         # extract a list of implicated source files
@@ -422,9 +423,9 @@ class Scenario:
         evaluations: t.List[PatchEvaluation] = []
 
         # rebuild the whole project once before using incremental builds for each patch
-        self.rebuild(record_compile_commands=False)
-
-        # TODO apply ranking of candidate patches prior to evaluation
+        # don't bother rebuilding if we don't use additional sanitizer flags
+        if self.sanitizer_flags:
+            self.rebuild(record_compile_commands=False)
 
         for candidate in candidates:
             if time_limit_seconds and timer.duration >= time_limit_seconds:
@@ -456,7 +457,6 @@ class Scenario:
             timer_compile.start()
             candidate.apply()
 
-            # TODO enable the appropriate sanitizers
             try:
                 self.rebuild(prebuild=False, clean=False, record_compile_commands=False)
             except subprocess.CalledProcessError:
@@ -553,9 +553,7 @@ class Scenario:
         """
         self.analyze()
 
-        # the project needs to be rebuilt to work with the same compiler toolchain as the repair module
-        # FIXME is this strictly true?
-        self.rebuild()
+        # self.rebuild()
 
         fix_flag = "--fix" if fix else ""
         implicated_files = self._determine_implicated_files()

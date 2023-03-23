@@ -24,7 +24,7 @@ global_timeout={global_timeout}
 local_timeout={local_timeout}
 mutate_range={mutate_range}
 crash_tag={crash_tag}
-store_all_inputs=False
+store_all_inputs={store_all_inputs}
 rand_seed={fuzz_seed}
 combination_num={max_combinations}
 trace_cmd={trace_cmd}
@@ -41,6 +41,7 @@ class FuzzerConfig:
     poc_format: t.Sequence[str]
     poc_values: t.Sequence[t.Union[str, int, float]]
     trace_command_template: t.Sequence[str]
+    store_all_inputs: bool
     max_combinations: int = attrs.field(default=3)
     mutate_range: str = attrs.field(default="default")
     seed: int = attrs.field(default=0)
@@ -55,6 +56,7 @@ class FuzzerConfig:
             trace_command_template=dict_["proof-of-crash"]["commands"]["trace"],
             poc_format=dict_["proof-of-crash"]["format"],
             poc_values=dict_["proof-of-crash"]["values"],
+            store_all_inputs=dict_.get("store-all-inputs", False),
         )
         if "max-combinations" in dict_:
             config.max_combinations = dict_["max-combinations"]
@@ -89,7 +91,9 @@ class Fuzzer:
         poc_fmt = ";".join(config.poc_format)
         trace_command = ";".join(config.trace_command_template)
         crash_command = ";".join(config.crash_command_template)
+        store_all_inputs = "True" if config.store_all_inputs else "False"
         return _FUZZER_CONFIG_TEMPLATE.format(
+            store_all_inputs=store_all_inputs,
             binary_path=self.scenario.binary_path,
             crash_cmd=crash_command,
             crash_tag=config.crash_tag,
@@ -141,10 +145,9 @@ class Fuzzer:
             logger.info(f"skipping fuzzing: outputs already exist [{self.tests_directory}]")
             return self._load_tests()
 
-        # TODO build the program for fuzzing
-        # NOTE for now, we can use build-for-fuzzer, but going forward, we can
-        # generate the appropriate build call here (and save the need to write another script for each scenario!)
-        self.scenario.rebuild()
+        # only bother rebuilding if we have additional sanitizer flags
+        if self.scenario.sanitizer_flags:
+            self.scenario.rebuild()
 
         # invoke the fuzzer
         with self._generate_config_file() as config_filename:
