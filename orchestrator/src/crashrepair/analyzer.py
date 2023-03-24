@@ -116,7 +116,7 @@ class Analyzer:
         env = {
             "INJECT_CFLAGS": "-g -O0 -static -Wno-error",
             "INJECT_CXXFLAGS": "-g -O0 -static -Wno-error",
-            "INJECT_LDFLAGS": "-g -O0 -static -Wno-error",
+            "INJECT_LDFLAGS": "-Wno-error",
         }
 
         with self._generate_config() as config_filename:
