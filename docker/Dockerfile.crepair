@@ -65,7 +65,7 @@ COPY compiler ./compiler
 FROM common AS benchmark
 COPY benchmark/setup ./experiments/vulnloc
 ARG BENCHMARK_WORKERS=8
-RUN find ./experiments -name setup.sh | xargs -I {} -n 1 -P ${BENCHMARK_WORKERS} bash -c "{} || exit 0"
+RUN find ./experiments -name setup.sh | xargs -I {} -n 1 -P ${BENCHMARK_WORKERS} bash -c "{} &> {}.log && echo {} || exit 0"
 COPY benchmark/configurations /data/vulnloc
 
 # creates a minimal image that contains only the tool
