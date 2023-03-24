@@ -17,7 +17,7 @@ LD_FLAGS = "-L/CrashRepair/lib -lcrepair_runtime  -lkleeRuntest"
 def config_project(project_path, is_llvm, custom_config_command=None):
     emitter.normal("\t\tconfiguring program")
     dir_command = "cd " + project_path + ";"
-   
+
     config_command = None
     if custom_config_command is not None:
         if custom_config_command == "skip":
@@ -27,9 +27,9 @@ def config_project(project_path, is_llvm, custom_config_command=None):
             if os.path.exists(project_path + "/" + "aclocal.m4"):
                 pre_config_command = "rm aclocal.m4;aclocal"
                 execute_command(pre_config_command)
-                
-            if CC == "wllvm":
-                custom_config_command = remove_fsanitize(custom_config_command)
+
+            if CC == "wllvm" or CC == "crepair-cc":
+                custom_config_command = filter_sanitizers(custom_config_command)
                 if "cmake" in custom_config_command:
                     custom_config_command = custom_config_command.replace("clang", "wllvm")
                     custom_config_command = custom_config_command.replace("clang++", "wllvm++")
@@ -91,78 +91,6 @@ def config_project(project_path, is_llvm, custom_config_command=None):
         error_exit("CONFIGURATION FAILED!!\nExit Code: " + str(ret_code))
 
 
-def apply_flags(build_command):
-    if values.CONF_BUILD_FLAGS == "disable":
-        return build_command
-    c_flags = C_FLAGS
-    ld_flags = LD_FLAGS
-    if "XCFLAGS=" in build_command:
-        c_flags_old = (build_command.split("XCFLAGS='")[1]).split("'")[0]
-        if "-fPIC" in c_flags_old:
-            c_flags = c_flags.replace("-static", "")
-        c_flags_new = c_flags.replace("'", "") + " " + c_flags_old
-        build_command = build_command.replace(c_flags_old, c_flags_new)
-    elif "CFLAGS=" in build_command:
-        c_flags_old = (build_command.split("CFLAGS='")[1]).split("'")[0]
-        if "-fPIC" in c_flags_old:
-            c_flags = c_flags.replace("-static", "")
-        c_flags_new = c_flags.replace("'", "") + " " + c_flags_old
-        build_command = build_command.replace(c_flags_old, c_flags_new)
-    else:
-        if c_flags:
-            new_command = "make CFLAGS=\"" + c_flags + "\" "
-            build_command = build_command.replace("make ", new_command)
-
-    if "LDFLAGS=" in build_command:
-        ld_flags_old = (build_command.split("LDFLAGS='")[1]).split("'")[0]
-        ld_flags_new = ld_flags.replace("'", "") + " " + ld_flags_old
-        build_command = build_command.replace(ld_flags_old, ld_flags_new)
-    else:
-        if ld_flags:
-            new_command = "make LDFLAGS=\"" + ld_flags + "\" "
-            build_command = build_command.replace("make ", new_command)
-
-    if "XCXXFLAGS=" in build_command:
-        c_flags_old = (build_command.split("XCXXFLAGS='")[1]).split("'")[0]
-        if "-fPIC" in c_flags_old:
-            c_flags = c_flags.replace("-static", "")
-        c_flags_new = c_flags.replace("'", "") + " " + c_flags_old
-        build_command = build_command.replace(c_flags_old, c_flags_new)
-    elif "CXXFLAGS=" in build_command:
-        c_flags_old = (build_command.split("CXXFLAGS='")[1]).split("'")[0]
-        if "-fPIC" in c_flags_old:
-            c_flags = c_flags.replace("-static", "")
-        c_flags_new = c_flags.replace("'", "") + " " + c_flags_old
-        build_command = build_command.replace(c_flags_old, c_flags_new)
-    else:
-        if c_flags:
-            new_command = "make CXXFLAGS=\"" + c_flags + "\" "
-            build_command = build_command.replace("make ", new_command)
-
-    if "XCC=" in build_command:
-        cc_old = (build_command.split("XCC='")[1]).split("'")[0]
-        build_command = build_command.replace(cc_old, CC)
-    elif "CC=" in build_command:
-        cc_old = (build_command.split("CC='")[1]).split("'")[0]
-        build_command = build_command.replace(cc_old, CC)
-    else:
-        new_command = "make CC=" + CC + " "
-        build_command = build_command.replace("make", new_command)
-
-    if "XCXX=" in build_command:
-        cc_old = (build_command.split("XCXX='")[1]).split("'")[0]
-        build_command = build_command.replace(cc_old, CXX)
-    elif "CXX=" in build_command:
-        cc_old = (build_command.split("CXX='")[1]).split("'")[0]
-        build_command = build_command.replace(cc_old, CXX)
-    else:
-        if values.CONF_IS_CPP:
-            new_command = "make CXX=" + CXX + " "
-            build_command = build_command.replace("make", new_command)
-
-    return build_command
-
-
 def build_project(project_path, build_command=None):
     emitter.normal("\t\tcompiling program")
     dir_command = "cd " + project_path + ";"
@@ -181,9 +109,7 @@ def build_project(project_path, build_command=None):
             build_command = build_command.replace("make ", "bear make ")
             if "-j" not in build_command:
                 build_command = build_command + " -j `nproc`"
-        if CC == "wllvm":
-            build_command = remove_fsanitize(build_command)
-        #build_command = apply_flags(build_command)
+        build_command = filter_sanitizers(build_command)
     if not build_command:
         error_exit("[Not Found] Build Command")
 
@@ -220,126 +146,11 @@ def build_normal():
     build_project(values.CONF_DIR_SRC, values.CONF_COMMAND_BUILD)
 
 
-def remove_fsanitize(build_command):
-    
-    sanitize_group = ['integer', 'address', 'undefined']
+def filter_sanitizers(build_command):
+    sanitize_group = ['address', 'integer-divide-by-zero']
     for group in sanitize_group:
         build_command = str(build_command).replace("-fsanitize=" + str(group), "")
     return build_command
-
-
-# def build_instrumented_code(source_directory):
-#     
-#     emitter.normal("\t\t\tbuilding instrumented code")
-#     execute_command("export LLVM_COMPILER=clang")
-#     global CXX_FLAGS, C_FLAGS, CC, CXX
-#     CC = "wllvm"
-#     CXX = "wllvm++"
-#     CXX_FLAGS = "'-g -O0 -static -DNDEBUG '"
-#     C_FLAGS = "'-g -O0 -static  -L/klee/build/lib -lkleeRuntest'"
-#     LD_FLAGS = "'-L/klee/build/lib -lkleeRuntest'"
-#
-#     if os.path.exists(source_directory + "/" + "aclocal.m4"):
-#         pre_config_command = "cd " + source_directory + ";"
-#         pre_config_command += "rm aclocal.m4;aclocal"
-#         execute_command(pre_config_command)
-#
-#     elif os.path.exists(source_directory + "/autogen.sh"):
-#         pre_config_command = "./autogen.sh"
-#         execute_command(pre_config_command)
-#
-#     if os.path.exists(source_directory + "/" + "CMakeCache.txt"):
-#         config_command = "cd " + source_directory + ";"
-#         config_command += "cmake -DCMAKE_EXE_LINKER_FLAGS=" + LD_FLAGS + " ."
-#         execute_command(config_command)
-#
-#     build_command = "cd " + source_directory + ";"
-#     custom_build_command = ""
-#     if (values.PATH_A in source_directory) or (values.PATH_B in source_directory):
-#         if values.BUILD_COMMAND_A is not None:
-#             custom_build_command = values.BUILD_COMMAND_A
-#
-#     if values.PATH_C in source_directory:
-#         if values.BUILD_COMMAND_C is not None:
-#             custom_build_command = values.BUILD_COMMAND_C
-#
-#     # print("custom command is " + custom_build_command)
-#
-#     if not custom_build_command:
-#         build_command += "make CFLAGS=" + C_FLAGS + " "
-#         build_command += "CXXFLAGS=" + CXX_FLAGS + " > " + definitions.FILE_MAKE_LOG
-#     else:
-#         if not os.path.isfile(source_directory + "/compile_commands.json"):
-#             custom_build_command = custom_build_command.replace("make", "bear make")
-#         build_command = remove_fsanitize(build_command)
-#         build_command_with_flags = apply_flags(custom_build_command)
-#         build_command += build_command_with_flags
-#
-#     # print(build_command)
-#     ret_code = execute_command(build_command)
-#     if int(ret_code) == 2:
-#         # TODO: check only upto common directory
-#         while source_directory != "" and ret_code != "0":
-#             build_command = build_command.replace(source_directory, "???")
-#             source_directory = "/".join(source_directory.split("/")[:-1])
-#             build_command = build_command.replace("???", source_directory)
-#             ret_code = execute_command(build_command)
-#
-#     if int(ret_code) != 0:
-#         emitter.error(build_command)
-#         error_exit("BUILD FAILED!!\nExit Code: " + str(ret_code))
-
-
-def build_verify(project_path):
-    global CC, CXX, CXX_FLAGS, C_FLAGS, LD_FLAGS
-    emitter.sub_sub_title("building projects")
-    CC = "clang-7"
-    CXX = "clang++-7"
-    CXX_FLAGS = "'-g -O0 -static -DNDEBUG'"
-    C_FLAGS = "'-g -O0 -static -DNDEBUG'"
-    emitter.normal("\t\t" + project_path)
-    clean_project(project_path)
-
-    if values.CONF_COMMAND_CONFIGURATATION:
-        config_project(project_path, False, values.CONF_COMMAND_CONFIGURATATION)
-    else:
-        config_project(project_path, False)
-
-    if values.CONF_COMMAND_BUILD:
-        CXX_FLAGS = "'-g -O0 -static -DNDEBUG -fsanitize=" + values.CONF_FLAG_ASAN + "'"
-        C_FLAGS = "'-g -O0 -static -DNDEBUG -fsanitize=" + values.CONF_FLAG_ASAN + "'"
-        build_project(project_path, values.CONF_COMMAND_BUILD)
-    else:
-        CXX_FLAGS = "'-g -O0 -static -DNDEBUG -fsanitize=" + values.CONF_FLAG_ASAN + "'"
-        C_FLAGS = "'-g -O0 -static -DNDEBUG -fsanitize=" + values.CONF_FLAG_ASAN + "'"
-        build_project(project_path)
-
-
-def build_asan(project_path):
-    global CC, CXX, CXX_FLAGS, C_FLAGS, LD_FLAGS
-    clean_project(project_path)
-    CC = "clang"
-    CXX = "clang++"
-    CXX_FLAGS = "'-g -O0 -static'"
-    C_FLAGS = "'-g -O0 -static'"
-    config_project(project_path)
-    CXX_FLAGS = "'-g -O0 -static -DNDEBUG -fsanitize=" + values.ASAN_FLAG + "'"
-    C_FLAGS = "'-g -O0 -static -DNDEBUG -fsanitize=" + values.ASAN_FLAG + "'"
-    build_project(project_path)
-
-
-def build_llvm(project_path):
-    global CC, CXX, CXX_FLAGS, C_FLAGS, LD_FLAGS
-    clean_project(project_path)
-    os.environ["LLVM_COMPILER"] = "clang"
-    CC = "wllvm"
-    CXX = "wllvm++"
-    CXX_FLAGS = "'-g -O0 -static'"
-    C_FLAGS = "'-g -O0 -static'"
-    config_project(project_path)
-    CXX_FLAGS = "'-g -O0 -static -DNDEBUG '"
-    C_FLAGS = "'-g -O0 -static  -L/klee/build/lib -lkleeRuntest'"
-    build_project(project_path)
 
 
 def restore_project(project_path):
