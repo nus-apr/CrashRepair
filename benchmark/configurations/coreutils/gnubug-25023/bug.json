@@ -19,7 +19,7 @@
     "commands": {
       "prebuild": "FORCE_UNSAFE_CONFIGURE=1 ./configure",
       "clean": "make clean",
-      "build": "make CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\" LDFLAGS=\"${LDFLAGS:-}\" src/make-prime-list"
+      "build": "make CFLAGS=\"-ggdb -fPIC -fPIE ${CFLAGS:-}\" CXXFLAGS=\"-ggdb -fPIC -fPIE ${CXXFLAGS:-}\" LDFLAGS=\"${LDFLAGS:-}\" src/pr"
     }
   },
    "fuzzer": {
