@@ -117,6 +117,12 @@ class Analyzer:
 
         logger.info(f"running analysis with timeout: {self.timeout_minutes} minutes")
 
+        env = {
+            "INJECT_CFLAGS": "-g -O0 -static -Wno-error",
+            "INJECT_CXXFLAGS": "-g -O0 -static -Wno-error",
+            "INJECT_LDFLAGS": "-g -O0 -static -Wno-error",
+        }
+
         with self._generate_config() as config_filename:
             timeout_seconds = self.timeout_minutes * 60
             logger.debug(f"wrote analyzer config file to: {config_filename}")
@@ -124,6 +130,7 @@ class Analyzer:
             try:
                 shell(
                     command,
+                    env=env,
                     cwd=self.scenario.directory,
                     check_returncode=False,
                     timeout_seconds=timeout_seconds,
