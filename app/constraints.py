@@ -622,6 +622,33 @@ def generate_div_zero_constraint(divisor_node):
     return constraint_expr
 
 
+def generate_cast_constraint(cast_node):
+    result_data_type = extractor.extract_data_type(cast_node)
+    type_min, type_max = get_type_limits(result_data_type)
+    max_val_symbol = make_constraint_symbol(type_max, "CONST_INT")
+    max_val_expr = make_symbolic_expression(max_val_symbol)
+
+    min_val_symbol = make_constraint_symbol(type_min, "CONST_INT")
+    min_val_expr = make_symbolic_expression(min_val_symbol)
+
+    casting_source_ast = cast_node['inner'][0]
+    casting_expr = generate_expr_for_ast(casting_source_ast)
+
+    less_than_op_str = "<"
+    less_than_op_type = next(key for key, value in SymbolType.items() if value == less_than_op_str)
+    less_than_op = make_constraint_symbol(less_than_op_str, less_than_op_type)
+    first_constraint = make_binary_expression(less_than_op, casting_expr, max_val_expr)
+    second_constraint = make_binary_expression(less_than_op, min_val_expr, casting_expr)
+
+
+    logical_and_op_str = "&&"
+    logical_and_op_type = next(key for key, value in SymbolType.items() if value == logical_and_op_str)
+    logical_and_op = make_constraint_symbol(logical_and_op_str, logical_and_op_type)
+    constraint_expr = make_binary_expression(logical_and_op, first_constraint, second_constraint)
+
+    return constraint_expr
+
+
 def generate_type_underflow_constraint(ast_node):
     result_data_type = extractor.extract_data_type(ast_node)
     type_min, type_max = get_type_limits(result_data_type)

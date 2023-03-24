@@ -623,7 +623,19 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
                 if c_line >= row and name not in assertion_var_list:
                     assertion_var_list[name] = var
         var_list = assertion_var_list.values()
-
+    elif crash_type == definitions.CRASH_TYPE_CAST_OVERFLOW :
+        cast_ast_list = extract_cast_node_list(func_ast)
+        cast_ast = None
+        for c_ast in cast_ast_list:
+            if oracle.is_loc_in_range(crash_loc, c_ast["range"]):
+                cast_ast = c_ast
+                break
+        if cast_ast is None:
+            emitter.error("\t[error] unable to find cast operator")
+            utilities.error_exit("Unable to generate crash free constraint")
+        ast_var_list = extract_ast_var_list(cast_ast, src_file)
+        cfc = constraints.generate_cast_constraint(cast_ast)
+        var_list = get_var_list(ast_var_list, cfc, crash_loc)
     else:
         emitter.error("\t[error] unknown crash type: {}".format(crash_type))
         utilities.error_exit("Unable to generate crash free constraint")
@@ -641,6 +653,20 @@ def extract_child_id_list(ast_node):
     if id_list:
         id_list = list(set(id_list))
     return id_list
+
+
+def extract_cast_node_list(ast_node):
+    cast_expr_list = list()
+    if not ast_node:
+        return cast_expr_list
+    node_type = str(ast_node["kind"])
+    if node_type == "CStyleCastExpr":
+        cast_expr_list.append(ast_node)
+    if "inner" in ast_node and len(ast_node['inner']) > 0:
+        for child_node in ast_node['inner']:
+            child_cast_list = extract_cast_node_list(child_node)
+            cast_expr_list = cast_expr_list + child_cast_list
+    return cast_expr_list
 
 
 def extract_call_node_list(ast_node, black_list=None, white_list=None):
@@ -1144,6 +1170,8 @@ def extract_crash_type(crash_reason):
         crash_type = definitions.CRASH_TYPE_MEMSET_ERROR
     elif "memcpy error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMCPY_ERROR
+    elif "overflow on cast" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_CAST_OVERFLOW
     elif "memmove error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMMOVE_ERROR
     elif "assertion error" in crash_reason:

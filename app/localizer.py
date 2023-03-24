@@ -149,7 +149,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             continue
                         if data_type == "pointer" and "*" not in e_type and "[" not in e_type:
                             continue
-                        if data_type == "double" and e_type != "double":
+                        if data_type in ["double", "float"] and e_type not in ["double", "float"]:
                             continue
                         filtered_taint_list.append(taint_expr)
                     expr_taint_list[var_info_index] = {

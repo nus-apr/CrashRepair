@@ -165,6 +165,8 @@ CRASH_TYPE_MEMORY_WRITE_OVERFLOW = 10
 CRASH_TYPE_MEMORY_READ_NULL = 11
 CRASH_TYPE_MEMORY_WRITE_NULL = 12
 CRASH_TYPE_MEMMOVE_ERROR = 13
+CRASH_TYPE_CAST_OVERFLOW = 14
+
 
 CRASH_TYPE_MESSAGE = {
     CRASH_TYPE_DIV_ZERO: "division by zero",
@@ -180,6 +182,7 @@ CRASH_TYPE_MESSAGE = {
     CRASH_TYPE_ASSERTION_ERROR: "assertion error",
     CRASH_TYPE_MEMORY_READ_NULL: "memory read from null pointer",
     CRASH_TYPE_MEMORY_WRITE_NULL: "memory write to null pointer",
+    CRASH_TYPE_CAST_OVERFLOW: "overflow on cast operation"
 }
 
 INTEGER_TYPES = ["int", "short", "long", "size_t", "unsigned long", "unsigned int", "unsigned short",
