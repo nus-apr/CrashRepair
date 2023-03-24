@@ -350,7 +350,8 @@ class Scenario:
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
 
-        self.rebuild(use_sanitizers=False)
+        # the analysis takes care of its own build
+        # self.rebuild(use_sanitizers=False)
 
         analyzer = Analyzer.for_scenario(
             self,
