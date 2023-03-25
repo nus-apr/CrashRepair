@@ -15,7 +15,7 @@ import copy
 
 File_Log_Path = "/tmp/log_sym_path"
 File_Ktest_Path = "/tmp/concolic.ktest"
-
+dummy_count = 0
 
 
 def generate_mask_bytes(klee_out_dir, poc_path):
@@ -132,10 +132,15 @@ def generate_z3_code_for_expr(var_expr, var_name, bit_size):
 
 
 def generate_z3_code_for_var(var_expr, var_name):
+    global dummy_count
     var_name = str(var_name).replace("->", "")
     var_name = str(var_name).replace("[", "-").replace("]", "-")
     var_name = str(var_name).replace("(", "-").replace(")", "-")
     var_name = str(var_name).replace(" ", "")
+    if any(op in var_name for op in ["+", "-", "*", "/"]):
+        dummy_count = dummy_count + 1
+        var_name = f"_dummy_a_{dummy_count}"
+
     if "sizeof " in var_name or "diff " in var_name:
         var_name = "sizeof_" + var_name.split(" ")[3]
     bit_size = 2
@@ -220,8 +225,10 @@ def generate_definitions(sym_expr_a, sym_expr_b):
     sym_expr_b = [x for x in lines_b if "assert" in x][0]
     var_name_a = str(var_dec_a.split(" ")[1]).replace("(", "").replace(")", "")
     var_name_b = str(var_dec_b.split(" ")[1]).replace("(", "").replace(")", "")
+
     bit_size_a = int(var_name_a.split("_")[-1])
     bit_size_b = int(var_name_b.split("_")[-1])
+
 
     if bit_size_a > bit_size_b:
         var_dec_b = var_dec_b.replace("_ BitVec {}".format(bit_size_b), "_ BitVec {}".format(bit_size_a))

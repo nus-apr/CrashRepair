@@ -1,5 +1,5 @@
 import os
-
+import signal
 from app import definitions, values, emitter, extractor, logger, utilities, generator
 from pysmt.shortcuts import is_sat, Not, And, is_unsat
 from pysmt.smtlib.parser import SmtLibParser
@@ -80,65 +80,6 @@ def is_loc_on_sanitizer(source_path, line_number, suspicious_lines):
 
 def is_loc_in_trace(source_loc):
     return source_loc in values.LIST_TRACE
-
-
-def check_path_feasibility(chosen_control_loc, new_path, index):
-    """
-    This function will check if a selected path is feasible
-           ppc : partial path conditoin at chosen control loc
-           chosen_control_loc: branch location selected for flip
-           returns satisfiability of the negated path
-    """
-    result = False
-    if chosen_control_loc != values.CONF_LOC_PATCH:
-        result = not is_unsat(new_path)
-    else:
-        result = is_sat(new_path)
-
-    if result:
-        return True, index
-    else:
-        emitter.data("Path is not satisfiable at " + str(chosen_control_loc), new_path)
-        return False, index
-
-
-def check_patch_feasibility(assertion, var_relationship, patch_constraint, path_condition, index):  # TODO
-    path_constraint = And(path_condition, patch_constraint)
-    patch_score = 0
-    is_under_approx = None
-    is_over_approx = None
-    result = True
-    if assertion:
-        if is_sat(path_constraint):
-            if is_loc_in_trace(values.CONF_LOC_BUG):
-                patch_score = 2
-                is_under_approx = not is_unsat(And(path_constraint, Not(assertion)))
-                if values.DEFAULT_REFINE_METHOD in ["under-approx", "overfit"]:
-                    if is_under_approx:
-                        emitter.debug("removing due to universal quantification")
-                        result = False
-
-                negated_path_condition = values.NEGATED_PPC_FORMULA
-                path_constraint = And(negated_path_condition, patch_constraint)
-                is_over_approx = not is_unsat(And(path_constraint, assertion))
-                if values.DEFAULT_REFINE_METHOD in ["over-approx", "overfit"]:
-                    if is_over_approx:
-                        emitter.debug("removing due to existential quantification")
-                        result = False
-            else:
-                patch_score = 1
-            # else:
-            #     specification = And(path_condition, Not(patch_constraint))
-            #     existential_quantification = is_unsat(And(specification, assertion))
-            #     result = existential_quantification
-
-    return result, index, patch_score, is_under_approx, is_over_approx
-
-
-def check_input_feasibility(index, patch_constraint, new_path):
-    check_sat = And(new_path, patch_constraint)
-    result = not is_unsat(check_sat)
-    return result, index
 
 
 def is_valid_range(check_range):
@@ -254,6 +195,7 @@ def is_equivalent(expr_a, expr_b):
     z3_eq_code = generator.generate_z3_code_for_equivalence(expr_a, expr_b)
     return not is_satisfiable(z3_eq_code)
 
+
 def is_satisfiable(z3_code):
     parser = SmtLibParser()
     result = False
@@ -267,11 +209,11 @@ def is_satisfiable(z3_code):
         with open("/tmp/z3_cli_code", "w") as z3_file:
             z3_file.writelines(z3_code)
             z3_file.close()
-        z3_cli_command = "z3 /tmp/z3_cli_code > /tmp/z3_cli_output"
+        z3_cli_command = "timeout -k 1s 10s z3 /tmp/z3_cli_code > /tmp/z3_cli_output"
         utilities.execute_command(z3_cli_command)
         with open("/tmp/z3_cli_output", "r") as log_file:
             output_content = log_file.readlines()
-            if "sat" == output_content[-1].strip():
+            if output_content and "sat" == output_content[-1].strip():
                 result = True
     return result
 
