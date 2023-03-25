@@ -330,8 +330,13 @@ class Scenario:
             "CFLAGS": cflags,
             "CXXFLAGS": cflags,
             "LDFLAGS": cflags,
+            "INJECT_CFLAGS": cflags,
+            "INJECT_CXXFLAGS": cflags,
+            "INJECT_LDFLAGS": cflags,
         }
         env = {**default_env, **env}
+
+        logger.debug(f"using environment: {env}")
 
         if clean:
             self.shell(self.clean_command, cwd=self.build_directory, check_returncode=False)
