@@ -21,5 +21,5 @@ git format-patch -1 $fix_commit_id
 cp *.patch $dir_name/dev-patch/fix.patch
 
 ./bootstrap
-
 FORCE_UNSAFE_CONFIGURE=1 ./configure
+make CC=crepair-cc CXX=crepair-cxx CFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" CXXFLAGS="-ggdb -fPIC -fPIE -g -O0 -Wno-error" LDFLAGS="-static"
