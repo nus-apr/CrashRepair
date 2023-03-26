@@ -44,11 +44,13 @@ struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
 struct null : string<'N', 'U', 'L', 'L'> {};
+struct short_max : string<'S', 'H', 'R', 'T', '_', 'M', 'A', 'X'> {};
+struct short_min : string<'S', 'H', 'R', 'T', '_', 'M', 'I', 'N'> {};
 struct int_max : string<'I', 'N', 'T', '_', 'M', 'A', 'X'> {};
 struct int_min : string<'I', 'N', 'T', '_', 'M', 'I', 'N'> {};
 struct long_max : string<'L', 'O', 'N', 'G', '_', 'M', 'A', 'X'> {};
 struct long_min : string<'L', 'O', 'N', 'G', '_', 'M', 'I', 'N'> {};
-struct constant : sor<null, int_max, int_min, long_max, long_min> {};
+struct constant : sor<null, short_max, short_min, int_max, int_min, long_max, long_min> {};
 
 struct left_shift : pad<string<'<', '<'>, space> {};
 struct right_shift : pad<string<'>', '>'>, space> {};
@@ -126,6 +128,8 @@ using selector = parse_tree::selector<
   parse_tree::remove_content::on<
     result,
     null,
+    short_max,
+    short_min,
     int_max,
     int_min,
     long_max,
@@ -228,6 +232,10 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
     return convertBinOpNode(BinOp::Opcode::RIGHT_SHIFT, node);
   } else if (nodeType == "crashrepairfix::null") {
     return NullConst::create();
+  } else if (nodeType == "crashrepairfix::short_max") {
+    return IntConst::create(SHRT_MAX);
+  } else if (nodeType == "crashrepairfix::short_min") {
+    return IntConst::create(SHRT_MIN);
   } else if (nodeType == "crashrepairfix::int_max") {
     return IntConst::create(INT_MAX);
   } else if (nodeType == "crashrepairfix::int_min") {

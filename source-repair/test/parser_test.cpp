@@ -90,6 +90,10 @@ TEST(ParserTest, Issue57) {
   ASSERT_NE(parse("(0 < (482344960 + @var(integer, x)))"), nullptr);
 }
 
+TEST(ParserTest, Issue123) {
+  ASSERT_NE(parse("((@var(float, value[i]) < SHRT_MAX) && (SHRT_MIN < @var(float, value[i])))"), nullptr);
+}
+
 // https://stackoverflow.com/questions/37276015/how-do-i-generate-an-ast-from-a-string-of-c-using-clang
 TEST(UtilsTest, ForLoopTopLevelStmt) {
   auto filename = fs::absolute("test.cpp").string();
