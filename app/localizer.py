@@ -79,7 +79,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     sorted_fix_locations = [(cfc_info["function"], cfc_info["loc"])]
     cached_list = []
     emitter.normal("\tgenerating possible fix locations")
-    for taint_info in taint_symbolic.keys():
+    for taint_info in reversed(taint_symbolic.keys()):
         src_file, line, col, inst_addr = taint_info.split(":")
         taint_loc = ":".join([src_file, line, col])
         if taint_loc in fix_locations and taint_loc not in cached_list:
