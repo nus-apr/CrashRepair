@@ -111,7 +111,6 @@ void ProgramMutator::mutateNonConditionalStmt(AstLinkedFixLocation &location) {
 
 void ProgramMutator::weakenBranchCondition(AstLinkedFixLocation &location) {
   spdlog::info("weakening branch condition in statement: {}", location.getSource());
-  auto *stmt = location.getStmt();
   auto *condition = location.getBranchConditionExpression();
   auto &sourceManager = location.getSourceManager();
   auto constraintSource = location.getConstraint()->toSource();
