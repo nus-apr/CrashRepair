@@ -37,6 +37,9 @@ class Test:
             )
         except subprocess.TimeoutExpired:
             return False
+        except UnicodeDecodeError:
+            logger.debug("test failed: unable to decode output")
+            return False
 
         if self.bad_output:
             stdout = raw_test_outcome.stdout or ""
