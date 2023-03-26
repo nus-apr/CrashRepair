@@ -71,7 +71,7 @@ def levenshtein_distance(s, t):
 
 def solve_sign(number, bit_size):
     signed_number = number
-    if bit_size >= 4:
+    if int(bit_size) >= 4:
         hex_string = "0x" + "F" * int(bit_size / 4)
         _number = number & int(hex_string, 16)
         if bit_size == 8:

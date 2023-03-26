@@ -280,6 +280,7 @@ def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
 
 def pointer_analysis(var_info, memory_track, pointer_track):
     updated_var_info = dict()
+    shadow_var_info = dict()
     for var_name in var_info:
         var_loc = var_info[var_name]["loc"]
         value_list = var_info[var_name]["expr_list"]
@@ -288,6 +289,12 @@ def pointer_analysis(var_info, memory_track, pointer_track):
         if "sizeof " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
             static_size = var_info[var_name]["static_size"]
+            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
+            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            shadow_var_info[pointer_name] = {
+                "expr_list": [f"(_ bv{base_address} 64)"],
+                "data_type": "pointer",
+            }
             # if "[" in static_size:
             #     static_size = static_size.split("[")[-1].split("]")[0]
             # if str(static_size).isnumeric():
@@ -306,7 +313,13 @@ def pointer_analysis(var_info, memory_track, pointer_track):
 
         elif "base " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
+            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            shadow_var_info[pointer_name] = {
+                "expr_list": [f"(_ bv{base_address} 64)"],
+                "data_type": "pointer",
+            }
+
             updated_var_info[var_name] = {
                 "expr_list": [f"(_ bv{base_address} 64)"],
                 "data_type": "pointer"
@@ -314,22 +327,30 @@ def pointer_analysis(var_info, memory_track, pointer_track):
 
         elif "diff " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
-
+            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
+            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            shadow_var_info[pointer_name] = {
+                "expr_list": [f"(_ bv{base_address} 64)"],
+                "data_type": "pointer",
+            }
             diff_expr, concrete_value = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
                 "data_type": "integer",
                 "concrete_value": concrete_value
             }
-
+    updated_var_info["shadow"] = shadow_var_info
     return updated_var_info
 
 
 def identify_sources(var_info):
     taint_byte_list = []
     taint_memory_list = []
-
+    shadow_memory_list = []
+    shadow_var_info = var_info["shadow"]
     for var_name in var_info:
+        if var_name == "shadow":
+            continue
         sym_expr_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         byte_list = []
@@ -358,7 +379,32 @@ def identify_sources(var_info):
             taint_memory_list = taint_memory_list + memory_list
             tainted_addresses = sorted([str(i) for i in memory_list])
             taint_sources = taint_sources + tainted_addresses
-        emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
+            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
+        elif "sizeof " in var_name or "base " in var_name or "diff " in var_name:
+            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
+            if pointer_name not in shadow_var_info:
+                continue
+            value_list = shadow_var_info[pointer_name]["expr_list"]
+            for expr in value_list:
+                expr_tokens = expr.strip().split(" ")
+                if "A-data" in expr or "arg" in expr:
+                    memory_address = expr_tokens[3]
+                    if "(bvsub" in expr_tokens[0]:
+                        memory_address = expr_tokens[4]
+                else:
+                    memory_address = expr_tokens[1]
+                    if "(bvsub" in expr_tokens[0]:
+                        memory_address = expr_tokens[2]
+                shadow_memory_list.append(memory_address)
+            shadow_memory_list = list(set(shadow_memory_list))
+            tainted_addresses = sorted([str(i) for i in shadow_memory_list])
+            taint_sources = taint_sources + tainted_addresses
+            emitter.highlight("\t\t[info] Shadow Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
+    if len(taint_byte_list) == 0 and len(taint_memory_list) == 0:
+        if len(shadow_memory_list) > 0:
+            taint_memory_list = shadow_memory_list
+            emitter.warning("\t\tusing shadow symbolic sources for localization")
+
     taint_byte_list = list(set(taint_byte_list))
     taint_memory_list = list(set(taint_memory_list))
     return taint_byte_list, taint_memory_list
