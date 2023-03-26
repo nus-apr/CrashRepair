@@ -968,7 +968,7 @@ def generate_memmove_constraint(call_node):
     diff_expr = make_binary_expression(arithmetic_op, target_expr, source_expr)
     try:
         diff_expr_str = diff_expr.to_expression()
-        simplified_diff_expr_str = sympify(diff_expr_str)
+        simplified_diff_expr_str = str(sympify(diff_expr_str))
         simplified_diff_expr = generate_expr_for_str(simplified_diff_expr_str, "VAR_INT")
     except Exception as ex:
         simplified_diff_expr = diff_expr
