@@ -966,11 +966,17 @@ def generate_memmove_constraint(call_node):
     target_expr = generate_expr_for_ast(target_ptr_node)
     arithmetic_op = build_op_symbol("-")
     diff_expr = make_binary_expression(arithmetic_op, target_expr, source_expr)
+    try:
+        diff_expr_str = diff_expr.to_expression()
+        simplified_diff_expr_str = sympify(diff_expr_str)
+        simplified_diff_expr = generate_expr_for_str(simplified_diff_expr_str, "VAR_INT")
+    except Exception as ex:
+        simplified_diff_expr = diff_expr
     size_expr = generate_expr_for_ast(size_node)
 
     # last, concatenate both constraints into one
     less_than_op = build_op_symbol("<")
-    first_constraint = make_binary_expression(less_than_op, diff_expr, size_expr)
+    first_constraint = make_binary_expression(less_than_op, simplified_diff_expr, size_expr)
 
     # Generating second constraint of type
     # check if the size constraint is a diff operator
