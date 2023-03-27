@@ -162,9 +162,14 @@ class Fuzzer:
             self.scenario.shell(command, cwd=self.scenario.directory)
 
         # if we store all inputs, copy across those inputs into the test directory
-        all_inputs_directory = os.path.join(self.scenario.directory, "fuzzer/all_inputs")
+        fuzzer_directory = os.path.join(self.scenario.directory, "scenario")
+        all_inputs_directory = os.path.join(fuzzer_directory, "all_inputs")
+        concentrated_inputs_directory = os.path.join(fuzzer_directory, "concentrated_inputs")
+
         if self.config.store_all_inputs:
             shutil.copytree(all_inputs_directory, self.tests_directory, dirs_exist_ok=True)
+        else:
+            shutil.copytree(concentrated_inputs_directory, self.tests_directory, dirs_exist_ok=True)
 
         # how many tests did we generate?
         num_generated_tests = len(os.listdir(self.tests_directory))
