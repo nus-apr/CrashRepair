@@ -43,7 +43,7 @@ class FuzzerConfig:
     poc_values: t.Sequence[t.Union[str, int, float]]
     trace_command_template: t.Sequence[str]
     store_all_inputs: bool
-    max_combinations: int = attrs.field(default=3)
+    max_combinations: int = attrs.field(default=1)
     mutate_range: str = attrs.field(default="default")
     seed: int = attrs.field(default=0)
     timeout_global: int = attrs.field(default=300)
