@@ -1,9 +1,14 @@
 #!/bin/bash
 set -eu
 
+export MEMORY_LIMIT="${MEMORY_LIMIT:-16g}"
+export CPU_LIMIT="${CPU_LIMIT:-8}"
+export REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT:-45}"
+export TEST_TIME_LIMIT="${TEST_TIME_LIMIT:-30}"
+
 HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXPERIMENTS_FILE="${HERE_DIR}/experiments.txt"
-RUN_SCRIPT="${HERE_DIR}/run"
+export RUN_SCRIPT="${HERE_DIR}/run"
 
 if ! which parallel; then
   echo "ERROR: unable to locate parallel binary (https://www.gnu.org/software/parallel)"
@@ -22,11 +27,10 @@ function run_scenario {
   echo "running: ${program}/${scenario}"
   ${RUN_SCRIPT} ${program} ${scenario}
 }
-export RUN_SCRIPT
 export -f run_scenario
 
 NUM_WORKERS="$2"
 
 echo "executing experiments across ${NUM_WORKERS} workers"
-parallel -j ${NUM_WORKERS} run_scenario {} < "${EXPERIMENTS_FILE}"
+parallel --keep-order --eta --halt now,fail=1 -j ${NUM_WORKERS} run_scenario {} < "${EXPERIMENTS_FILE}"
 echo "finished running experiments"
