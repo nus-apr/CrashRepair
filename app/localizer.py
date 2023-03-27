@@ -191,6 +191,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                     var_input_byte_list = extractor.extract_input_bytes_used(var_sym_expr_code)
                     if not var_input_byte_list and not crash_var_input_byte_list:
                         logger.track_localization("NO TAINT SOURCES FOR {} and {}".format(crash_var_name, expr_str))
+                        if not expr_str or expr_str.strip() in ["()"]:
+                            continue
                         if crash_var_type == "pointer" and e_type == "pointer":
                             if var_expr in crash_var_expr_list:
                                 if crash_var_name not in candidate_mapping:
