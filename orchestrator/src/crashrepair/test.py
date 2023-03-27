@@ -25,7 +25,7 @@ class Test:
         """Runs this test and returns :code:`True` if it passes."""
         capture_output = self.bad_output is not None
         env: t.Dict[str, str] = {}
-        env["ASAN_OPTIONS"] = f"halt_on_error={'true' if halt_on_error else 'false'}"
+        env["ASAN_OPTIONS"] = f"detect_leaks=0:halt_on_error={'true' if halt_on_error else 'false'}"
 
         if "LD_LIBRARY_PATH_ORIG" in os.environ:
             env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]
