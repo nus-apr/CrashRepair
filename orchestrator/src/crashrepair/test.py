@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import os
 import subprocess
 import typing as t
 
@@ -25,6 +26,10 @@ class Test:
         capture_output = self.bad_output is not None
         env: t.Dict[str, str] = {}
         env["ASAN_OPTIONS"] = f"halt_on_error={'true' if halt_on_error else 'false'}"
+
+        if "LD_LIBRARY_PATH_ORIG" in os.environ:
+            env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]
+
         try:
             raw_test_outcome = self._shell(
                 self.command,
