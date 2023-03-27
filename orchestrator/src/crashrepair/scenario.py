@@ -84,6 +84,8 @@ class Scenario:
     halt_on_error: bool
         If :code:`True`, instructs the sanitizer to halt the program upon failure.
         Otherwise, the program will continue to run where possible.
+    rebuild_for_validation: bool
+        Forces the orchestrator to rebuild the project from scratch before beginning validation.
     """
     subject: str
     name: str
@@ -109,6 +111,7 @@ class Scenario:
     time_limit_seconds_single_test: int = attrs.field(default=30)
     time_limit_minutes_analysis: int = attrs.field(default=3600)
     halt_on_error: bool = attrs.field(default=True)
+    rebuild_for_validation: bool = attrs.field(default=False)
 
     @property
     def compile_commands_path(self) -> str:
@@ -171,6 +174,7 @@ class Scenario:
         sanitizer_flags: str,
         fuzzer_config: t.Optional[FuzzerConfig] = None,
         bad_output: t.Optional[str] = None,
+        rebuild_for_validation: bool = False,
         halt_on_error: bool = True,
     ) -> Scenario:
         directory = os.path.dirname(filename)
@@ -217,6 +221,7 @@ class Scenario:
             crash_test=crash_test,
             additional_klee_flags=additional_klee_flags,
             sanitizer_flags=sanitizer_flags,
+            rebuild_for_validation=rebuild_for_validation,
             halt_on_error=halt_on_error,
         )
 
@@ -256,6 +261,7 @@ class Scenario:
             prebuild_command = build_commands["prebuild"]
             build_command = build_commands["build"]
             sanitizer_flags = build_dict.get("sanitizerflags", "")
+            rebuild_for_validation = build_dict.get("rebuild-for-validation", False)
 
             crash_dict = bug_dict["crash"]
             crashing_command = crash_dict["command"]
@@ -286,6 +292,7 @@ class Scenario:
             additional_klee_flags=additional_klee_flags,
             expected_exit_code_for_crashing_input=expected_exit_code_for_crashing_input,
             sanitizer_flags=sanitizer_flags,
+            rebuild_for_validation=rebuild_for_validation,
             fuzzer_config=fuzzer_config,
             bad_output=bad_output,
             halt_on_error=halt_on_error,
@@ -442,7 +449,9 @@ class Scenario:
 
         # rebuild the whole project once before using incremental builds for each patch
         # don't bother rebuilding if we don't use additional sanitizer flags
-        if self.sanitizer_flags or not os.path.exists(self.compile_commands_path):
+        should_rebuild = self.sanitizer_flags or self.rebuild_for_validation
+        should_rebuild = should_rebuild or not os.path.exists(self.compile_commands_path)
+        if should_rebuild:
             self.rebuild(record_compile_commands=True)
 
         for candidate in candidates:
