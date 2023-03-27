@@ -503,6 +503,24 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
                         if oracle.is_loc_in_range(crash_loc, ref_node["range"], is_arrow):
                             target_ast = ref_node
                             break
+            if target_ast:
+                target_ast_type = str(target_ast["kind"])
+                if target_ast_type == "DeclRefExpr":
+                    reference_type = str(target_ast["referencedDecl"]["kind"])
+                    if reference_type == "FunctionDecl":
+                        function_name = str(target_ast["referencedDecl"]["name"])
+                        call_node_list = extract_call_node_list(func_ast, white_list=[function_name])
+                        call_node = None
+                        for c_node in call_node_list:
+                            if oracle.is_loc_in_range(crash_loc, c_node["range"]):
+                                call_node = c_node
+                                break
+                        if call_node:
+                            operand_count = len(call_node["inner"])
+                            if operand_count == 2: # only one argument
+                                operand_node = call_node['inner'][1]
+                                target_ast = extract_reference_node_list(operand_node)[0]
+
 
         if target_ast is None:
             emitter.error("\t[error] unable to find memory access operator")
