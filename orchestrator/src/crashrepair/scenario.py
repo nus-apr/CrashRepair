@@ -326,6 +326,8 @@ class Scenario:
         if not env:
             env = {}
 
+        logger.debug(f"original environment: {os.environ}")
+
         generic_cflags = "-g -O0 -Wno-error"
         klee_cflags = f"-L{KLEE_LIB_PATH} -lkleeRuntest"
         crepair_cflags = (
@@ -349,6 +351,8 @@ class Scenario:
             "INJECT_CXXFLAGS": cflags,
             "INJECT_LDFLAGS": cflags,
         }
+        if "LD_LIBRARY_PATH_ORIG" in os.environ:
+            default_env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]
         env = {**default_env, **env}
 
         logger.debug(f"using environment: {env}")
@@ -452,7 +456,7 @@ class Scenario:
         should_rebuild = self.sanitizer_flags or self.rebuild_for_validation
         should_rebuild = should_rebuild or not os.path.exists(self.compile_commands_path)
         if should_rebuild:
-            self.rebuild(record_compile_commands=True)
+            self.rebuild(record_compile_commands=False)
 
         for candidate in candidates:
             if time_limit_seconds and timer.duration >= time_limit_seconds:
