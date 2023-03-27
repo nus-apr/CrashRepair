@@ -92,6 +92,7 @@ TEST(ParserTest, Issue57) {
 
 TEST(ParserTest, Issue123) {
   ASSERT_NE(parse("((@var(float, value[i]) < SHRT_MAX) && (SHRT_MIN < @var(float, value[i])))"), nullptr);
+  ASSERT_NE(parse("((@var(float, value[i]) < UCHAR_MAX) && (0 < @var(float, value[i])))"), nullptr);
 }
 
 // https://stackoverflow.com/questions/37276015/how-do-i-generate-an-ast-from-a-string-of-c-using-clang
