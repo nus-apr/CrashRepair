@@ -81,6 +81,9 @@ class Scenario:
         The maximum number of minutes that the analysis can run before being considered a timeout.
     sanitizer_flags: str
         Additional CFLAGS/CXXFLAGS that should be used to enable the relevant sanitizers.
+    halt_on_error: bool
+        If :code:`True`, instructs the sanitizer to halt the program upon failure.
+        Otherwise, the program will continue to run where possible.
     """
     subject: str
     name: str
@@ -105,6 +108,7 @@ class Scenario:
     time_limit_minutes_validation: t.Optional[int] = attrs.field(default=None)
     time_limit_seconds_single_test: int = attrs.field(default=30)
     time_limit_minutes_analysis: int = attrs.field(default=3600)
+    halt_on_error: bool = attrs.field(default=True)
 
     @property
     def compile_commands_path(self) -> str:
@@ -167,6 +171,7 @@ class Scenario:
         sanitizer_flags: str,
         fuzzer_config: t.Optional[FuzzerConfig] = None,
         bad_output: t.Optional[str] = None,
+        halt_on_error: bool = True,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -212,6 +217,7 @@ class Scenario:
             crash_test=crash_test,
             additional_klee_flags=additional_klee_flags,
             sanitizer_flags=sanitizer_flags,
+            halt_on_error=halt_on_error,
         )
 
         if fuzzer_config:
@@ -253,6 +259,7 @@ class Scenario:
 
             crash_dict = bug_dict["crash"]
             crashing_command = crash_dict["command"]
+            halt_on_error = crash_dict.get("halt-on-error", True)
             crashing_input = crash_dict.get("input")
             bad_output = crash_dict.get("bad_output")
             additional_klee_flags = crash_dict.get("extra-klee-flags", "")
@@ -281,6 +288,7 @@ class Scenario:
             sanitizer_flags=sanitizer_flags,
             fuzzer_config=fuzzer_config,
             bad_output=bad_output,
+            halt_on_error=halt_on_error,
         )
 
     @classmethod
@@ -325,11 +333,11 @@ class Scenario:
 
         # if CC/CXX aren't specified, use LLVM/Clang 11
         default_env = {
-            "CC": "/opt/llvm11/bin/clang",
-            "CXX": "/opt/llvm11/bin/clang++",
-            "CFLAGS": cflags,
-            "CXXFLAGS": cflags,
-            "LDFLAGS": cflags,
+            # "CC": "/opt/llvm11/bin/clang",
+            # "CXX": "/opt/llvm11/bin/clang++",
+            # "CFLAGS": cflags,
+            # "CXXFLAGS": cflags,
+            # "LDFLAGS": cflags,
             "INJECT_CFLAGS": cflags,
             "INJECT_CXXFLAGS": cflags,
             "INJECT_LDFLAGS": cflags,
@@ -482,7 +490,7 @@ class Scenario:
             tests_failed: t.List[Test] = []
             for test in all_tests:
                 logger.debug(f"testing candidate #{candidate.id_} against test #{test.name}...")
-                if test.run(self.time_limit_seconds_single_test):
+                if test.run(self.time_limit_seconds_single_test, halt_on_error=self.halt_on_error):
                     logger.info(f"candidate #{candidate.id_} passes test #{test.name}")
                     tests_passed.append(test)
                 else:

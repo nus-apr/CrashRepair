@@ -20,12 +20,11 @@ class Test:
     _shell: Shell = attrs.field(repr=False)
     bad_output: t.Optional[str] = attrs.field(default=None)
 
-    def run(self, timeout_seconds: int) -> bool:
+    def run(self, timeout_seconds: int, *, halt_on_error: bool = True) -> bool:
         """Runs this test and returns :code:`True` if it passes."""
         capture_output = self.bad_output is not None
-        env = {
-            "ASAN_OPTIONS": "halt_on_error=false",
-        }
+        env: t.Dict[str, str] = {}
+        env["ASAN_OPTIONS"] = f"halt_on_error={'true' if halt_on_error else 'false'}"
         try:
             raw_test_outcome = self._shell(
                 self.command,
