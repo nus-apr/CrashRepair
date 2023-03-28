@@ -225,21 +225,21 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((crash_var_name, e_line, e_col, e_addr, is_exp_dec))
-                        elif any(token in crash_var_name for token in ["diff ", "sizeof "]) and "bv" in var_expr:
-                            concrete_val_var_expr = int(var_expr.split(" ")[1].replace("bv", ""))
-                            bit_size_var_expr = int(var_expr.split(" ")[-1].replace(")", ""))
-                            signed_val_var_expr = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
-                            concrete_val_crash_var_expr = int(crash_var_expr.split(" ")[1].replace("bv", ""))
-                            bit_size_crash_var_expr = int(crash_var_expr.split(" ")[-1].replace(")", ""))
-                            signed_val_crash_var_expr = solver.solve_sign(concrete_val_crash_var_expr, bit_size_crash_var_expr)
-                            if signed_val_crash_var_expr == signed_val_var_expr:
-                                if crash_var_name not in candidate_mapping:
-                                    candidate_mapping[crash_var_name] = set()
-                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
-                                logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
-                                logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
-                                candidate_mapping[crash_var_name].add(
-                                    (expr_str, e_line, e_col, e_addr, is_exp_dec))
+                        # elif any(token in crash_var_name for token in ["diff ", "sizeof "]) and "bv" in var_expr:
+                        #     concrete_val_var_expr = int(var_expr.split(" ")[1].replace("bv", ""))
+                        #     bit_size_var_expr = int(var_expr.split(" ")[-1].replace(")", ""))
+                        #     signed_val_var_expr = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
+                        #     concrete_val_crash_var_expr = int(crash_var_expr.split(" ")[1].replace("bv", ""))
+                        #     bit_size_crash_var_expr = int(crash_var_expr.split(" ")[-1].replace(")", ""))
+                        #     signed_val_crash_var_expr = solver.solve_sign(concrete_val_crash_var_expr, bit_size_crash_var_expr)
+                        #     if signed_val_crash_var_expr == signed_val_var_expr:
+                        #         if crash_var_name not in candidate_mapping:
+                        #             candidate_mapping[crash_var_name] = set()
+                        #         logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                        #         logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
+                        #         logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
+                        #         candidate_mapping[crash_var_name].add(
+                        #             (expr_str, e_line, e_col, e_addr, is_exp_dec))
                         else:
                             crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
                             if "width" in crash_var_expr_list:
