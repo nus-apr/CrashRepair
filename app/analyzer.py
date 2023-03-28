@@ -218,7 +218,7 @@ def get_base_address(symbolic_ptr, memory_track, pointer_track):
     concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
     base_address = None
     if concrete_ptr in memory_track:
-        base_address = concrete_ptr
+        base_address = int(concrete_ptr)
     else:
         ref_address = None
         current_ptr = symbolic_ptr

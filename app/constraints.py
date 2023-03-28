@@ -773,7 +773,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                 base_pointer = analyzer.get_base_address(crash_pointer,
                                                          values.MEMORY_TRACK_CONCRETE,
                                                          values.POINTER_TRACK_CONCRETE)
-                if base_pointer is None:
+                if base_pointer is None or int(base_pointer) == 0:
                     member_expr_node = None
                     while member_expr_node is None:
                         ptr_node_type = ptr_node["kind"]
