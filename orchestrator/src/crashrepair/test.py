@@ -25,7 +25,8 @@ class Test:
         """Runs this test and returns :code:`True` if it passes."""
         capture_output = self.bad_output is not None
         env: t.Dict[str, str] = {}
-        env["ASAN_OPTIONS"] = f"detect_leaks=0:halt_on_error={'true' if halt_on_error else 'false'}"
+        asan_options = f"detect_odr_violation=0:detect_leaks=0:halt_on_error={'true' if halt_on_error else 'false'}"  # noqa: E501
+        env["ASAN_OPTIONS"] = asan_options
 
         if "LD_LIBRARY_PATH_ORIG" in os.environ:
             env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]
