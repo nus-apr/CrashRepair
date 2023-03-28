@@ -39,6 +39,10 @@ def get_concrete_values(arguments_str, output_dir_path, test_case_id, program_pa
     exit_code = klee.run_concrete_execution(program_path + ".bc", argument_list, True, klee_concrete_out_dir)
     assert exit_code == 0
 
+    if not values.IS_CRASH:
+        emitter.warning("\t\t[note]: the program did not crash")
+        exit(0)
+
     # set location of bug/crash
     values.IS_CRASH = False
     c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())

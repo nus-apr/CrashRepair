@@ -237,7 +237,8 @@ def collect_crash_point(trace_file_path):
                     elif "null pointer" in read_line.lower():
                         crash_reason = ": ".join(read_line.split(": ")[-2:])
                     break
-    crash_type = extractor.extract_crash_type(crash_reason)
+    if crash_reason:
+        crash_type = extractor.extract_crash_type(crash_reason)
     return crash_location, crash_type
 
 
