@@ -215,7 +215,7 @@ def extract_value_list(value_map, crash_info):
 
 
 def get_base_address(symbolic_ptr, memory_track, pointer_track):
-    concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
+    concrete_ptr = int(symbolic_ptr.split(" ")[1].replace("bv", ""))
     base_address = None
     if concrete_ptr in memory_track:
         base_address = int(concrete_ptr)
@@ -231,9 +231,9 @@ def get_base_address(symbolic_ptr, memory_track, pointer_track):
             pointer_info = pointer_track[current_ptr]
             sym_address = pointer_info["base"]
             if "A-data" in sym_address or "arg" in sym_address:
-                ref_address = sym_address.split(" ")[3].replace("bv", "")
+                ref_address = int(sym_address.split(" ")[3].replace("bv", ""))
             else:
-                ref_address = sym_address.split(" ")[1].replace("bv", "")
+                ref_address = int(sym_address.split(" ")[1].replace("bv", ""))
             if ref_address in memory_track:
                 base_address = ref_address
             else:
@@ -384,7 +384,7 @@ def identify_sources(var_info):
             tainted_addresses = sorted([str(i) for i in memory_list])
             taint_sources = taint_sources + tainted_addresses
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
-        elif "sizeof " in var_name or "base " in var_name or "diff " in var_name:
+        elif not taint_byte_list and ("sizeof " in var_name or "base " in var_name or "diff " in var_name):
             pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
             if pointer_name not in shadow_var_info:
                 continue
