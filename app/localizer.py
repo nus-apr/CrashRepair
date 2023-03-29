@@ -78,29 +78,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                         continue
                     if set(marked_byte_list + taint_memory_list) <= set(observed_tainted_bytes):
                         fix_locations[source_loc] = func_name
-    unique_fix_files = [cfc_info["loc"].split(":")[0]]
-    unique_fix_functons = [cfc_info["function"]]
-    unique_fix_lines = [cfc_info["loc"].split(":")[0] + ":" + cfc_info["loc"].split(":")[1]]
-    for loc in fix_locations:
-        src_file = loc.split(":")[0]
-        src_line = loc.split(":")[1]
-        fix_line = f"{src_file}:{src_line}"
-        if src_file not in unique_fix_files:
-            unique_fix_files.append(src_file)
-        if fix_line not in unique_fix_lines:
-            unique_fix_lines.append(fix_line)
-        function_name = fix_locations[loc]
-        if function_name not in unique_fix_functons:
-            unique_fix_functons.append(function_name)
     logger.track_localization("found {} fix locations".format(len(fix_locations)))
-    taint_analysis_summary["fix-loc-count"] = len(fix_locations)
-    taint_analysis_summary["fix-line-count"] = len(unique_fix_lines)
-    taint_analysis_summary["fix-func-count"] = len(unique_fix_functons)
-    taint_analysis_summary["fix-file-count"] = len(unique_fix_files)
-    taint_analysis_summary["fix-file-list"] = unique_fix_files
-    taint_analysis_summary["fix-func-list"] = unique_fix_functons
-    taint_analysis_summary["fix-line-list"] = unique_fix_lines
-    taint_analysis_summary["fix-loc-list"] = list(fix_locations.keys())
     logger.track_localization("sorting fix location based on trace")
     sorted_fix_locations = [(cfc_info["function"], cfc_info["loc"])]
     cached_list = []
@@ -113,6 +91,28 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
             emitter.highlight("\t\t[fix-loc] {}, {}".format(fix_locations[taint_loc],taint_loc))
             cached_list.append(taint_loc)
     logger.track_localization("found {} unique fix locations".format(len(sorted_fix_locations)))
+    unique_fix_files = []
+    unique_fix_functons = []
+    unique_fix_lines = []
+    for function_name, loc in sorted_fix_locations:
+        src_file = loc.split(":")[0]
+        src_line = loc.split(":")[1]
+        fix_line = f"{src_file}:{src_line}"
+        if src_file not in unique_fix_files:
+            unique_fix_files.append(src_file)
+        if fix_line not in unique_fix_lines:
+            unique_fix_lines.append(fix_line)
+        if function_name not in unique_fix_functons:
+            unique_fix_functons.append(function_name)
+
+    taint_analysis_summary["fix-loc-count"] = len(fix_locations)
+    taint_analysis_summary["fix-line-count"] = len(unique_fix_lines)
+    taint_analysis_summary["fix-func-count"] = len(unique_fix_functons)
+    taint_analysis_summary["fix-file-count"] = len(unique_fix_files)
+    taint_analysis_summary["fix-file-list"] = unique_fix_files
+    taint_analysis_summary["fix-func-list"] = unique_fix_functons
+    taint_analysis_summary["fix-line-list"] = unique_fix_lines
+    taint_analysis_summary["fix-loc-list"] = list(fix_locations.keys())
     writer.write_as_json(taint_analysis_summary, definitions.DIRECTORY_OUTPUT + "/taint-analysis-summary.json")
     return sorted_fix_locations
 
