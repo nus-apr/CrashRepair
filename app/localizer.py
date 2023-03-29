@@ -21,6 +21,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     emitter.sub_title("Generating Fix Locations")
     logger.track_localization("generating fix locations\n")
     fix_locations = dict()
+    taint_analysis_summary = dict()
     is_taint_influenced = len(marked_byte_list) > 0 or len(taint_memory_list) > 0
     taint_source_loc_map, taint_sink_loc_list = parallel.generate_taint_sink_info(taint_symbolic,
                                                                                   taint_memory_list,
@@ -29,6 +30,9 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     logger.track_localization("found {} source locations".format(len(taint_symbolic)))
     emitter.highlight("\t\t[info] found " + str(len(taint_sink_loc_list)) + " source files")
     logger.track_localization("generating tainted function list")
+    taint_analysis_summary["analyzed-file-count"] = len(taint_sink_loc_list)
+    taint_analysis_summary["analyzed-taint-loc-count"] = len(taint_source_loc_map)
+    taint_analysis_summary["taint-instr-count"] = len(taint_symbolic)
     tainted_function_list = collections.OrderedDict()
     func_count = 0
     for source_path in taint_sink_loc_list:
@@ -51,7 +55,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                         func_count = func_count + 1
                         tainted_function_list[source_path][func_name] = list()
                     tainted_function_list[source_path][func_name].append(loc)
-
+    taint_analysis_summary["analyzed-func-count"] = func_count
     logger.track_localization("found {} executed functions".format(func_count))
     emitter.highlight("\t\t[info] found " + str(func_count) + " executed functions")
     logger.track_localization("filtering tainted locations for fix")
@@ -74,7 +78,22 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                         continue
                     if set(marked_byte_list + taint_memory_list) <= set(observed_tainted_bytes):
                         fix_locations[source_loc] = func_name
+    unique_fix_files = []
+    unique_fix_functons = []
+    for loc in fix_locations:
+        src_file = loc.split(":")[0]
+        if src_file not in unique_fix_files:
+            unique_fix_files.append(src_file)
+        function_name = fix_locations[loc]
+        if function_name not in unique_fix_functons:
+            unique_fix_functons.append(function_name)
     logger.track_localization("found {} fix locations".format(len(fix_locations)))
+    taint_analysis_summary["fix-loc-count"] = len(fix_locations)
+    taint_analysis_summary["fix-func-count"] = len(unique_fix_functons)
+    taint_analysis_summary["fix-file-count"] = len(unique_fix_files)
+    taint_analysis_summary["fix-file-list"] = unique_fix_files
+    taint_analysis_summary["fix-func-list"] = unique_fix_functons
+    taint_analysis_summary["fix-loc-list"] = list(fix_locations.keys())
     logger.track_localization("sorting fix location based on trace")
     sorted_fix_locations = [(cfc_info["function"], cfc_info["loc"])]
     cached_list = []
@@ -87,6 +106,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
             emitter.highlight("\t\t[fix-loc] {}, {}".format(fix_locations[taint_loc],taint_loc))
             cached_list.append(taint_loc)
     logger.track_localization("found {} unique fix locations".format(len(sorted_fix_locations)))
+    writer.write_as_json(taint_analysis_summary, definitions.DIRECTORY_OUTPUT + "/taint-analysis-summary.json")
     return sorted_fix_locations
 
 
