@@ -880,31 +880,19 @@ def generate_shift_overflow_constraint(shift_node):
 
 def generate_memset_constraint(call_node):
     pointer_node = call_node["inner"][1]
-    size_node = call_node["inner"][3]
     # pointer_name = converter.convert_node_to_str(pointer_node)
     # size_value = converter.convert_node_to_str(size_node)
 
     # Generating a constraint of type size_value > 0 && pointer_name != 0
     # first generate the expressions for the two operands
     pointer_expr = generate_expr_for_ast(pointer_node)
-    size_expr = generate_expr_for_ast(size_node)
-
-    # generate the first constraint 0 < size_value
-    zero_val_symbol = make_constraint_symbol("0", "CONST_INT")
-    zero_val_expr = make_symbolic_expression(zero_val_symbol)
-    less_than_op = build_op_symbol("<")
-    first_constraint_expr = make_binary_expression(less_than_op, zero_val_expr, size_expr)
-
 
     # next generate the second constraint pointer != 0
     not_eq_op = build_op_symbol("!=")
     null_symbol = make_constraint_symbol("NULL", "NULL_VAL")
     null_expr = make_symbolic_expression(null_symbol)
-    second_constraint_expr = make_binary_expression(not_eq_op, null_expr, pointer_expr)
+    constraint_expr = make_binary_expression(not_eq_op, null_expr, pointer_expr)
 
-    # last, concatenate both constraints into one
-    logical_and_op = build_op_symbol("&&")
-    constraint_expr = make_binary_expression(logical_and_op, first_constraint_expr, second_constraint_expr)
     return constraint_expr
 
 ## Incomplete lifting of constraint from StringLiteral
