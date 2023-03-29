@@ -78,9 +78,9 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                         continue
                     if set(marked_byte_list + taint_memory_list) <= set(observed_tainted_bytes):
                         fix_locations[source_loc] = func_name
-    unique_fix_files = []
-    unique_fix_functons = []
-    unique_fix_lines = []
+    unique_fix_files = [cfc_info["loc"].split(":")[0]]
+    unique_fix_functons = [cfc_info["function"]]
+    unique_fix_lines = [cfc_info["loc"].split(":")[0] + ":" + cfc_info["loc"].split(":")[1]]
     for loc in fix_locations:
         src_file = loc.split(":")[0]
         src_line = loc.split(":")[1]
