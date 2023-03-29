@@ -404,6 +404,8 @@ def identify_sources(var_info):
             tainted_addresses = sorted([str(i) for i in shadow_memory_list])
             taint_sources = taint_sources + tainted_addresses
             emitter.highlight("\t\t[info] Shadow Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
+        else:
+            emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
     if len(taint_byte_list) == 0 and len(taint_memory_list) == 0:
         if len(shadow_memory_list) > 0:
             taint_memory_list = shadow_memory_list
