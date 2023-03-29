@@ -94,6 +94,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
             unique_fix_functons.append(function_name)
     logger.track_localization("found {} fix locations".format(len(fix_locations)))
     taint_analysis_summary["fix-loc-count"] = len(fix_locations)
+    taint_analysis_summary["fix-line-count"] = len(unique_fix_lines)
     taint_analysis_summary["fix-func-count"] = len(unique_fix_functons)
     taint_analysis_summary["fix-file-count"] = len(unique_fix_files)
     taint_analysis_summary["fix-file-list"] = unique_fix_files
