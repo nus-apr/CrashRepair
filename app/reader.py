@@ -481,7 +481,7 @@ def read_memory_values(memory_log_path):
                 if 'KLEE: MemoryTrack:' in line:
                     line = line.replace("KLEE: MemoryTrack:", "").strip()
                     values = line.split(":")
-                    address = values[0].split(" ")[1].replace("bv", "")
+                    address = int(values[0].split(" ")[1].replace("bv", ""))
                     sym_size = values[1]
                     con_size = int(values[2].split(" ")[1].replace("bv", ""))
                     ptr_width = int(values[3].replace("(", "").replace(")", "")) / 8
