@@ -80,10 +80,15 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                         fix_locations[source_loc] = func_name
     unique_fix_files = []
     unique_fix_functons = []
+    unique_fix_lines = []
     for loc in fix_locations:
         src_file = loc.split(":")[0]
+        src_line = loc.split(":")[1]
+        fix_line = f"{src_file}:{src_line}"
         if src_file not in unique_fix_files:
             unique_fix_files.append(src_file)
+        if fix_line not in unique_fix_lines:
+            unique_fix_lines.append(fix_line)
         function_name = fix_locations[loc]
         if function_name not in unique_fix_functons:
             unique_fix_functons.append(function_name)
@@ -93,6 +98,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     taint_analysis_summary["fix-file-count"] = len(unique_fix_files)
     taint_analysis_summary["fix-file-list"] = unique_fix_files
     taint_analysis_summary["fix-func-list"] = unique_fix_functons
+    taint_analysis_summary["fix-line-list"] = unique_fix_lines
     taint_analysis_summary["fix-loc-list"] = list(fix_locations.keys())
     logger.track_localization("sorting fix location based on trace")
     sorted_fix_locations = [(cfc_info["function"], cfc_info["loc"])]
