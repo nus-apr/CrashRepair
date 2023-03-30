@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# This script uses JupyterLab to generate tables and plots graphs using saved results
+#
+# - https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html
+#
+HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+ROOT_DIR="${HERE_DIR}/.."
+RESULTS_DIR="${ROOT_DIR}/results"
+JUPYTER_DIR="${ROOT_DIR}/jupyter"
+
+HOST_PORT=10000
+USERNAME=crashrepair
+
+DOCKER_IMAGE="jupyter/scipy-notebook:2023-02-28"
+docker run \
+  --rm \
+  -it \
+  --user $(id -u) \
+  --group-add users \
+  -p ${HOST_PORT}:${HOST_PORT} \
+  -v "${RESULTS_DIR}:/home/jovyan/results" \
+  -v "${JUPYTER_DIR}:/home/jovyan/work" \
+  -e JUPYTER_PORT=${HOST_PORT} \
+  ${DOCKER_IMAGE} \
+  start-notebook.sh \
+    --no-browser
