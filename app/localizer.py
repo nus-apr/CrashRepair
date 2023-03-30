@@ -253,6 +253,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((crash_var_name, e_line, e_col, e_addr, is_exp_dec))
                         elif any(token in crash_var_name for token in ["diff "]) and "bv" in var_expr:
+                            if "++" in expr_str or "--" in expr_str:
+                                continue
                             concrete_val_var_expr = int(var_expr.split(" ")[1].replace("bv", ""))
                             bit_size_var_expr = int(var_expr.split(" ")[-1].replace(")", ""))
                             signed_val_var_expr = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
