@@ -923,10 +923,58 @@ def generate_assertion_constraint(call_node, func_node, src_file):
         utilities.error_exit("Not implemented: handling more than 3 tokens in assertion constraint")
     return constraint_expr
 
-def generate_memcpy_constraint(call_node):
+
+def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
+    source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+    source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    constraint_expr = None
+    for taint_loc in values.VALUE_TRACK_CONCRETE:
+        if source_ptr_loc_str in taint_loc:
+            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+            if expr_list and "pointer" in expr_list[0]:
+                last_pointer = expr_list[-1].replace("pointer:", "")
+                base_pointer = analyzer.get_base_address(last_pointer,
+                                                         values.MEMORY_TRACK_CONCRETE,
+                                                         values.POINTER_TRACK_CONCRETE)
+                if base_pointer:
+                    last_ptr_concrete = last_pointer.split(" ")[1].replace("bv", "")
+                    pointer_diff = int(last_ptr_concrete) - int(base_pointer)
+                    if pointer_diff < 0:
+                        diff_op = build_op_symbol("diff ")
+                        ptr_expr = generate_expr_for_ast(ptr_node)
+                        diff_expr = make_unary_expression(diff_op, ptr_expr)
+                        lt_op = build_op_symbol("<")
+                        zero_symbol = make_constraint_symbol("0", "CONST_INT")
+                        zero_expr = make_symbolic_expression(zero_symbol)
+                        constraint_expr = make_binary_expression(lt_op, zero_expr, diff_expr)
+                    else:
+                        alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
+                        concrete_value = alloc_info["con_size"]
+                        if int(concrete_value) < int(pointer_diff):
+                            sizeof_op = build_op_symbol("sizeof ")
+                            ptr_expr = generate_expr_for_ast(ptr_node)
+                            size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                            diff_op = build_op_symbol("diff ")
+                            diff_expr = make_unary_expression(diff_op, ptr_expr)
+                            lt_op = build_op_symbol("<")
+                            constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
+
+    return constraint_expr
+
+
+def generate_memcpy_constraint(call_node, src_file):
     source_ptr_node = call_node["inner"][1]
     target_ptr_node = call_node["inner"][2]
     size_node = call_node["inner"][3]
+
+    # first check if the pointers are in bound
+    source_ptr_bound_constraint = generate_out_of_bound_ptr_constraint(source_ptr_node, src_file)
+    if source_ptr_bound_constraint:
+        return source_ptr_bound_constraint
+    target_ptr_bound_constraint = generate_out_of_bound_ptr_constraint(target_ptr_node, src_file)
+    if target_ptr_bound_constraint:
+        return target_ptr_bound_constraint
+
     # source_name = converter.convert_node_to_str(source_ptr_node)
     # target_name = converter.convert_node_to_str(target_ptr_node)
     # size_value = converter.convert_node_to_str(size_node)
