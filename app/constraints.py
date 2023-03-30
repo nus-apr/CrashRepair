@@ -723,7 +723,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         array_expr = generate_expr_for_ast(array_node)
         size_expr = make_unary_expression(sizeof_op, array_expr)
         iterator_expr = generate_expr_for_ast(iterator_node)
-        if iterator_expr.get_type() == "INT_CONST":
+        if iterator_expr.get_type() != "INT_CONST":
             # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
             less_than_op = build_op_symbol("<")
             upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
