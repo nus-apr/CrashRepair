@@ -718,25 +718,26 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         array_node = reference_node["inner"][0]
         iterator_node = reference_node["inner"][1]
 
-        # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
-        # first generate the left-side expression
-        iterator_expr = generate_expr_for_ast(iterator_node)
-
-        # second generate the constraint logical-operator
-        less_than_op = build_op_symbol("<")
-
         # last generate the expression for array size
         sizeof_op = build_op_symbol("sizeof ")
         array_expr = generate_expr_for_ast(array_node)
         size_expr = make_unary_expression(sizeof_op, array_expr)
-        upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
-
-        lte_op = build_op_symbol("<=")
-        zero_symbol = make_constraint_symbol("0", "CONST_INT")
-        zero_expr = make_symbolic_expression(zero_symbol)
-        lower_bound_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
-        logic_and_op = build_op_symbol("&&")
-        constraint_expr = make_binary_expression(logic_and_op, upper_bound_expr, lower_bound_expr)
+        iterator_expr = generate_expr_for_ast(iterator_node)
+        if iterator_expr.get_type() == "INT_CONST":
+            # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
+            less_than_op = build_op_symbol("<")
+            upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
+            lte_op = build_op_symbol("<=")
+            zero_symbol = make_constraint_symbol("0", "CONST_INT")
+            zero_expr = make_symbolic_expression(zero_symbol)
+            lower_bound_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
+            logic_and_op = build_op_symbol("&&")
+            constraint_expr = make_binary_expression(logic_and_op, upper_bound_expr, lower_bound_expr)
+        else:
+            diff_op = build_op_symbol("diff ")
+            diff_expr = make_unary_expression(diff_op, array_expr)
+            lte_op = build_op_symbol("<=")
+            constraint_expr = make_binary_expression(lte_op, diff_expr, size_expr)
 
     else:
         ptr_node = None
