@@ -847,8 +847,6 @@ def generate_shift_overflow_constraint(shift_node):
     binary_right_ast = shift_node["inner"][1]
     binary_op_str = shift_node["opcode"]
 
-    # Generating a constraint of type INT_MAX >> {} < {} && 0 < {} < bit width
-    # first generate the expressions for the two operands
     binary_left_expr = generate_expr_for_ast(binary_left_ast)
     binary_right_expr = generate_expr_for_ast(binary_right_ast)
     result_data_type = extractor.extract_data_type(binary_left_ast)
@@ -856,13 +854,7 @@ def generate_shift_overflow_constraint(shift_node):
     max_val_symbol = make_constraint_symbol(type_max, "CONST_INT")
     max_val_expr = make_symbolic_expression(max_val_symbol)
 
-    gt_eq_op = build_op_symbol(">=")
-    shift_op = build_op_symbol(">>")
-    shifted_value_expr = make_binary_expression(shift_op, max_val_expr, binary_right_expr)
-    first_constraint_expr = make_binary_expression(gt_eq_op, shifted_value_expr, binary_left_expr)
-
-
-    # next generate the second constraint 0 < {} < bit width
+    # Generating a constraint of type 0 < {} < bit width && INT_MAX >> {} < {}
     less_than_op = build_op_symbol("<")
     type_width = get_type_width(result_data_type)
     width_val_symbol = make_constraint_symbol(str(type_width), "CONST_INT")
@@ -872,11 +864,15 @@ def generate_shift_overflow_constraint(shift_node):
     first_predicate_expr = make_binary_expression(less_than_op, zero_expr, binary_right_expr)
     second_predicate_expr = make_binary_expression(less_than_op, binary_right_expr, width_val_expr)
     and_op = build_op_symbol("&&")
-    second_constraint_expr = make_binary_expression(and_op, first_predicate_expr, second_predicate_expr)
+    first_constraint_expr = make_binary_expression(and_op, first_predicate_expr, second_predicate_expr)
 
-    # last, concatenate both constraints into one
+    gt_eq_op = build_op_symbol(">=")
+    shift_op = build_op_symbol(">>")
+    shifted_value_expr = make_binary_expression(shift_op, max_val_expr, binary_right_expr)
+    second_constraint_expr = make_binary_expression(gt_eq_op, shifted_value_expr, binary_left_expr)
+
     if binary_op_str == ">>":
-        constraint_expr = second_constraint_expr
+        constraint_expr = first_constraint_expr
     else:
         constraint_expr = make_binary_expression(and_op, first_constraint_expr, second_constraint_expr)
     return constraint_expr
