@@ -530,13 +530,14 @@ def read_state_values(taint_log_path):
     state_values = OrderedDict() # Stores the values at specific location.
     values_loc = {} # Temporary storage for current values.
     current_src_loc = -1
+    max_count = values.DEFAULT_MAX_TAINT_VALUES
+    crop_index = 0
     if os.path.exists(taint_log_path):
+        num_lines = sum(1 for line in open(taint_log_path))
+        if num_lines > max_count:
+            crop_index = num_lines - max_count
         with open(taint_log_path, 'r') as taint_file:
-            line_number = 0
-            for line in reversed(list(taint_file)):
-                line_number = line_number + 1
-                if line_number >= values.DEFAULT_MAX_TAINT_VALUES:
-                    break
+            for line in list(taint_file)[crop_index:]:
                 if "no debug info" in line:
                     continue
                 if 'KLEE: TaintTrack:' in line:
