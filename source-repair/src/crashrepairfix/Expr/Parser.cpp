@@ -50,9 +50,11 @@ struct uchar_max : string<'U', 'C', 'H', 'A', 'R', '_', 'M', 'A', 'X'> {};
 struct uchar_min : string<'U', 'C', 'H', 'A', 'R', '_', 'M', 'I', 'N'> {};
 struct int_max : string<'I', 'N', 'T', '_', 'M', 'A', 'X'> {};
 struct int_min : string<'I', 'N', 'T', '_', 'M', 'I', 'N'> {};
+struct uint_max : string<'U', 'I', 'N', 'T', '_', 'M', 'A', 'X'> {};
+struct uint_min : string<'U', 'I', 'N', 'T', '_', 'M', 'I', 'N'> {};
 struct long_max : string<'L', 'O', 'N', 'G', '_', 'M', 'A', 'X'> {};
 struct long_min : string<'L', 'O', 'N', 'G', '_', 'M', 'I', 'N'> {};
-struct constant : sor<null, uchar_max, uchar_min, short_max, short_min, int_max, int_min, long_max, long_min> {};
+struct constant : sor<null, uchar_max, uchar_min, short_max, short_min, uint_max, uint_min, int_max, int_min, long_max, long_min> {};
 
 struct left_shift : pad<string<'<', '<'>, space> {};
 struct right_shift : pad<string<'>', '>'>, space> {};
@@ -130,6 +132,8 @@ using selector = parse_tree::selector<
   parse_tree::remove_content::on<
     result,
     null,
+    uint_max,
+    uint_min,
     uchar_max,
     uchar_min,
     short_max,
@@ -243,6 +247,10 @@ std::unique_ptr<Expr> convertParseNode(tao::pegtl::parse_tree::node *node) {
   } else if (nodeType == "crashrepairfix::uchar_max") {
     return IntConst::create(UCHAR_MAX);
   } else if (nodeType == "crashrepairfix::uchar_min") {
+    return IntConst::create(0);
+  } else if (nodeType == "crashrepairfix::uint_max") {
+    return IntConst::create(UINT_MAX);
+  } else if (nodeType == "crashrepairfix::uint_min") {
     return IntConst::create(0);
   } else if (nodeType == "crashrepairfix::int_max") {
     return IntConst::create(INT_MAX);
