@@ -215,7 +215,9 @@ def extract_value_list(value_map, crash_info):
 
 
 def get_base_address(symbolic_ptr, memory_track, pointer_track):
-    concrete_ptr = int(symbolic_ptr.split(" ")[1].replace("bv", ""))
+    concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
+    if str(concrete_ptr).isnumeric():
+        concrete_ptr = int(concrete_ptr)
     base_address = None
     if concrete_ptr in memory_track:
         base_address = int(concrete_ptr)
