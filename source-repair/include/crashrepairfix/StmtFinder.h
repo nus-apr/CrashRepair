@@ -58,6 +58,15 @@ public:
     return true;
   }
 
+  bool VisitCompoundAssignOperator(clang::CompoundAssignOperator *compoundOp) {
+    if (checkLocation(compoundOp->getBeginLoc())) {
+      spdlog::debug("found corresponding compound assign operator!");
+      result = compoundOp;
+      return false;
+    }
+    return true;
+  }
+
   bool VisitStmt(clang::Stmt *stmt) {
     if (checkLocation(stmt->getBeginLoc())) {
       spdlog::debug("found corresponding statement!");
