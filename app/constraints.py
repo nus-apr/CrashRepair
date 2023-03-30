@@ -1012,11 +1012,11 @@ def get_type_limits(data_type):
 
 def get_type_width(data_type):
     if data_type in ["int", "unsigned int"]:
-        return 4
+        return 32
     elif data_type == "short":
-        return 2
-    elif data_type == "long":
         return 8
+    elif data_type == "long":
+        return 64
     else:
         utilities.error_exit("Unknown data type for width constraints: {}".format(data_type))
 
