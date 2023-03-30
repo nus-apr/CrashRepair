@@ -592,7 +592,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
             emitter.error("\t[error] unable to find call operator for memcpy error")
             utilities.error_exit("Unable to generate crash free constraint")
         ast_var_list = extract_ast_var_list(crash_call_ast, src_file)
-        cfc = constraints.generate_memcpy_constraint(crash_call_ast)
+        cfc = constraints.generate_memcpy_constraint(crash_call_ast, src_file)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
     elif crash_type == definitions.CRASH_TYPE_MEMMOVE_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memmove"])
@@ -1100,7 +1100,7 @@ def extract_expression_list(ast_node, src_file):
 
 def extract_expression_string_list(ast_node, src_file):
     expression_list = dict()
-    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/", "="])
+    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/", "=", "+=", "-=", "*=", "/="])
     # array_access_list = extract_array_subscript_node_list(ast_node)
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node)
@@ -1127,14 +1127,14 @@ def extract_expression_string_list(ast_node, src_file):
             result_type = "RESULT_REAL"
         if "opcode" in ast_node:
             op_code = ast_node["opcode"]
-            if op_code == "=":
+            if op_code in ["=", "+=", "-=", "*=", "/="]:
                 lhs_node = ast_node["inner"][0]
                 rhs_node = ast_node["inner"][1]
                 loc_range = rhs_node["range"]["begin"]
                 if rhs_node["kind"] == "BinaryOperator":
                     loc_range = rhs_node["inner"][0]["range"]["end"]
                 expression_loc = extract_loc(src_file, loc_range)
-                expression_str = converter.get_node_value(lhs_node)
+                expression_str = converter.get_node_value(rhs_node)
                 expression_index = (expression_loc[1], expression_loc[2])
                 expression_list[expression_index] = (expression_str, result_type)
                 continue
