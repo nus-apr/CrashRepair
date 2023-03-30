@@ -259,7 +259,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             concrete_val_crash_var_expr = int(crash_var_expr.split(" ")[1].replace("bv", ""))
                             bit_size_crash_var_expr = int(crash_var_expr.split(" ")[-1].replace(")", ""))
                             signed_val_crash_var_expr = solver.solve_sign(concrete_val_crash_var_expr, bit_size_crash_var_expr)
-                            if abs(signed_val_crash_var_expr) == abs(signed_val_var_expr):
+                            if signed_val_crash_var_expr == signed_val_var_expr:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
