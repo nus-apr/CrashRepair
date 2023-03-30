@@ -855,13 +855,14 @@ def generate_shift_overflow_constraint(shift_node):
     max_val_symbol = make_constraint_symbol(type_max, "CONST_INT")
     max_val_expr = make_symbolic_expression(max_val_symbol)
 
-    less_than_op = build_op_symbol("<")
+    gt_eq_op = build_op_symbol(">=")
     shift_op = build_op_symbol(">>")
     shifted_value_expr = make_binary_expression(shift_op, max_val_expr, binary_right_expr)
-    first_constraint_expr = make_binary_expression(less_than_op, shifted_value_expr, binary_left_expr)
+    first_constraint_expr = make_binary_expression(gt_eq_op, shifted_value_expr, binary_left_expr)
 
 
     # next generate the second constraint 0 < {} < bit width
+    less_than_op = build_op_symbol("<")
     type_width = get_type_width(result_data_type)
     width_val_symbol = make_constraint_symbol(str(type_width), "CONST_INT")
     width_val_expr = make_symbolic_expression(width_val_symbol)
@@ -873,7 +874,10 @@ def generate_shift_overflow_constraint(shift_node):
     second_constraint_expr = make_binary_expression(and_op, first_predicate_expr, second_predicate_expr)
 
     # last, concatenate both constraints into one
-    constraint_expr = make_binary_expression(and_op, first_constraint_expr, second_constraint_expr)
+    if binary_op_str == ">>":
+        constraint_expr = second_constraint_expr
+    else:
+        constraint_expr = make_binary_expression(and_op, first_constraint_expr, second_constraint_expr)
     return constraint_expr
 
 
