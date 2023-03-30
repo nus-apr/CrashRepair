@@ -1,15 +1,14 @@
 {
   "project": {
-    "name": "shift-overflow"
+    "name": "buffer-overflow"
   },
-  "name": "shift-right",
+  "name": "qsort",
   "binary": "src/test",
   "crash": {
     "command": "$POC",
     "input": "./exploit",
     "extra-klee-flags": "",
-    "expected-exit-code": 0,
-    "bad_output": "runtime error"
+    "expected-exit-code": 0
   },
   "source-directory": "src",
   "build": {
@@ -18,7 +17,7 @@
     "commands": {
       "prebuild": "exit 0",
       "clean": "make clean",
-      "build": "make CFLAGS='-g -O0 -fsanitize=undefined'"
+      "build": "make"
     }
   }
 }

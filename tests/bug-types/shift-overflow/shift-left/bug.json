@@ -8,7 +8,8 @@
     "command": "$POC",
     "input": "./exploit",
     "extra-klee-flags": "",
-    "expected-exit-code": 0
+    "expected-exit-code": 0,
+    "bad_output": "runtime error"
   },
   "source-directory": "src",
   "build": {
