@@ -284,7 +284,7 @@ def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
     return diff_expr, diff_val
 
 
-def pointer_analysis(var_info, memory_track, pointer_track):
+def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=None):
     updated_var_info = dict()
     shadow_var_info = dict()
     for var_name in var_info:
@@ -339,7 +339,11 @@ def pointer_analysis(var_info, memory_track, pointer_track):
                 "expr_list": [f"(_ bv{base_address} 64)"],
                 "data_type": "pointer",
             }
+
             diff_expr, concrete_value = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
+            if concrete_value == 0:
+                if concrete_var_info:
+                    concrete_value = concrete_var_info[var_name]["concrete_value"]
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
                 "data_type": "integer",
@@ -461,7 +465,8 @@ def analyze():
             crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
             sym_var_info = pointer_analysis(crash_var_symbolic_info,
                                             values.MEMORY_TRACK_SYMBOLIC,
-                                            values.POINTER_TRACK_SYMBOLIC)
+                                            values.POINTER_TRACK_SYMBOLIC,
+                                            con_var_info)
             var_info = sym_var_info
             value_map = taint_values_symbolic
         else:
