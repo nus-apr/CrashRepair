@@ -271,7 +271,9 @@ def get_sizeof_pointer(base_address, memory_track, static_size):
 
 def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
     base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-
+    if not base_address:
+        symbolic_ptr = list(pointer_track.keys())[-1]
+        base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
     if "A-data" in symbolic_ptr or "arg" in symbolic_ptr:
         base_expr = "(_ bv{} 64)".format(base_address)
         diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
