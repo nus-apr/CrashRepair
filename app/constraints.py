@@ -712,10 +712,13 @@ def generate_type_overflow_constraint(ast_node):
     return constraint_expr
 
 
-def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address):
+def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address, src_file):
     ref_node_type = reference_node["kind"]
     if ref_node_type == "ArraySubscriptExpr":
         array_node = reference_node["inner"][0]
+        array_ptr_bound_constraint = generate_out_of_bound_ptr_constraint(array_node, src_file)
+        if array_ptr_bound_constraint:
+            return array_ptr_bound_constraint
         iterator_node = reference_node["inner"][1]
 
         # last generate the expression for array size
@@ -946,7 +949,7 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
                     else:
                         alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
                         concrete_value = alloc_info["con_size"]
-                        if int(concrete_value) < int(pointer_diff):
+                        if int(concrete_value) <= int(pointer_diff):
                             sizeof_op = build_op_symbol("sizeof ")
                             ptr_expr = generate_expr_for_ast(ptr_node)
                             size_expr = make_unary_expression(sizeof_op, ptr_expr)

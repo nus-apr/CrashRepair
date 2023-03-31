@@ -526,7 +526,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
             emitter.error("\t[error] unable to find memory access operator")
             utilities.error_exit("Unable to generate crash free constraint")
         ast_var_list = extract_ast_var_list(target_ast, src_file)
-        cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc, crash_address)
+        cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc, crash_address, src_file)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
 
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
