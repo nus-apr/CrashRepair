@@ -981,13 +981,16 @@ def generate_memcpy_constraint(call_node, src_file):
     source_expr = generate_expr_for_ast(source_ptr_node)
     target_expr = generate_expr_for_ast(target_ptr_node)
     arithmetic_op = build_op_symbol("-")
-    left_hand_expr = make_binary_expression(arithmetic_op, target_expr, source_expr)
-
+    diff_expr_1 = make_binary_expression(arithmetic_op, target_expr, source_expr)
+    diff_expr_2 = make_binary_expression(arithmetic_op, source_expr, target_expr)
+    less_than_op = build_op_symbol("<")
     size_expr = generate_expr_for_ast(size_node)
+    first_constraint = make_binary_expression(less_than_op, diff_expr_1, size_expr)
+    second_constraint = make_binary_expression(less_than_op, diff_expr_2, size_expr)
 
     # last, concatenate both constraints into one
-    less_than_op = build_op_symbol("<")
-    constraint_expr = make_binary_expression(less_than_op, left_hand_expr, size_expr)
+    logical_and_op = build_op_symbol("&&")
+    constraint_expr = make_binary_expression(logical_and_op, first_constraint, second_constraint)
     return constraint_expr
 
 
