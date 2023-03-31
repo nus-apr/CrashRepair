@@ -20,13 +20,22 @@ class Test:
     cwd: str = attrs.field(repr=False)
     _shell: Shell = attrs.field(repr=False)
     bad_output: t.Optional[str] = attrs.field(default=None)
+    asan_options: t.Optional[str] = attrs.field(default=None)
+    ubsan_options: t.Optional[str] = attrs.field(default=None)
 
     def run(self, timeout_seconds: int, *, halt_on_error: bool = True) -> bool:
         """Runs this test and returns :code:`True` if it passes."""
         capture_output = self.bad_output is not None
         env: t.Dict[str, str] = {}
-        asan_options = f"detect_odr_violation=0:detect_leaks=0:halt_on_error={'true' if halt_on_error else 'false'}"  # noqa: E501
+
+        if self.asan_options:
+            asan_options = self.asan_options
+        else:
+            asan_options = f"detect_odr_violation=0:detect_leaks=0:halt_on_error={'true' if halt_on_error else 'false'}"  # noqa: E501
         env["ASAN_OPTIONS"] = asan_options
+
+        if self.ubsan_options:
+            env["UBSAN_OPTIONS"] = self.ubsan_options
 
         if "LD_LIBRARY_PATH_ORIG" in os.environ:
             env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]

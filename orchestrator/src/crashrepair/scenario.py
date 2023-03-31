@@ -86,6 +86,10 @@ class Scenario:
         Otherwise, the program will continue to run where possible.
     rebuild_for_validation: bool
         Forces the orchestrator to rebuild the project from scratch before beginning validation.
+    asan_options: t.Optional[str]
+        Optional, custom ASAN options that should be used when validating patches.
+    ubsan_options: t.Optional[str]
+        Optional, custom UBSAN options that should be used when validating patches.
     """
     subject: str
     name: str
@@ -112,6 +116,8 @@ class Scenario:
     time_limit_minutes_analysis: int = attrs.field(default=3600)
     halt_on_error: bool = attrs.field(default=True)
     rebuild_for_validation: bool = attrs.field(default=False)
+    asan_options: t.Optional[str] = attrs.field(default=None)
+    ubsan_options: t.Optional[str] = attrs.field(default=None)
 
     @property
     def compile_commands_path(self) -> str:
@@ -176,6 +182,8 @@ class Scenario:
         bad_output: t.Optional[str] = None,
         rebuild_for_validation: bool = False,
         halt_on_error: bool = True,
+        ubsan_options: t.Optional[str] = None,
+        asan_options: t.Optional[str] = None,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -202,6 +210,8 @@ class Scenario:
             cwd=directory,
             shell=shell,
             bad_output=bad_output,
+            asan_options=asan_options,
+            ubsan_options=ubsan_options,
         )
 
         scenario = Scenario(
@@ -223,6 +233,8 @@ class Scenario:
             sanitizer_flags=sanitizer_flags,
             rebuild_for_validation=rebuild_for_validation,
             halt_on_error=halt_on_error,
+            ubsan_options=ubsan_options,
+            asan_options=asan_options,
         )
 
         if fuzzer_config:
@@ -268,6 +280,8 @@ class Scenario:
             halt_on_error = crash_dict.get("halt-on-error", True)
             crashing_input = crash_dict.get("input")
             bad_output = crash_dict.get("bad_output")
+            asan_options = crash_dict.get("asan-options")
+            ubsan_options = crash_dict.get("ubsan-options")
             additional_klee_flags = crash_dict.get("extra-klee-flags", "")
             expected_exit_code_for_crashing_input = crash_dict.get("expected-exit-code", 0)
         except KeyError as exc:
@@ -296,6 +310,8 @@ class Scenario:
             fuzzer_config=fuzzer_config,
             bad_output=bad_output,
             halt_on_error=halt_on_error,
+            ubsan_options=ubsan_options,
+            asan_options=asan_options,
         )
 
     @classmethod
