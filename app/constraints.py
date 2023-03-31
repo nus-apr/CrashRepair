@@ -730,7 +730,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
             # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
             less_than_op = build_op_symbol("<")
             upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
-            lte_op = build_op_symbol("<=")
+            lte_op = build_op_symbol("<")
             zero_symbol = make_constraint_symbol("0", "CONST_INT")
             zero_expr = make_symbolic_expression(zero_symbol)
             lower_bound_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
@@ -739,8 +739,8 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         else:
             diff_op = build_op_symbol("diff ")
             diff_expr = make_unary_expression(diff_op, array_expr)
-            lte_op = build_op_symbol("<=")
-            constraint_expr = make_binary_expression(lte_op, diff_expr, size_expr)
+            lt_op = build_op_symbol("<")
+            constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
 
     else:
         ptr_node = None
@@ -816,8 +816,8 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
 
         diff_op = build_op_symbol("diff ")
         diff_expr = make_unary_expression(diff_op, ptr_expr)
-        lte_op = build_op_symbol("<=")
-        constraint_expr = make_binary_expression(lte_op, diff_expr, sizeof_expr)
+        lt_op = build_op_symbol("<")
+        constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
 
     return constraint_expr
 
