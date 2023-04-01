@@ -346,6 +346,7 @@ def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=No
             if concrete_value == 0:
                 if concrete_var_info:
                     concrete_value = concrete_var_info[var_name]["concrete_value"]
+                    diff_expr = concrete_var_info[var_name]["expr_list"][0]
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
                 "data_type": "integer",

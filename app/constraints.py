@@ -5,7 +5,7 @@ from sympy import sympify
 import os
 import typing as t
 
-from app import values, utilities, converter, extractor, analyzer, generator
+from app import values, utilities, converter, extractor, analyzer, generator, solver
 
 SymbolType = {
     "PTR": "",
@@ -366,6 +366,13 @@ class ConstraintExpression:
                 left_symbol_str = str(left_symbol._m_symbol)
                 if left_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[left_symbol_str]
+                    if "++" in mapped_str or "--" in mapped_str:
+                        var_name = mapped_str.replace("++", "").replace("--", "")
+                        if f"++{var_name}" == mapped_str or f"--{var_name}" == mapped_str:
+                            mapped_str = f"{var_name} + 1"
+                        if f"{var_name}++" == mapped_str or f"{var_name}--" == mapped_str:
+                            mapped_str = var_name
+
                     if any(op in mapped_str for op in ["+", "-", "*", "/"]):
                         mapped_expr = generate_expr_for_str(mapped_str,
                                                             self._m_lvalue.get_type())
@@ -382,6 +389,13 @@ class ConstraintExpression:
                 right_symbol_str = str(right_symbol._m_symbol)
                 if right_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[right_symbol_str]
+                    if "++" in mapped_str or "--" in mapped_str:
+                        var_name = mapped_str.replace("++", "").replace("--", "")
+                        if f"++{var_name}" == mapped_str or f"--{var_name}" == mapped_str:
+                            mapped_str = f"{var_name} + 1"
+                        if f"{var_name}++" == mapped_str or f"{var_name}--" == mapped_str:
+                            mapped_str = var_name
+
                     if any(op in mapped_str for op in ["+", "-", "*", "/"]):
                         mapped_expr = generate_expr_for_str(mapped_str,
                                                             self._m_rvalue.get_type())
@@ -725,32 +739,15 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         return constraint_expr
     ref_node_type = reference_node["kind"]
     if ref_node_type == "ArraySubscriptExpr":
-        array_node = reference_node["inner"][0]
-        array_ptr_bound_constraint = generate_out_of_bound_ptr_constraint(array_node, src_file)
-        if array_ptr_bound_constraint:
-            return array_ptr_bound_constraint
         iterator_node = reference_node["inner"][1]
+        array_node = reference_node["inner"][0]
+        iterator_constraint = generate_iterator_constraint(iterator_node, src_file, array_node)
+        if iterator_constraint:
+            return iterator_constraint
 
-        # last generate the expression for array size
-        sizeof_op = build_op_symbol("sizeof ")
-        array_expr = generate_expr_for_ast(array_node)
-        size_expr = make_unary_expression(sizeof_op, array_expr)
-        iterator_expr = generate_expr_for_ast(iterator_node)
-        if iterator_expr.get_type() != "INT_CONST":
-            # Generating a constraint of type PTR(I) <= SIZEOF(ARR)
-            less_than_op = build_op_symbol("<")
-            upper_bound_expr = make_binary_expression(less_than_op, iterator_expr, size_expr)
-            lte_op = build_op_symbol("<")
-            zero_symbol = make_constraint_symbol("0", "CONST_INT")
-            zero_expr = make_symbolic_expression(zero_symbol)
-            lower_bound_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
-            logic_and_op = build_op_symbol("&&")
-            constraint_expr = make_binary_expression(logic_and_op, upper_bound_expr, lower_bound_expr)
-        else:
-            diff_op = build_op_symbol("diff ")
-            diff_expr = make_unary_expression(diff_op, array_expr)
-            lt_op = build_op_symbol("<")
-            constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
+        array_pointer_constraint = generate_out_of_bound_ptr_constraint(array_node, src_file)
+        if array_pointer_constraint:
+            return array_pointer_constraint
 
     else:
         ptr_node = None
@@ -931,6 +928,55 @@ def generate_assertion_constraint(call_node, func_node, src_file):
     else:
         utilities.error_exit("Not implemented: handling more than 3 tokens in assertion constraint")
     return constraint_expr
+
+
+def generate_iterator_constraint(iterator_node, src_file, ptr_node):
+    source_ptr_loc = extractor.extract_loc(src_file, iterator_node["range"]["begin"])
+    source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    constraint_expr = None
+    for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
+        if source_ptr_loc_str in taint_loc:
+            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+            if expr_list and "integer" in expr_list[0]:
+                last_expr = expr_list[-1].replace("integer:", "")
+                concrete_val_var_expr = int(last_expr.split(" ")[1].replace("bv", ""))
+                bit_size_var_expr = int(last_expr.split(" ")[-1].replace(")", ""))
+                last_value = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
+                if int(last_value) < 0:
+                    iterator_expr = generate_expr_for_ast(iterator_node)
+                    lte_op = build_op_symbol("<=")
+                    zero_symbol = make_constraint_symbol("0", "CONST_INT")
+                    zero_expr = make_symbolic_expression(zero_symbol)
+                    constraint_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
+                else:
+                    alloc_size = get_pointer_size(ptr_node, src_file)
+                    if 0 < alloc_size <= int(last_value):
+                        lt_op = build_op_symbol("<")
+                        sizeof_op = build_op_symbol("sizeof ")
+                        ptr_expr = generate_expr_for_ast(ptr_node)
+                        size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                        iterator_expr = generate_expr_for_ast(iterator_node)
+                        constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
+    return constraint_expr
+
+
+def get_pointer_size(ptr_node, src_file):
+    source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+    source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    alloc_size = -1
+    for taint_loc in values.VALUE_TRACK_CONCRETE:
+        if source_ptr_loc_str in taint_loc:
+            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+            if expr_list and "pointer" in expr_list[0]:
+                last_pointer = expr_list[-1].replace("pointer:", "")
+                base_pointer = analyzer.get_base_address(last_pointer,
+                                                         values.MEMORY_TRACK_CONCRETE,
+                                                         values.POINTER_TRACK_CONCRETE)
+                if base_pointer:
+                    alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
+                    alloc_size = alloc_info["con_size"]
+    return alloc_size
+
 
 
 def generate_out_of_bound_ptr_constraint(ptr_node, src_file):

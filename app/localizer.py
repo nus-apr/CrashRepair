@@ -141,12 +141,6 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
             continue
         for expr_info in (var_info_list+expr_info_list):
             e_str, e_line, e_col, e_type, dec_or_ref = expr_info
-            if "++" in e_str or "--" in e_str:
-                var_name = e_str.replace("++", "").replace("--", "")
-                if f"++{var_name}" == e_str or f"--{var_name}" == e_str:
-                    e_str = f"{var_name} + 1"
-                if f"{var_name}++" == e_str or f"{var_name}--" == e_str:
-                    e_str = var_name
             # e-col indicates the index of the parameter argument, not the column number in the source
             if dec_or_ref == "param" and int(e_line) == int(line) and int(e_col) == int(col):
                 var_info_index = (e_str, e_line, e_col, 0)
