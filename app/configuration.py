@@ -350,6 +350,8 @@ def print_configuration():
     emitter.configuration("klee concrete execution timeout", str(values.DEFAULT_TIMEOUT_KLEE_CONCRETE))
     emitter.configuration("klee concolic execution timeout", str(values.DEFAULT_TIMEOUT_KLEE_CONCOLIC))
     emitter.configuration("synthesize subset expressions", str(values.DEFAULT_SYNTHESIZE_SUBSET_EXPR))
+    emitter.configuration("window size for taint locations", str(values.DEFAULT_MAX_TAINT_LOCATIONS))
+    emitter.configuration("window size for taint values", str(values.DEFAULT_MAX_TAINT_VALUES))
 
 
 def collect_test_list():
