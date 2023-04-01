@@ -993,17 +993,23 @@ def get_pointer_size(ptr_node, src_file):
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     alloc_size = -1
-    for taint_loc in values.VALUE_TRACK_CONCRETE:
-        if source_ptr_loc_str in taint_loc:
-            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
-            if expr_list and "pointer" in expr_list[0]:
-                last_pointer = expr_list[-1].replace("pointer:", "")
-                base_pointer = analyzer.get_base_address(last_pointer,
-                                                         values.MEMORY_TRACK_CONCRETE,
-                                                         values.POINTER_TRACK_CONCRETE)
-                if base_pointer:
-                    alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
-                    alloc_size = alloc_info["con_size"]
+    var_type = extractor.extract_data_type(ptr_node)
+    static_size = 0
+    if "[" in var_type:
+        static_size = int(var_type.split("[")[-1].split("]")[0])
+        alloc_size = static_size
+    if not static_size:
+        for taint_loc in values.VALUE_TRACK_CONCRETE:
+            if source_ptr_loc_str in taint_loc:
+                expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+                if expr_list and "pointer" in expr_list[0]:
+                    last_pointer = expr_list[-1].replace("pointer:", "")
+                    base_pointer = analyzer.get_base_address(last_pointer,
+                                                             values.MEMORY_TRACK_CONCRETE,
+                                                             values.POINTER_TRACK_CONCRETE)
+                    if base_pointer:
+                        alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
+                        alloc_size = alloc_info["con_size"]
     return alloc_size
 
 

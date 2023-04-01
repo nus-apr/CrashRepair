@@ -1164,6 +1164,10 @@ def extract_expression_string_list(ast_node, src_file):
 
 def extract_data_type(ast_node):
     data_type = "None"
+    node_kind = ast_node["kind"]
+    if node_kind == "ImplicitCastExpr":
+        ast_node = ast_node["inner"][0]
+        return extract_data_type(ast_node)
     if "type" in ast_node:
         type_node = ast_node["type"]
         if "desugaredQualType" in type_node:
