@@ -490,6 +490,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     cfc_var_info_list = cfc_info["var-info"]
     # cfc_expr.resolve_sizeof(cfc_var_info_list)
     cfc_expr_str = cfc_expr.to_string()
+    if not os.path.isfile(src_file):
+        emitter.warning("\t\t[warning] source file not found for ast lookup {}".format(src_file))
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
     call_node_list = extractor.extract_call_node_list(function_ast)
     taint_src_loc = (src_file, int(taint_line), int(taint_col))

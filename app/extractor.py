@@ -188,7 +188,11 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
         c_address = "-1"
     # ast_tree = extract_ast_json(c_file)
     # function_node_list = extract_function_node_list(ast_tree)
-    c_func_name, crash_func_ast = extract_func_ast(c_file, c_line)
+    if os.path.isfile(c_file):
+        c_func_name, crash_func_ast = extract_func_ast(c_file, c_line)
+    else:
+        crash_func_ast = None
+        c_func_name = "outside of source"
     c_loc = ":".join([c_file, c_line, c_column])
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc, c_address)
     var_name_list = sorted([x[0] for x in var_list])
@@ -523,10 +527,17 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
 
 
         if target_ast is None:
-            emitter.error("\t[error] unable to find memory access operator")
-            utilities.error_exit("Unable to generate crash free constraint")
-        ast_var_list = extract_ast_var_list(target_ast, src_file)
+            emitter.warning("\t\t[warning] unable to find memory access operator within sources")
+            last_accessed_ptr = list(values.POINTER_TRACK_CONCRETE.keys())[-1]
+            crash_ptr_loc_str = values.POINTER_TRACK_CONCRETE[last_accessed_ptr]["loc"]
+            src_file, line_num, column_num, _ = crash_ptr_loc_str.split(":")
+            crash_loc = (src_file, int(line_num), int(column_num))
         cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc, crash_address, src_file)
+        if not cfc:
+            utilities.error_exit("Unable to generate crash free constraint")
+        ast_var_list = []
+        if target_ast:
+            ast_var_list = extract_ast_var_list(target_ast, src_file)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
 
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_NULL, definitions.CRASH_TYPE_MEMORY_WRITE_NULL]:
@@ -1221,10 +1232,13 @@ def get_var_list(ast_var_list, cfc, crash_loc):
         if "sizeof " in symbol or "base " in symbol or "diff " in symbol:
             search_ex = re.search(r'pointer, (.*)\)\)', symbol)
             symbol_ptr = search_ex.group(1)
-            for var_node in ast_var_list:
-                var_name = var_node[0]
-                if var_name == symbol_ptr:
-                    var_list.append((symbol, var_node[1], var_node[2], var_node[3], "logical"))
+            if ast_var_list:
+                for var_node in ast_var_list:
+                    var_name = var_node[0]
+                    if var_name == symbol_ptr:
+                        var_list.append((symbol, var_node[1], var_node[2], var_node[3], "logical"))
+            else:
+                var_list.append((symbol, crash_loc[1], crash_loc[2], "void *", "logical"))
         else:
             for var_node in ast_var_list:
                 var_name = var_node[0]

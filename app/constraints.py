@@ -713,6 +713,16 @@ def generate_type_overflow_constraint(ast_node):
 
 
 def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address, src_file):
+    if not reference_node:
+        sizeof_op = build_op_symbol("sizeof ")
+        ptr_expr = generate_expr_for_str("ghost pointer", "PTR")
+        sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
+
+        diff_op = build_op_symbol("diff ")
+        diff_expr = make_unary_expression(diff_op, ptr_expr)
+        lt_op = build_op_symbol("<")
+        constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
+        return constraint_expr
     ref_node_type = reference_node["kind"]
     if ref_node_type == "ArraySubscriptExpr":
         array_node = reference_node["inner"][0]
