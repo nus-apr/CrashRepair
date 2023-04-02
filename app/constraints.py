@@ -853,8 +853,8 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
 
 
 def generate_memory_null_constraint(reference_node, crash_loc):
-    ref_node_type = reference_node["kind"]
-    if ref_node_type == "MemberExpr":
+    ref_node_kind = reference_node["kind"]
+    if ref_node_kind == "MemberExpr":
         got_pointer = False
         src_file, crash_l, crash_c = crash_loc
         while not got_pointer:
@@ -863,6 +863,10 @@ def generate_memory_null_constraint(reference_node, crash_loc):
                 reference_node = reference_node["inner"][0]
             else:
                 got_pointer = True
+    elif ref_node_kind == "ArraySubscriptExpr":
+        reference_node = reference_node["inner"][0]
+
+
     left_expr = generate_expr_for_ast(reference_node)
     constraint_op_str = "!="
     constraint_op_type = next(key for key, value in SymbolType.items() if value == constraint_op_str)
