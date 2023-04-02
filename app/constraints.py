@@ -303,11 +303,22 @@ class ConstraintExpression:
     def get_base(self):
         return self._m_base_mapping
 
+    def transform_increment_decrement(self, expr_str):
+        transformed_expr = expr_str
+        if "++" in expr_str or "--" in expr_str:
+            var_name = expr_str.replace("++", "").replace("--", "")
+            if f"++{var_name}" == expr_str or f"--{var_name}" == expr_str:
+                transformed_expr = f"{var_name} + 1"
+            if f"{var_name}++" == expr_str or f"{var_name}--" == expr_str:
+                transformed_expr = var_name
+        return transformed_expr
+
     def resolve_sizeof(self, symbolic_mapping):
         if self._m_symbol.is_sizeof():
             symbol_name = self.to_string()
             if symbol_name in symbolic_mapping:
                 mapping = symbolic_mapping[symbol_name]
+                mapping = self.transform_increment_decrement(mapping)
                 # assumption: mapping is either constant or variable, not an expression i.e. a+b
                 if str(mapping).isnumeric():
                     mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
@@ -324,6 +335,7 @@ class ConstraintExpression:
             symbol_name = self.to_string()
             if symbol_name in symbolic_mapping:
                 mapping = symbolic_mapping[symbol_name]
+                mapping = self.transform_increment_decrement(mapping)
                 # assumption: mapping is either constant or variable, not an expression i.e. a+b
                 if str(mapping).isnumeric():
                     mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
@@ -366,12 +378,7 @@ class ConstraintExpression:
                 left_symbol_str = str(left_symbol._m_symbol)
                 if left_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[left_symbol_str]
-                    if "++" in mapped_str or "--" in mapped_str:
-                        var_name = mapped_str.replace("++", "").replace("--", "")
-                        if f"++{var_name}" == mapped_str or f"--{var_name}" == mapped_str:
-                            mapped_str = f"{var_name} + 1"
-                        if f"{var_name}++" == mapped_str or f"{var_name}--" == mapped_str:
-                            mapped_str = var_name
+                    mapped_str = self.transform_increment_decrement(mapped_str)
 
                     if any(op in mapped_str for op in ["+", "-", "*", "/"]):
                         mapped_expr = generate_expr_for_str(mapped_str,
@@ -389,12 +396,7 @@ class ConstraintExpression:
                 right_symbol_str = str(right_symbol._m_symbol)
                 if right_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[right_symbol_str]
-                    if "++" in mapped_str or "--" in mapped_str:
-                        var_name = mapped_str.replace("++", "").replace("--", "")
-                        if f"++{var_name}" == mapped_str or f"--{var_name}" == mapped_str:
-                            mapped_str = f"{var_name} + 1"
-                        if f"{var_name}++" == mapped_str or f"{var_name}--" == mapped_str:
-                            mapped_str = var_name
+                    mapped_str = self.transform_increment_decrement(mapped_str)
 
                     if any(op in mapped_str for op in ["+", "-", "*", "/"]):
                         mapped_expr = generate_expr_for_str(mapped_str,
@@ -441,9 +443,19 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     translated_map = dict()
     token_num = 0
     try:
-        if any(c in expr_str for c in ["[", "]", ".", "->"]):
+        if any(c in expr_str for c in ["[", "]", ".", "->", "++","--"]):
             token_list = expr_str.split(" ")
             for token in token_list:
+                if "++" in token or "--" in token:
+                    stripped_token = token.replace("(", "").replace(")", "")
+                    transformed_token = token
+                    var_name = stripped_token.replace("++", "").replace("--", "")
+                    if f"++{var_name}" == stripped_token or f"--{var_name}" == stripped_token:
+                        transformed_token = f"({var_name} + 1)"
+                    if f"{var_name}++" == stripped_token or f"{var_name}--" == stripped_token:
+                        transformed_token = var_name
+                    translated_map[stripped_token] = transformed_token
+                    expr_str = expr_str.replace(stripped_token, transformed_token)
                 if any(c in token for c in ["[", "]", ".", "->"]):
                     token_name = "__token_{}".format(token_num)
                     stripped_token = token.replace("(", "").replace(")", "")
