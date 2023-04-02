@@ -963,6 +963,8 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
         source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
         source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     constraint_expr = None
+    result_data_type = extractor.extract_data_type(iterator_node)
+    is_signed = "unsigned" not in result_data_type
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if source_ptr_loc_str in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
@@ -971,7 +973,7 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                 concrete_val_var_expr = int(last_expr.split(" ")[1].replace("bv", ""))
                 bit_size_var_expr = int(last_expr.split(" ")[-1].replace(")", ""))
                 last_value = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
-                if int(last_value) < 0:
+                if int(last_value) < 0 and is_signed:
                     iterator_expr = generate_expr_for_ast(iterator_node)
                     lte_op = build_op_symbol("<=")
                     zero_symbol = make_constraint_symbol("0", "CONST_INT")
@@ -979,7 +981,7 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                     constraint_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
                 else:
                     alloc_size = get_pointer_size(ptr_node, src_file)
-                    if 0 < alloc_size <= int(last_value):
+                    if (0 < alloc_size <= int(last_value)) or (int(last_value) < 0 and not is_signed):
                         lt_op = build_op_symbol("<")
                         sizeof_op = build_op_symbol("sizeof ")
                         ptr_expr = generate_expr_for_ast(ptr_node)
