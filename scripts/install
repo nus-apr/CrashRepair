@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# This script builds the combined Docker image for CrashRepair and the benchmark
+#
+HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+ROOT_DIR="${HERE_DIR}/.."
+DOCKER_DIR="${ROOT_DIR}/docker"
+
+make -C "${DOCKER_DIR}" aio
