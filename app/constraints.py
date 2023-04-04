@@ -859,7 +859,14 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         diff_op = build_op_symbol("diff ")
         diff_expr = make_unary_expression(diff_op, ptr_expr)
         lt_op = build_op_symbol("<")
-        constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
+
+        pointer_diff = get_pointer_diff(ptr_node, src_file)
+        if pointer_diff < 0:
+            zero_symbol = make_constraint_symbol("0", "CONST_INT")
+            zero_expr = make_symbolic_expression(zero_symbol)
+            constraint_expr = make_binary_expression(lt_op, zero_expr, diff_expr)
+        else:
+            constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
 
     return constraint_expr
 
