@@ -1035,7 +1035,7 @@ def get_pointer_diff(ptr_node, src_file):
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     pointer_diff = None
-    for taint_loc in values.VALUE_TRACK_CONCRETE:
+    for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if source_ptr_loc_str in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
             if expr_list and "pointer" in expr_list[0]:
@@ -1046,6 +1046,7 @@ def get_pointer_diff(ptr_node, src_file):
                 if base_pointer:
                     last_ptr_concrete = last_pointer.split(" ")[1].replace("bv", "")
                     pointer_diff = int(last_ptr_concrete) - int(base_pointer)
+                    break
     return pointer_diff
 
 
