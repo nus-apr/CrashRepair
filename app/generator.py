@@ -6,7 +6,7 @@ import os
 from pysmt.exceptions import UndefinedSymbolError, PysmtValueError,PysmtTypeError
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.typing import BV32, BV8, ArrayType
-from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, is_sat
+from pysmt.shortcuts import write_smtlib, get_model, Symbol, is_unsat, is_sat, is_valid
 from app import emitter, values, reader, definitions, extractor, oracle, utilities, logger
 import re
 import struct
@@ -153,7 +153,7 @@ def generate_z3_code_for_var(var_expr, var_name):
             parser = SmtLibParser()
             script = parser.get_script(cStringIO(code))
             formula = script.get_last_formula()
-            result = is_sat(formula, solver_name="z3")
+            result = is_valid(formula, solver_name="z3")
             break
         except PysmtTypeError as ex:
             bit_size = bit_size * 2

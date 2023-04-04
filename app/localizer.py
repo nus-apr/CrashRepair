@@ -203,6 +203,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
             for expr_taint_info in expr_taint_list:
                 expr_str, e_line, e_col, e_addr = expr_taint_info
                 var_expr_list = expr_taint_list[expr_taint_info]["expr_list"]
+                var_expr_list = var_expr_list[-values.DEFAULT_EXPR_COMPARE_LIMIT:]
                 e_type = expr_taint_list[expr_taint_info]["data_type"]
                 is_exp_dec = expr_taint_list[expr_taint_info]["is_dec"]
                 if e_type != crash_var_type:
@@ -492,6 +493,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     cfc_expr_str = cfc_expr.to_string()
     if not os.path.isfile(src_file):
         emitter.warning("\t\t[warning] source file not found for ast lookup {}".format(src_file))
+        return []
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
     call_node_list = extractor.extract_call_node_list(function_ast)
     taint_src_loc = (src_file, int(taint_line), int(taint_col))

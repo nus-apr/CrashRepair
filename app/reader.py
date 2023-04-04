@@ -464,6 +464,9 @@ def read_tainted_expressions(taint_log_path):
                         data_type = "double"
                     formatted_taint_value = "{}:{}".format(data_type.strip(), taint_value)
                     taint_map[source_loc].append(formatted_taint_value)
+    for taint_loc in taint_map:
+        expr_list = taint_map[taint_loc]
+        taint_map[taint_loc] = list(set(expr_list))
     return taint_map
 
 
