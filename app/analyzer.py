@@ -300,7 +300,7 @@ def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=No
             pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             shadow_var_info[pointer_name] = {
-                "expr_list": [f"(_ bv{base_address} 64)"],
+                "expr_list": [symbolic_ptr],
                 "data_type": "pointer",
             }
             # if "[" in static_size:
@@ -324,7 +324,7 @@ def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=No
             pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             shadow_var_info[pointer_name] = {
-                "expr_list": [f"(_ bv{base_address} 64)"],
+                "expr_list": [symbolic_ptr],
                 "data_type": "pointer",
             }
 
@@ -338,7 +338,7 @@ def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=No
             pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             shadow_var_info[pointer_name] = {
-                "expr_list": [f"(_ bv{base_address} 64)"],
+                "expr_list": [symbolic_ptr],
                 "data_type": "pointer",
             }
 
