@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
+import re
 import os
 import operator
 import collections
@@ -187,12 +187,14 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
     # print(var_taint_list)
     logger.track_localization("VAR TAINT LIST: {}".format(expr_taint_list))
     candidate_mapping = collections.OrderedDict()
+    shadow_var_info = cfc_var_info_list["shadow"]
     for crash_var_name in cfc_var_info_list:
         if crash_var_name == "shadow":
             continue
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
-        if "sizeof " in crash_var_name and "con_size" in crash_var_expr_list:
+        if ("sizeof " in crash_var_name or "diff " in crash_var_name) and \
+                "con_size" in crash_var_expr_list:
             crash_var_expr_list = ["(_ bv{} 64)".format(crash_var_expr_list["con_size"])]
         crash_var_input_byte_list = []
         subset_expr_list = list()
@@ -221,7 +223,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                         logger.track_localization("NO TAINT SOURCES FOR {} and {}".format(crash_var_name, expr_str))
                         if not expr_str or expr_str.strip() in ["()"]:
                             continue
-                        if crash_var_type == "pointer" and e_type == "pointer":
+                        if crash_var_type == "pointer" and e_type == "pointer" and "diff " not in crash_var_name and "base " not in crash_var_name:
                             if var_expr in crash_var_expr_list:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
@@ -262,7 +264,16 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             concrete_val_crash_var_expr = int(crash_var_expr.split(" ")[1].replace("bv", ""))
                             bit_size_crash_var_expr = int(crash_var_expr.split(" ")[-1].replace(")", ""))
                             signed_val_crash_var_expr = solver.solve_sign(concrete_val_crash_var_expr, bit_size_crash_var_expr)
+
+                            diff_ptr_name =  re.search(r'pointer, (.*)\)\)', crash_var_name).group(1)
+                            diff_pointer_val = shadow_var_info[diff_ptr_name]["expr_list"][0].split(" ")[1].replace("bv", "")
+                            is_match = False
+                            if int(diff_pointer_val) == int(concrete_val_var_expr):
+                                if any(token in expr_str for token in ["+", "-"]):
+                                    is_match = True
                             if signed_val_crash_var_expr == signed_val_var_expr:
+                                    is_match = True
+                            if is_match:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
@@ -510,7 +521,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     for c_t_lookup in cfc_tokens:
         if c_t_lookup in candidate_mapping:
             cfc_token_mappings.append((c_t_lookup, len(candidate_mapping[c_t_lookup])))
-        elif "sizeof " in c_t_lookup or "diff " in c_t_lookup:
+        elif any (token in c_t_lookup for token in ["sizeof ", "diff " ,"base "]):
             cfc_token_mappings.append((c_t_lookup, 1))
     sorted_cfc_tokens = sorted(cfc_token_mappings, key=lambda x:x[1])
     sorted_cfc_tokens = [x[0] for x in sorted_cfc_tokens]
@@ -567,9 +578,16 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
             else:
-                if "sizeof " in c_t_lookup or "diff " in c_t_lookup:
-                    concrete_value = cfc_var_info_list[c_t_lookup]["concrete_value"]
-                    localized_tokens[c_t_lookup] = str(concrete_value)
+                if "sizeof " in c_t_lookup:
+                    ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
+                    localized_tokens[c_t_lookup] = f"__get_ptr_size({ptr_name})"
+                if "diff " in c_t_lookup:
+                    ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
+                    localized_tokens[c_t_lookup] = f"{ptr_name} - __get_ptr_base({ptr_name})"
+                if "base " in c_t_lookup:
+                    ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
+                    localized_tokens[c_t_lookup] = f"__get_ptr_base({ptr_name})"
+
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
         if len(localized_tokens.keys()) == len(cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
