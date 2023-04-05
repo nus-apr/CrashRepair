@@ -863,9 +863,10 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
 
         pointer_diff = get_pointer_diff(ptr_node, src_file)
         if pointer_diff < 0:
+            lte_op = build_op_symbol("<=")
             base_op = build_op_symbol("base ")
             base_expr = make_unary_expression(base_op, ptr_expr)
-            constraint_expr = make_binary_expression(lt_op, base_expr, diff_expr)
+            constraint_expr = make_binary_expression(lte_op, base_expr, diff_expr)
         else:
             constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
 
@@ -1080,10 +1081,10 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
         diff_op = build_op_symbol("diff ")
         ptr_expr = generate_expr_for_ast(ptr_node)
         diff_expr = make_unary_expression(diff_op, ptr_expr)
-        lt_op = build_op_symbol("<")
+        lte_op = build_op_symbol("<=")
         base_op = build_op_symbol("base ")
         base_expr = make_unary_expression(base_op, ptr_expr)
-        constraint_expr = make_binary_expression(lt_op, base_expr, diff_expr)
+        constraint_expr = make_binary_expression(lte_op, base_expr, diff_expr)
 
     alloc_size = get_pointer_size(ptr_node, src_file)
     if alloc_size is not None and int(alloc_size) <= int(pointer_diff):
