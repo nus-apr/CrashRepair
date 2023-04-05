@@ -13,7 +13,7 @@ if [ ! "$(docker ps -q -f name=$CONTAINER_NAME)"  ]; then
     if [ ! "$(docker ps -aq -f status=exited -f name=$CONTAINER_NAME)"  ]; then
         docker rm crepair
     fi
-    docker run -d -ti --name $CONTAINER_NAME -v $BASEDIR:/CrashRepair --cap-add=SYS_PTRACE --security-opt seccomp=unconfined $IMAGE_NAME
+    docker run -d -ti --name $CONTAINER_NAME -v $BASEDIR/app:/CrashRepair/app --cap-add=SYS_PTRACE --security-opt seccomp=unconfined $IMAGE_NAME
 fi
 
 docker exec -it $CONTAINER_NAME bash
