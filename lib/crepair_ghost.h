@@ -5,8 +5,8 @@
 #include <pthread.h>
 
 
-size_t get_ptr_size(size_t ptr);
-size_t get_ptr_base(size_t ptr);
+size_t __get_ptr_size(size_t ptr);
+size_t __get_ptr_base(size_t ptr);
 
 #define MEM_MAP_SIZE 5000
 struct Map {
@@ -17,7 +17,7 @@ int map_counter = 0;
 struct Map memory_map[MEM_MAP_SIZE];
 
 
-size_t get_ptr_size(size_t ptr){
+size_t __get_ptr_size(size_t ptr){
 
    for (int i=0; i < map_counter; i++){
 
@@ -34,7 +34,7 @@ size_t get_ptr_size(size_t ptr){
 
 }
 
-size_t get_ptr_base(size_t ptr) {
+size_t __get_ptr_base(size_t ptr) {
 
    for (int i=0; i < map_counter; i++){
 
