@@ -41,6 +41,15 @@ RUN apt-get update -qq \
  && apt-get install -y \
       gcc-9 \
       g++-9 \
+ && apt-get install -y \
+      jbigkit-bin \
+      libfreetype6-dev \
+      libgmp-dev \
+      libgmp10 \
+      libjbig-dev \
+      libjbig0 \
+      libreadline-dev \
+      libreadline5 \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
