@@ -862,9 +862,9 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
 
         pointer_diff = get_pointer_diff(ptr_node, src_file)
         if pointer_diff < 0:
-            zero_symbol = make_constraint_symbol("0", "CONST_INT")
-            zero_expr = make_symbolic_expression(zero_symbol)
-            constraint_expr = make_binary_expression(lt_op, zero_expr, diff_expr)
+            base_op = build_op_symbol("base ")
+            base_expr = make_unary_expression(base_op, ptr_expr)
+            constraint_expr = make_binary_expression(lt_op, base_expr, diff_expr)
         else:
             constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
 
@@ -1038,6 +1038,21 @@ def get_pointer_size(ptr_node, src_file):
     return alloc_size
 
 
+def get_pointer_base(ptr_node, src_file):
+    source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+    source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    base_pointer = None
+    for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
+        if source_ptr_loc_str in taint_loc:
+            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+            if expr_list and "pointer" in expr_list[0]:
+                last_pointer = expr_list[-1].replace("pointer:", "")
+                base_pointer = analyzer.get_base_address(last_pointer,
+                                                         values.MEMORY_TRACK_CONCRETE,
+                                                         values.POINTER_TRACK_CONCRETE)
+    return base_pointer
+
+
 def get_pointer_diff(ptr_node, src_file):
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
@@ -1065,9 +1080,9 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
         ptr_expr = generate_expr_for_ast(ptr_node)
         diff_expr = make_unary_expression(diff_op, ptr_expr)
         lt_op = build_op_symbol("<")
-        zero_symbol = make_constraint_symbol("0", "CONST_INT")
-        zero_expr = make_symbolic_expression(zero_symbol)
-        constraint_expr = make_binary_expression(lt_op, zero_expr, diff_expr)
+        base_op = build_op_symbol("base ")
+        base_expr = make_unary_expression(base_op, ptr_expr)
+        constraint_expr = make_binary_expression(lt_op, base_expr, diff_expr)
 
     alloc_size = get_pointer_size(ptr_node, src_file)
     if alloc_size is not None and int(alloc_size) <= int(pointer_diff):
