@@ -994,7 +994,7 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
         if source_ptr_loc_str in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
             if expr_list and "integer" in expr_list[0]:
-                last_expr = expr_list[0].replace("integer:", "")
+                last_expr = expr_list[-1].replace("integer:", "")
                 concrete_val_var_expr = int(last_expr.split(" ")[1].replace("bv", ""))
                 bit_size_var_expr = int(last_expr.split(" ")[-1].replace(")", ""))
                 last_value = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
