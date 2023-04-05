@@ -144,7 +144,7 @@ def get_crash_values(argument_list, program_path):
         v_info["expr_list"] = []
         var_info[v_name] = v_info
         v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
-        if "sizeof " in v_name or "base " in v_name or "diff " in v_name:
+        if any( t in v_name for t in ["sizeof ", "base ", "diff "]):
             search_ex = re.search(r'pointer, (.*)\)\)', v_name)
             v_name = search_ex.group(1)
             #v_name = v_name.split(" ")[-1].replace(")", "")
@@ -349,7 +349,7 @@ def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=No
                     diff_expr = concrete_var_info[var_name]["expr_list"][0]
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
-                "data_type": "integer",
+                "data_type": "pointer",
                 "concrete_value": concrete_value
             }
     updated_var_info["shadow"] = shadow_var_info
@@ -374,7 +374,7 @@ def identify_sources(var_info):
         byte_list = list(set(byte_list))
         taint_byte_list = taint_byte_list + byte_list
         taint_sources = sorted([str(i) for i in byte_list])
-        if var_type == "pointer":
+        if var_type == "pointer" and any( t in var_name for t in ["base ", "diff "]):
             memory_list = []
             value_list = var_info[var_name]["expr_list"]
             for expr in value_list:
@@ -393,7 +393,7 @@ def identify_sources(var_info):
             tainted_addresses = sorted([str(i) for i in memory_list])
             taint_sources = taint_sources + tainted_addresses
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
-        elif not taint_byte_list and ("sizeof " in var_name or "base " in var_name or "diff " in var_name):
+        elif not byte_list and any( t in var_name for t in ["sizeof ", "base ", "diff "]):
             pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
             if pointer_name not in shadow_var_info:
                 continue
@@ -410,6 +410,7 @@ def identify_sources(var_info):
                         memory_address = expr_tokens[2]
                 shadow_memory_list.append(memory_address)
             shadow_memory_list = list(set(shadow_memory_list))
+            taint_memory_list = taint_memory_list + shadow_memory_list
             tainted_addresses = sorted([str(i) for i in shadow_memory_list])
             taint_sources = taint_sources + tainted_addresses
             emitter.highlight("\t\t[info] Shadow Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
