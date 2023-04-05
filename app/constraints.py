@@ -456,8 +456,9 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
                         transformed_token = var_name
                     translated_map[stripped_token] = transformed_token
                     expr_str = expr_str.replace(stripped_token, transformed_token)
-                if any(c in token for c in ["[", "]", ".", "->"]):
+                if any(c in token for c in ["[", "]", ".", "->", "len"]):
                     token_name = "__token_{}".format(token_num)
+                    token_num = token_num + 1
                     stripped_token = token.replace("(", "").replace(")", "")
                     translated_map[token_name] = stripped_token
                     expr_str = expr_str.replace(stripped_token, token_name)
