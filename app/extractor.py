@@ -1075,7 +1075,7 @@ def extract_loc(file_path, ast_loc_info, op_code = None):
 def extract_expression_list(ast_node, src_file):
     expression_list = list()
     array_access_list = extract_array_subscript_node_list(ast_node)
-    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/"])
+    binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/", "=", "+=", "-=", "*=", "/="])
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node, src_file)
     for subscript_node in array_access_list:
@@ -1091,12 +1091,35 @@ def extract_expression_list(ast_node, src_file):
         op_code = None
         if "opcode" in op_node:
             op_code = op_node["opcode"]
-            if op_code == "=":
-                op_node = op_node["inner"][1]
-                if "opcode" in op_node:
-                    op_code = op_node["opcode"]
+            data_type = extract_data_type(op_node)
+            if op_code in ["=", "+=", "-=", "*=", "/="]:
+                lhs_node = op_node["inner"][0]
+                rhs_node = op_node["inner"][1]
+
+                expression_str_lhs = converter.get_node_value(lhs_node)
+                expression_str_rhs = converter.get_node_value(rhs_node)
+                if op_code in ["+=", "-=", "*=", "/="]:
+                    loc_range = op_node["range"]["begin"]
+                    expression_loc = extract_loc(src_file, loc_range, op_code)
+                    if op_code == "+=":
+                        expression_str_rhs = f"{expression_str_lhs} + {expression_str_rhs}"
+                    elif op_code == "-=":
+                        expression_str_rhs = f"{expression_str_lhs} - {expression_str_rhs}"
+                    elif op_code == "*=":
+                        expression_str_rhs = f"{expression_str_lhs} * {expression_str_rhs}"
+                    elif op_code == "/=":
+                        expression_str_rhs = f"{expression_str_lhs} / {expression_str_rhs}"
                 else:
-                    op_code = None
+                    loc_range = op_node["range"]["begin"]
+                    if op_node["kind"] == "BinaryOperator":
+                        loc_range = op_node["inner"][0]["range"]["end"]
+                    expression_loc = extract_loc(src_file, loc_range)
+                expression_list.append((expression_str_lhs, expression_loc[1],
+                                        expression_loc[2], data_type, "ref"))
+                expression_list.append((expression_str_rhs, expression_loc[1],
+                                        expression_loc[2], data_type, "ref"))
+                continue
+
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
             data_type = "bool"
         else:
@@ -1144,10 +1167,14 @@ def extract_expression_string_list(ast_node, src_file):
             if op_code in ["=", "+=", "-=", "*=", "/="]:
                 lhs_node = op_node["inner"][0]
                 rhs_node = op_node["inner"][1]
-                loc_range = rhs_node["range"]["begin"]
-                if rhs_node["kind"] == "BinaryOperator":
-                    loc_range = rhs_node["inner"][0]["range"]["end"]
-                expression_loc = extract_loc(src_file, loc_range)
+                if op_code in ["+=", "-=", "/=", "*="]:
+                    loc_range = rhs_node["range"]["begin"]
+                    expression_loc = extract_loc(src_file, loc_range, op_code)
+                else:
+                    loc_range = rhs_node["range"]["begin"]
+                    if rhs_node["kind"] == "BinaryOperator":
+                        loc_range = rhs_node["inner"][0]["range"]["end"]
+                    expression_loc = extract_loc(src_file, loc_range)
                 expression_str = converter.get_node_value(rhs_node)
                 expression_index = (expression_loc[1], expression_loc[2])
                 expression_list[expression_index] = (expression_str, result_type)
