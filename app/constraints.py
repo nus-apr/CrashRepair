@@ -447,18 +447,22 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     try:
         if any(c in expr_str for c in ["[", "]", ".", "->", "++","--"]):
             token_list = expr_str.split(" ")
+            new_token_list = []
             for token in token_list:
+                new_token = token
                 if "++" in token or "--" in token:
                     stripped_token = token.replace("(", "").replace(")", "")
                     transformed_token = transform_increment_decrement(stripped_token)
-                    translated_map[stripped_token] = transformed_token
-                    expr_str = expr_str.replace(stripped_token, transformed_token)
+                    new_token = transformed_token
                 if any(c in token for c in ["[", "]", ".", "->", "len"]):
                     token_name = "__token_{}".format(token_num)
                     token_num = token_num + 1
-                    stripped_token = token.replace("(", "").replace(")", "")
-                    translated_map[token_name] = stripped_token
-                    expr_str = expr_str.replace(stripped_token, token_name)
+                    new_token = token_name
+
+                if token != new_token:
+                    translated_map[new_token] = token
+                new_token_list.append(new_token)
+            expr_str = " ".join(new_token_list)
         symbolized_expr = sympify(expr_str)
     except Exception as ex:
         constraint_symbol = make_constraint_symbol(expr_str, data_type)
