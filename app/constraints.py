@@ -342,6 +342,10 @@ class ConstraintExpression:
                 resolve_cfc = resolve_base(lhs_str, symbol_mapping)
                 if resolve_cfc:
                     self._m_lvalue = resolve_cfc
+            elif left_symbol.is_null() or \
+                left_symbol.is_const_int() or \
+                left_symbol.is_const_real():
+                self._m_lvalue._m_symbol = left_symbol
             else:
                 emitter.error(f"constraint expr {self._m_lvalue.to_string()}")
                 emitter.error(f"constraint type {left_symbol}")
@@ -379,7 +383,10 @@ class ConstraintExpression:
                 resolve_cfc = resolve_base(rhs_str, symbol_mapping)
                 if resolve_cfc:
                     self._m_rvalue = resolve_cfc
-
+            elif right_symbol.is_null() or \
+                right_symbol.is_const_int() or \
+                right_symbol.is_const_real():
+                self._m_rvalue._m_symbol = right_symbol
             else:
                 emitter.error(f"constraint expr {self._m_rvalue.to_string()}")
                 emitter.error(f"constraint type {right_symbol}")
