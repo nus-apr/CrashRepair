@@ -470,7 +470,7 @@ def read_tainted_expressions(taint_log_path):
         for v in reversed(expr_list):
             if v not in unique_var_expr_list:
                 unique_var_expr_list.append(v)
-        taint_map[taint_loc] = unique_var_expr_list
+        taint_map[taint_loc] = list(reversed(unique_var_expr_list))
     return taint_map
 
 
