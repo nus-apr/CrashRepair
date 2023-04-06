@@ -313,7 +313,25 @@ class ConstraintExpression:
 
         if self._m_lvalue:
             left_symbol = self._m_lvalue._m_symbol
-            if left_symbol.is_var_int() or left_symbol.is_var_real() or left_symbol.is_ptr():
+            if left_symbol.is_operator():
+                if left_symbol.is_sizeof():
+                    lhs_str = self._m_lvalue.to_string()
+                    resolve_cfc = resolve_sizeof(lhs_str, symbol_mapping)
+                    if resolve_cfc:
+                        self._m_lvalue = resolve_cfc
+                elif left_symbol.is_diff():
+                    lhs_str = self._m_lvalue.to_string()
+                    resolve_cfc = resolve_diff(lhs_str, symbol_mapping)
+                    if resolve_cfc:
+                        self._m_lvalue = resolve_cfc
+                elif left_symbol.is_base():
+                    lhs_str = self._m_lvalue.to_string()
+                    resolve_cfc = resolve_base(lhs_str, symbol_mapping)
+                    if resolve_cfc:
+                        self._m_lvalue = resolve_cfc
+                else:
+                    self._m_lvalue.update_symbols(symbol_mapping)
+            elif left_symbol.is_var_int() or left_symbol.is_var_real() or left_symbol.is_ptr():
                 left_symbol_str = str(left_symbol._m_symbol)
                 if left_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[left_symbol_str]
@@ -327,21 +345,7 @@ class ConstraintExpression:
                         self._m_lvalue.update_symbols(symbol_mapping)
                 else:
                     self._m_lvalue.update_symbols(symbol_mapping)
-            elif left_symbol.is_sizeof():
-                lhs_str = self._m_lvalue.to_string()
-                resolve_cfc = resolve_sizeof(lhs_str, symbol_mapping)
-                if resolve_cfc:
-                    self._m_lvalue = resolve_cfc
-            elif left_symbol.is_diff():
-                lhs_str = self._m_lvalue.to_string()
-                resolve_cfc = resolve_diff(lhs_str, symbol_mapping)
-                if resolve_cfc:
-                    self._m_lvalue = resolve_cfc
-            elif left_symbol.is_base():
-                lhs_str = self._m_lvalue.to_string()
-                resolve_cfc = resolve_base(lhs_str, symbol_mapping)
-                if resolve_cfc:
-                    self._m_lvalue = resolve_cfc
+
             elif left_symbol.is_null() or \
                 left_symbol.is_const_int() or \
                 left_symbol.is_const_real():
@@ -354,7 +358,25 @@ class ConstraintExpression:
 
         if self._m_rvalue:
             right_symbol = self._m_rvalue._m_symbol
-            if right_symbol.is_var_int() or right_symbol.is_var_real() or right_symbol.is_ptr():
+            if right_symbol.is_operator():
+                if right_symbol.is_sizeof():
+                    rhs_str = self._m_rvalue.to_string()
+                    resolve_cfc = resolve_sizeof(rhs_str, symbol_mapping)
+                    if resolve_cfc:
+                        self._m_rvalue = resolve_cfc
+                elif right_symbol.is_diff():
+                    rhs_str = self._m_rvalue.to_string()
+                    resolve_cfc = resolve_diff(rhs_str, symbol_mapping)
+                    if resolve_cfc:
+                        self._m_rvalue = resolve_cfc
+                elif right_symbol.is_base():
+                    rhs_str = self._m_rvalue.to_string()
+                    resolve_cfc = resolve_base(rhs_str, symbol_mapping)
+                    if resolve_cfc:
+                        self._m_rvalue = resolve_cfc
+                else:
+                    self._m_rvalue.update_symbols(symbol_mapping)
+            elif right_symbol.is_var_int() or right_symbol.is_var_real() or right_symbol.is_ptr():
                 right_symbol_str = str(right_symbol._m_symbol)
                 if right_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[right_symbol_str]
@@ -368,21 +390,7 @@ class ConstraintExpression:
                         self._m_rvalue.update_symbols(symbol_mapping)
                 else:
                     self._m_rvalue.update_symbols(symbol_mapping)
-            elif right_symbol.is_sizeof():
-                rhs_str = self._m_rvalue.to_string()
-                resolve_cfc = resolve_sizeof(rhs_str, symbol_mapping)
-                if resolve_cfc:
-                    self._m_rvalue = resolve_cfc
-            elif right_symbol.is_diff():
-                rhs_str = self._m_rvalue.to_string()
-                resolve_cfc = resolve_diff(rhs_str, symbol_mapping)
-                if resolve_cfc:
-                    self._m_rvalue = resolve_cfc
-            elif right_symbol.is_base():
-                rhs_str = self._m_rvalue.to_string()
-                resolve_cfc = resolve_base(rhs_str, symbol_mapping)
-                if resolve_cfc:
-                    self._m_rvalue = resolve_cfc
+
             elif right_symbol.is_null() or \
                 right_symbol.is_const_int() or \
                 right_symbol.is_const_real():
@@ -823,7 +831,10 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         if ref_node_type == "DeclRefExpr":
             ptr_node = reference_node
         elif ref_node_type == "UnaryOperator":
-            ptr_node = reference_node
+            if reference_node["inner"][0]["kind"] in ["UnaryOperator", "ImplicitCastExpr"]:
+                ptr_node = reference_node["inner"][0]
+            else:
+                ptr_node = reference_node
         elif ref_node_type == "MemberExpr":
             got_pointer = False
             src_file, crash_l, crash_c = crash_loc
@@ -1039,16 +1050,24 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                     constraint_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
                 else:
                     alloc_size, is_static = get_pointer_size(ptr_node, src_file)
-                    if (0 < alloc_size <= int(last_value)) or (int(last_value) < 0 and not is_signed):
-                        lt_op = build_op_symbol("<")
-                        if is_static:
-                            size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
-                            size_expr = make_symbolic_expression(size_symbol)
-                        else:
-                            sizeof_op = build_op_symbol("sizeof ")
-                            ptr_expr = generate_expr_for_ast(ptr_node)
-                            size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                    if alloc_size.isnumeric():
+                        if (0 < int(alloc_size) <= int(last_value)) or (int(last_value) < 0 and not is_signed):
+                            lt_op = build_op_symbol("<")
+                            if is_static:
+                                size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
+                                size_expr = make_symbolic_expression(size_symbol)
+                            else:
+                                sizeof_op = build_op_symbol("sizeof ")
+                                ptr_expr = generate_expr_for_ast(ptr_node)
+                                size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                            iterator_expr = generate_expr_for_ast(iterator_node)
+                            constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
+                    else:
                         iterator_expr = generate_expr_for_ast(iterator_node)
+                        lt_op = build_op_symbol("<")
+                        sizeof_op = build_op_symbol("sizeof ")
+                        ptr_expr = generate_expr_for_ast(ptr_node)
+                        size_expr = make_unary_expression(sizeof_op, ptr_expr)
                         constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
     return constraint_expr
 
@@ -1061,9 +1080,10 @@ def get_pointer_size(ptr_node, src_file):
     static_size = None
     is_static = False
     if "[" in var_type:
-        static_size = int(var_type.split("[")[-1].split("]")[0])
-        alloc_size = static_size
         is_static = True
+        static_size = var_type.split("[")[-1].split("]")[0]
+        alloc_size = static_size
+
     if not static_size:
         for taint_loc in values.VALUE_TRACK_CONCRETE:
             if source_ptr_loc_str in taint_loc:
@@ -1075,7 +1095,7 @@ def get_pointer_size(ptr_node, src_file):
                                                              values.POINTER_TRACK_CONCRETE)
                     if base_pointer:
                         alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
-                        alloc_size = alloc_info["con_size"]
+                        alloc_size = str(alloc_info["con_size"])
     return alloc_size, is_static
 
 
@@ -1142,19 +1162,26 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
         constraint_expr = make_binary_expression(lte_op, base_expr, diff_expr)
 
     alloc_size, is_static = get_pointer_size(ptr_node, src_file)
-    if alloc_size is not None and int(alloc_size) <= int(pointer_diff):
-        if is_static:
-            size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
-            size_expr = make_symbolic_expression(size_symbol)
-        else:
-            sizeof_op = build_op_symbol("sizeof ")
+    if alloc_size.isnumeric():
+        if alloc_size is not None and int(alloc_size) <= int(pointer_diff):
             ptr_expr = generate_expr_for_ast(ptr_node)
-            size_expr = make_unary_expression(sizeof_op, ptr_expr)
-        diff_op = build_op_symbol("diff ")
-        diff_expr = make_unary_expression(diff_op, ptr_expr)
+            if is_static:
+                size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
+                size_expr = make_symbolic_expression(size_symbol)
+            else:
+                sizeof_op = build_op_symbol("sizeof ")
+                size_expr = make_unary_expression(sizeof_op, ptr_expr)
+            diff_op = build_op_symbol("diff ")
+            diff_expr = make_unary_expression(diff_op, ptr_expr)
+            lt_op = build_op_symbol("<")
+            constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
+    else:
         lt_op = build_op_symbol("<")
+        diff_op = build_op_symbol("diff ")
+        ptr_expr = generate_expr_for_ast(ptr_node)
+        size_expr = generate_expr_for_str(alloc_size, "VAR_INT")
+        diff_expr = make_unary_expression(diff_op, ptr_expr)
         constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
-
     return constraint_expr
 
 

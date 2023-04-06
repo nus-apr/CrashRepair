@@ -209,11 +209,11 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                 e_type = expr_taint_list[expr_taint_info]["data_type"]
                 is_exp_dec = expr_taint_list[expr_taint_info]["is_dec"]
                 if e_type != crash_var_type:
-                    # print("SKIP", crash_var_name, var_name, crash_var_type, v_type)
+                    # print("SKIP", expr_str, var_name, crash_var_type, e_type)
                     logger.track_localization("SKIP {} with {}".format((crash_var_name, crash_var_type),
                                                                        (expr_str, e_type, e_line, e_col, )))
                     continue
-                # print("MATCH", crash_var_name, var_name, crash_var_type, v_type)
+                # print("MATCH", expr_str, var_name, crash_var_type, e_type)
                 logger.track_localization("MATCH {} with {}".format((crash_var_name, crash_var_type),
                                                                    (expr_str, e_type, e_line, e_col)))
                 for var_expr in var_expr_list:
@@ -276,9 +276,14 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
 
                             diff_ptr_name =  re.search(r'pointer, (.*)\)\)', crash_var_name).group(1)
                             diff_pointer_val = shadow_var_info[diff_ptr_name]["expr_list"][0].split(" ")[1].replace("bv", "")
+
                             is_match = False
-                            if int(diff_pointer_val) == int(concrete_val_var_expr) and any(token in expr_str for token in ["+", "-"]):
-                                is_match = True
+                            if diff_pointer_val.isnumeric():
+                                if int(diff_pointer_val) == int(concrete_val_var_expr) and any(token in expr_str for token in ["+", "-"]):
+                                    is_match = True
+                            else:
+                                diff_pointer_expr = shadow_var_info[diff_ptr_name]["expr_list"][0]
+                                var_expr
                             if signed_val_crash_var_expr < 0 and signed_val_crash_var_expr == signed_val_var_expr:
                                 is_match = True
                             if is_match:

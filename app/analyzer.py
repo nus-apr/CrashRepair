@@ -275,8 +275,9 @@ def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
         symbolic_ptr = list(pointer_track.keys())[-1]
         base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
     if "A-data" in symbolic_ptr or "arg" in symbolic_ptr:
-        base_expr = "(_ bv{} 64)".format(base_address)
-        diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
+        # base_expr = "(_ bv{} 64)".format(base_address)
+        # diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
+        diff_expr = symbolic_ptr
         diff_val = 0
     else:
         concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
@@ -346,7 +347,7 @@ def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=No
             if concrete_value == 0:
                 if concrete_var_info:
                     concrete_value = concrete_var_info[var_name]["concrete_value"]
-                    diff_expr = concrete_var_info[var_name]["expr_list"][0]
+                    # diff_expr = concrete_var_info[var_name]["expr_list"][0]
             updated_var_info[var_name] = {
                 "expr_list": [diff_expr],
                 "data_type": "pointer",
