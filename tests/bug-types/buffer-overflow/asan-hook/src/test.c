@@ -11,7 +11,8 @@ int main(int argc, char **argv) {
   int x = buffer[0];
   int *arr = (int *) malloc(10);
   int val;
-  int *ptr = arr;
+  int *ptr;
+  ptr = arr + y;
   *ptr = 12;
   printf("index %d = %d", x, val);
   free(arr);
