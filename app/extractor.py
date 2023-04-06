@@ -1114,10 +1114,11 @@ def extract_expression_list(ast_node, src_file):
                     if op_node["kind"] == "BinaryOperator":
                         loc_range = op_node["inner"][0]["range"]["end"]
                     expression_loc = extract_loc(src_file, loc_range)
-                expression_list.append((expression_str_lhs, expression_loc[1],
-                                        expression_loc[2], data_type, "ref"))
-                expression_list.append((expression_str_rhs, expression_loc[1],
-                                        expression_loc[2], data_type, "ref"))
+                if expression_loc:
+                    expression_list.append((expression_str_lhs, expression_loc[1],
+                                            expression_loc[2], data_type, "ref"))
+                    expression_list.append((expression_str_rhs, expression_loc[1],
+                                            expression_loc[2], data_type, "ref"))
                 continue
 
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
@@ -1176,8 +1177,9 @@ def extract_expression_string_list(ast_node, src_file):
                         loc_range = rhs_node["inner"][0]["range"]["end"]
                     expression_loc = extract_loc(src_file, loc_range)
                 expression_str = converter.get_node_value(rhs_node)
-                expression_index = (expression_loc[1], expression_loc[2])
-                expression_list[expression_index] = (expression_str, result_type)
+                if expression_loc:
+                    expression_index = (expression_loc[1], expression_loc[2])
+                    expression_list[expression_index] = (expression_str, result_type)
                 continue
         if op_code in [">", ">=", "<", "<=", "==", "!="]:
             continue
