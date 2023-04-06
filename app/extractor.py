@@ -1168,7 +1168,7 @@ def extract_expression_string_list(ast_node, src_file):
                 lhs_node = op_node["inner"][0]
                 rhs_node = op_node["inner"][1]
                 if op_code in ["+=", "-=", "/=", "*="]:
-                    loc_range = rhs_node["range"]["begin"]
+                    loc_range = op_node["range"]["begin"]
                     expression_loc = extract_loc(src_file, loc_range, op_code)
                 else:
                     loc_range = rhs_node["range"]["begin"]
