@@ -277,11 +277,10 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             diff_ptr_name =  re.search(r'pointer, (.*)\)\)', crash_var_name).group(1)
                             diff_pointer_val = shadow_var_info[diff_ptr_name]["expr_list"][0].split(" ")[1].replace("bv", "")
                             is_match = False
-                            if int(diff_pointer_val) == int(concrete_val_var_expr):
-                                if any(token in expr_str for token in ["+", "-"]):
-                                    is_match = True
-                            if signed_val_crash_var_expr == signed_val_var_expr:
-                                    is_match = True
+                            if int(diff_pointer_val) == int(concrete_val_var_expr) and any(token in expr_str for token in ["+", "-"]):
+                                is_match = True
+                            if signed_val_crash_var_expr < 0 and signed_val_crash_var_expr == signed_val_var_expr:
+                                is_match = True
                             if is_match:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
@@ -733,9 +732,9 @@ def update_result_nodes(cfc, expr_str, data_type):
     if cfc.get_l_expr():
         cfc_lhs_str = cfc.get_l_expr().to_expression()
 
-    if "sizeof " not in cfc_lhs_str and "diff " not in cfc_lhs_str:
+    if not any (op in cfc_lhs_str for op in ["sizeof ", "diff ", "base "]):
         if oracle.is_expression_equal(cfc_lhs_str, expr_str):
-            # print("MATCH LHS", localized_cfc.to_string(), expression_str)
+            # print("MATCH LHS", cfc.to_string(), expr_str)
             result_symbol = constraints.make_constraint_symbol(expr_str, data_type)
             result_expr = constraints.make_symbolic_expression(result_symbol)
             cfc.set_l_expr(result_expr)
@@ -747,9 +746,9 @@ def update_result_nodes(cfc, expr_str, data_type):
                 updated_cfc = cfc
     if updated_cfc is not None:
         cfc = updated_cfc
-    if "sizeof " not in cfc_rhs_str and "diff " not in cfc_rhs_str:
+    if not any (op in cfc_rhs_str for op in ["sizeof ", "diff ", "base "]):
         if oracle.is_expression_equal(cfc_rhs_str, expr_str):
-            # print("MATCH RHS", localized_cfc.to_string(), expression_str)
+            # print("MATCH RHS", cfc.to_string(), expr_str)
             result_symbol = constraints.make_constraint_symbol(expr_str, data_type)
             result_expr = constraints.make_symbolic_expression(result_symbol)
             cfc.set_r_expr(result_expr)
