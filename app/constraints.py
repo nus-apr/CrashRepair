@@ -3,9 +3,10 @@
 from __future__ import annotations
 from sympy import sympify
 import os
+import copy
 import typing as t
 
-from app import values, utilities, converter, extractor, analyzer, generator, solver
+from app import values, utilities, converter, extractor, analyzer, generator, solver, emitter
 
 SymbolType = {
     "PTR": "",
@@ -303,74 +304,12 @@ class ConstraintExpression:
     def get_base(self):
         return self._m_base_mapping
 
-    def transform_increment_decrement(self, expr_str):
-        transformed_expr = expr_str
-        if "++" in expr_str or "--" in expr_str:
-            var_name = expr_str.replace("++", "").replace("--", "")
-            if f"++{var_name}" == expr_str or f"--{var_name}" == expr_str:
-                transformed_expr = f"{var_name} + 1"
-            if f"{var_name}++" == expr_str or f"{var_name}--" == expr_str:
-                transformed_expr = var_name
-        return transformed_expr
-
-    def resolve_sizeof(self, symbolic_mapping):
-        if self._m_symbol.is_sizeof():
-            symbol_name = self.to_string()
-            if symbol_name in symbolic_mapping:
-                mapping = symbolic_mapping[symbol_name]
-                mapping = self.transform_increment_decrement(mapping)
-                # assumption: mapping is either constant or variable, not an expression i.e. a+b
-                if str(mapping).isnumeric():
-                    mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
-                    self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
-                elif isinstance(mapping, dict):
-                    constant = str(int(mapping["size"]/ int(mapping["width"])))
-                    mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
-                    self._m_sizeof_mapping = make_symbolic_expression(mapped_symbol)
-                else:
-                    self._m_sizeof_mapping = generate_expr_for_str(mapping, "VAR_INT")
-
-    def resolve_diff(self, symbolic_mapping):
-        if self._m_symbol.is_diff():
-            symbol_name = self.to_string()
-            if symbol_name in symbolic_mapping:
-                mapping = symbolic_mapping[symbol_name]
-                mapping = self.transform_increment_decrement(mapping)
-                # assumption: mapping is either constant or variable, not an expression i.e. a+b
-                if str(mapping).isnumeric():
-                    mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
-                    self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
-                elif isinstance(mapping, dict):
-                    constant = str(int(mapping["size"]/ int(mapping["width"])))
-                    mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
-                    self._m_diff_mapping = make_symbolic_expression(mapped_symbol)
-                else:
-                    self._m_diff_mapping = generate_expr_for_str(mapping, "VAR_INT")
-
-    def resolve_base(self, symbolic_mapping):
-        if self._m_symbol.is_base():
-            symbol_name = self.to_string()
-            if symbol_name in symbolic_mapping:
-                mapping = symbolic_mapping[symbol_name]
-                # assumption: mapping is either constant or variable, not an expression i.e. a+b
-                if str(mapping).isnumeric():
-                    mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
-                    self._m_base_mapping = make_symbolic_expression(mapped_symbol)
-                else:
-                    mapped_symbol = make_constraint_symbol(mapping, "PTR")
-                    self._m_base_mapping = make_symbolic_expression(mapped_symbol)
 
     def update_symbols(self, symbol_mapping):
         if self._m_symbol.is_var_int() or self._m_symbol.is_var_real() or self._m_symbol.is_ptr():
             symbol_str = self.get_symbol()
             if symbol_str in symbol_mapping:
                 self._m_symbol.update_symbol(symbol_mapping[symbol_str])
-        elif self._m_symbol.is_sizeof():
-            self.resolve_sizeof(symbol_mapping)
-        elif self._m_symbol.is_diff():
-            self.resolve_diff(symbol_mapping)
-        elif self._m_symbol.is_base():
-            self.resolve_base(symbol_mapping)
 
         if self._m_lvalue:
             left_symbol = self._m_lvalue._m_symbol
@@ -378,7 +317,7 @@ class ConstraintExpression:
                 left_symbol_str = str(left_symbol._m_symbol)
                 if left_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[left_symbol_str]
-                    mapped_str = self.transform_increment_decrement(mapped_str)
+                    mapped_str = transform_increment_decrement(mapped_str)
 
                     if any(op in mapped_str for op in ["+", "-", "*", "/"]):
                         mapped_expr = generate_expr_for_str(mapped_str,
@@ -388,15 +327,34 @@ class ConstraintExpression:
                         self._m_lvalue.update_symbols(symbol_mapping)
                 else:
                     self._m_lvalue.update_symbols(symbol_mapping)
+            elif left_symbol.is_sizeof():
+                lhs_str = self._m_lvalue.to_string()
+                resolve_cfc = resolve_sizeof(lhs_str, symbol_mapping)
+                if resolve_cfc:
+                    self._m_lvalue = resolve_cfc
+            elif left_symbol.is_diff():
+                lhs_str = self._m_lvalue.to_string()
+                resolve_cfc = resolve_diff(lhs_str, symbol_mapping)
+                if resolve_cfc:
+                    self._m_lvalue = resolve_cfc
+            elif left_symbol.is_base():
+                lhs_str = self._m_lvalue.to_string()
+                resolve_cfc = resolve_base(lhs_str, symbol_mapping)
+                if resolve_cfc:
+                    self._m_lvalue = resolve_cfc
             else:
-                self._m_lvalue.update_symbols(symbol_mapping)
+                emitter.error(f"constraint expr {self._m_lvalue.to_string()}")
+                emitter.error(f"constraint type {left_symbol}")
+                utilities.error_exit("Unhandled constraint type")
+
+
         if self._m_rvalue:
             right_symbol = self._m_rvalue._m_symbol
             if right_symbol.is_var_int() or right_symbol.is_var_real() or right_symbol.is_ptr():
                 right_symbol_str = str(right_symbol._m_symbol)
                 if right_symbol_str in symbol_mapping:
                     mapped_str = symbol_mapping[right_symbol_str]
-                    mapped_str = self.transform_increment_decrement(mapped_str)
+                    mapped_str = transform_increment_decrement(mapped_str)
 
                     if any(op in mapped_str for op in ["+", "-", "*", "/"]):
                         mapped_expr = generate_expr_for_str(mapped_str,
@@ -406,8 +364,26 @@ class ConstraintExpression:
                         self._m_rvalue.update_symbols(symbol_mapping)
                 else:
                     self._m_rvalue.update_symbols(symbol_mapping)
+            elif right_symbol.is_sizeof():
+                rhs_str = self._m_rvalue.to_string()
+                resolve_cfc = resolve_sizeof(rhs_str, symbol_mapping)
+                if resolve_cfc:
+                    self._m_rvalue = resolve_cfc
+            elif right_symbol.is_diff():
+                rhs_str = self._m_rvalue.to_string()
+                resolve_cfc = resolve_diff(rhs_str, symbol_mapping)
+                if resolve_cfc:
+                    self._m_rvalue = resolve_cfc
+            elif right_symbol.is_base():
+                rhs_str = self._m_rvalue.to_string()
+                resolve_cfc = resolve_base(rhs_str, symbol_mapping)
+                if resolve_cfc:
+                    self._m_rvalue = resolve_cfc
+
             else:
-                self._m_rvalue.update_symbols(symbol_mapping)
+                emitter.error(f"constraint expr {self._m_rvalue.to_string()}")
+                emitter.error(f"constraint type {right_symbol}")
+                utilities.error_exit("Unhandled constraint type")
 
 
 def build_op_symbol(symbol_str):
@@ -438,6 +414,17 @@ def make_constraint_expression(c_symbol:ConstraintSymbol, l_val:ConstraintSymbol
     return ConstraintExpression(c_symbol, l_val, r_val)
 
 
+def transform_increment_decrement(expr_str):
+    transformed_expr = expr_str
+    if "++" in expr_str or "--" in expr_str:
+        var_name = expr_str.replace("++", "").replace("--", "")
+        if f"++{var_name}" == expr_str or f"--{var_name}" == expr_str:
+            transformed_expr = f"{var_name} + 1"
+        if f"{var_name}++" == expr_str or f"{var_name}--" == expr_str:
+            transformed_expr = var_name
+    return transformed_expr
+
+
 def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     constraint_expr = None
     translated_map = dict()
@@ -448,12 +435,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
             for token in token_list:
                 if "++" in token or "--" in token:
                     stripped_token = token.replace("(", "").replace(")", "")
-                    transformed_token = token
-                    var_name = stripped_token.replace("++", "").replace("--", "")
-                    if f"++{var_name}" == stripped_token or f"--{var_name}" == stripped_token:
-                        transformed_token = f"({var_name} + 1)"
-                    if f"{var_name}++" == stripped_token or f"{var_name}--" == stripped_token:
-                        transformed_token = var_name
+                    transformed_token = transform_increment_decrement(stripped_token)
                     translated_map[stripped_token] = transformed_token
                     expr_str = expr_str.replace(stripped_token, transformed_token)
                 if any(c in token for c in ["[", "]", ".", "->", "len"]):
@@ -521,6 +503,50 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     constraint_expr.update_symbols(translated_map)
     return constraint_expr
 
+def resolve_sizeof(expr_str, symbolic_mapping):
+    resolved_cfc = None
+    if expr_str in symbolic_mapping:
+        mapping = symbolic_mapping[expr_str]
+        mapping = transform_increment_decrement(mapping)
+        if str(mapping).isnumeric():
+            mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
+            resolved_cfc = make_symbolic_expression(mapped_symbol)
+        elif isinstance(mapping, dict):
+            constant = str(int(mapping["size"]/ int(mapping["width"])))
+            mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
+            resolved_cfc = make_symbolic_expression(mapped_symbol)
+        else:
+            resolved_cfc = generate_expr_for_str(mapping, "VAR_INT")
+    return resolved_cfc
+
+def resolve_diff(expr_str, symbolic_mapping):
+    resolved_cfc = None
+    if expr_str in symbolic_mapping:
+        mapping = symbolic_mapping[expr_str]
+        mapping = transform_increment_decrement(mapping)
+        # assumption: mapping is either constant or variable, not an expression i.e. a+b
+        if str(mapping).isnumeric():
+            mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
+            resolved_cfc = make_symbolic_expression(mapped_symbol)
+        elif isinstance(mapping, dict):
+            constant = str(int(mapping["size"]/ int(mapping["width"])))
+            mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
+            resolved_cfc = make_symbolic_expression(mapped_symbol)
+        else:
+            resolved_cfc = generate_expr_for_str(mapping, "VAR_INT")
+    return resolved_cfc
+
+def resolve_base(expr_str, symbolic_mapping):
+    resolved_cfc = None
+    if expr_str in symbolic_mapping:
+        mapping = symbolic_mapping[expr_str]
+        # assumption: mapping is either constant or variable, not an expression i.e. a+b
+        if str(mapping).isnumeric():
+            mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
+            resolved_cfc = make_symbolic_expression(mapped_symbol)
+        else:
+            resolved_cfc = generate_expr_for_str(mapping, "PTR")
+    return resolved_cfc
 
 def generate_expr_for_ast(ast_node)->ConstraintExpression:
     node_type = str(ast_node["kind"])
@@ -790,7 +816,7 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
         if ref_node_type == "DeclRefExpr":
             ptr_node = reference_node
         elif ref_node_type == "UnaryOperator":
-            ptr_node = reference_node["inner"][0]
+            ptr_node = reference_node
         elif ref_node_type == "MemberExpr":
             got_pointer = False
             src_file, crash_l, crash_c = crash_loc
@@ -1005,12 +1031,16 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                     zero_expr = make_symbolic_expression(zero_symbol)
                     constraint_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
                 else:
-                    alloc_size = get_pointer_size(ptr_node, src_file)
+                    alloc_size, is_static = get_pointer_size(ptr_node, src_file)
                     if (0 < alloc_size <= int(last_value)) or (int(last_value) < 0 and not is_signed):
                         lt_op = build_op_symbol("<")
-                        sizeof_op = build_op_symbol("sizeof ")
-                        ptr_expr = generate_expr_for_ast(ptr_node)
-                        size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                        if is_static:
+                            size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
+                            size_expr = make_symbolic_expression(size_symbol)
+                        else:
+                            sizeof_op = build_op_symbol("sizeof ")
+                            ptr_expr = generate_expr_for_ast(ptr_node)
+                            size_expr = make_unary_expression(sizeof_op, ptr_expr)
                         iterator_expr = generate_expr_for_ast(iterator_node)
                         constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
     return constraint_expr
@@ -1021,10 +1051,12 @@ def get_pointer_size(ptr_node, src_file):
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     alloc_size = -1
     var_type = extractor.extract_data_type(ptr_node)
-    static_size = 0
+    static_size = None
+    is_static = False
     if "[" in var_type:
         static_size = int(var_type.split("[")[-1].split("]")[0])
         alloc_size = static_size
+        is_static = True
     if not static_size:
         for taint_loc in values.VALUE_TRACK_CONCRETE:
             if source_ptr_loc_str in taint_loc:
@@ -1037,7 +1069,7 @@ def get_pointer_size(ptr_node, src_file):
                     if base_pointer:
                         alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
                         alloc_size = alloc_info["con_size"]
-    return alloc_size
+    return alloc_size, is_static
 
 
 def get_pointer_base(ptr_node, src_file):
@@ -1056,8 +1088,24 @@ def get_pointer_base(ptr_node, src_file):
 
 
 def get_pointer_diff(ptr_node, src_file):
-    source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
-    source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    node_kind = ptr_node["kind"]
+    if node_kind == "UnaryOperator":
+        op_code = ptr_node["opcode"]
+        if op_code in ["++", "--"]:
+            is_postfix = ptr_node["isPostfix"]
+            if is_postfix:
+                source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["end"])
+                source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+            else:
+                source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+                source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+        else:
+            source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+            source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+
+    else:
+        source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+        source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     pointer_diff = None
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if source_ptr_loc_str in taint_loc:
@@ -1086,11 +1134,15 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
         base_expr = make_unary_expression(base_op, ptr_expr)
         constraint_expr = make_binary_expression(lte_op, base_expr, diff_expr)
 
-    alloc_size = get_pointer_size(ptr_node, src_file)
+    alloc_size, is_static = get_pointer_size(ptr_node, src_file)
     if alloc_size is not None and int(alloc_size) <= int(pointer_diff):
-        sizeof_op = build_op_symbol("sizeof ")
-        ptr_expr = generate_expr_for_ast(ptr_node)
-        size_expr = make_unary_expression(sizeof_op, ptr_expr)
+        if is_static:
+            size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
+            size_expr = make_symbolic_expression(size_symbol)
+        else:
+            sizeof_op = build_op_symbol("sizeof ")
+            ptr_expr = generate_expr_for_ast(ptr_node)
+            size_expr = make_unary_expression(sizeof_op, ptr_expr)
         diff_op = build_op_symbol("diff ")
         diff_expr = make_unary_expression(diff_op, ptr_expr)
         lt_op = build_op_symbol("<")
