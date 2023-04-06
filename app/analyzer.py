@@ -374,7 +374,7 @@ def identify_sources(var_info):
         byte_list = list(set(byte_list))
         taint_byte_list = taint_byte_list + byte_list
         taint_sources = sorted([str(i) for i in byte_list])
-        if var_type == "pointer" and any( t in var_name for t in ["base ", "diff "]):
+        if var_type == "pointer" and not any( t in var_name for t in ["base ", "diff "]):
             memory_list = []
             value_list = var_info[var_name]["expr_list"]
             for expr in value_list:
