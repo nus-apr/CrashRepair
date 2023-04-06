@@ -107,7 +107,6 @@ def main():
     except SystemExit as e:
         total_duration = format((time.time() - start_time) / 60, '.3f')
         time_info[definitions.KEY_DURATION_TOTAL] = str(total_duration)
-        emitter.end(time_info, is_error)
         logger.end(time_info, is_error)
         logger.store_logs()
         parallel.pool.terminate()

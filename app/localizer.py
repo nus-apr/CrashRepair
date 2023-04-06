@@ -940,8 +940,7 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
 
             localization_list.append(localization_obj)
     if not localization_list:
-        emitter.error("Unable to Localize a Crash Free Constraint")
-        utilities.error_exit("Analysis Failed")
+        utilities.normal_exit("Unable to Localize a Crash Free Constraint")
     values.COUNT_FIX_LOC = len(localization_list)
     writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))

@@ -26,10 +26,17 @@ def execute_command(command, show_output=True):
 
 
 def error_exit(*arg_list):
-    emitter.error("Repair Failed")
+    emitter.error("Analysis Failed")
     for arg in arg_list:
         emitter.error(str(arg))
     raise Exception("Error. Exiting...")
+
+
+def normal_exit(*arg_list):
+    emitter.error("Analysis Failed")
+    for arg in arg_list:
+        emitter.error(str(arg))
+    raise SystemExit("Exiting...")
 
 
 def clean_files():
