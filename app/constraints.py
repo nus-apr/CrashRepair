@@ -445,7 +445,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     translated_map = dict()
     token_num = 0
     try:
-        if any(c in expr_str for c in ["[", "]", ".", "->", "++","--"]):
+        if any(c in expr_str for c in ["[", "]", ".", "->", "++","--", "len", "field"]):
             token_list = expr_str.split(" ")
             new_token_list = []
             for token in token_list:
@@ -454,7 +454,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
                     stripped_token = token.replace("(", "").replace(")", "")
                     transformed_token = transform_increment_decrement(stripped_token)
                     new_token = transformed_token
-                if any(c in token for c in ["[", "]", ".", "->", "len"]):
+                if any(c in token for c in ["[", "]", ".", "->", "len", "field"]):
                     token_name = "__token_{}".format(token_num)
                     token_num = token_num + 1
                     new_token = token_name
