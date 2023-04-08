@@ -593,13 +593,19 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
             else:
                 if "sizeof " in c_t_lookup:
                     ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                    localized_tokens[c_t_lookup] = f"crepair_size({ptr_name})"
+                    if ptr_name in localized_tokens:
+                        mapped_ptr = localized_tokens[ptr_name]
+                        localized_tokens[c_t_lookup] = f"crepair_size({mapped_ptr})"
                 if "diff " in c_t_lookup:
                     ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                    localized_tokens[c_t_lookup] = f"{ptr_name} - crepair_base({ptr_name})"
+                    if ptr_name in localized_tokens:
+                        mapped_ptr = localized_tokens[ptr_name]
+                        localized_tokens[c_t_lookup] = f"{mapped_ptr} - crepair_base({mapped_ptr})"
                 if "base " in c_t_lookup:
                     ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                    localized_tokens[c_t_lookup] = f"crepair_base({ptr_name})"
+                    if ptr_name in localized_tokens:
+                        mapped_ptr = localized_tokens[ptr_name]
+                        localized_tokens[c_t_lookup] = f"crepair_base({mapped_ptr})"
 
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
         if len(localized_tokens.keys()) == len(cfc_tokens):
