@@ -1102,6 +1102,17 @@ def get_pointer_size(ptr_node, src_file):
                         alloc_size = str(alloc_info["con_size"])
     return alloc_size, is_static
 
+def get_pointer_value(ptr_node, src_file):
+    source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+    source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    last_pointer = None
+    for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
+        if source_ptr_loc_str in taint_loc:
+            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+            if expr_list and "pointer" in expr_list[0]:
+                last_pointer = expr_list[-1].replace("pointer:", "")
+    return last_pointer
+
 
 def get_pointer_base(ptr_node, src_file):
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
@@ -1219,9 +1230,17 @@ def generate_memcpy_constraint(call_node, src_file):
     first_constraint = make_binary_expression(less_than_op, diff_expr_1, size_expr)
     second_constraint = make_binary_expression(less_than_op, diff_expr_2, size_expr)
 
-    # last, concatenate both constraints into one
-    logical_and_op = build_op_symbol("&&")
-    constraint_expr = make_binary_expression(logical_and_op, first_constraint, second_constraint)
+    source_ptr_val = get_pointer_value(source_ptr_node, src_file)
+    target_ptr_val = get_pointer_value(target_ptr_node, src_file)
+
+    if target_ptr_val < source_ptr_val:
+        constraint_expr = second_constraint
+    else:
+        constraint_expr = first_constraint
+
+    # # last, concatenate both constraints into one
+    # logical_and_op = build_op_symbol("&&")
+    # constraint_expr = make_binary_expression(logical_and_op, first_constraint, second_constraint)
     return constraint_expr
 
 
