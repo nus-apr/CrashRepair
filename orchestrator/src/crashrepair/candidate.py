@@ -15,7 +15,7 @@ from loguru import logger
 from .location import Location
 
 if t.TYPE_CHECKING:
-    from .test import Test
+    from .test import Test, TestOutcome
 
 
 @attrs.define(auto_attribs=True, slots=True)
@@ -27,6 +27,7 @@ class PatchEvaluation:
     test_time_seconds: t.Optional[float] = attrs.field(default=None)
     tests_passed: t.Collection[Test] = attrs.field(factory=list)
     tests_failed: t.Collection[Test] = attrs.field(factory=list)
+    test_outcomes: t.Collection[TestOutcome] = attrs.field(factory=list)
 
     @classmethod
     def failed_to_compile(
@@ -49,6 +50,7 @@ class PatchEvaluation:
         test_time_seconds: float,
         tests_passed: t.Collection[Test],
         tests_failed: t.Collection[Test],
+        test_outcomes: t.Collection[TestOutcome],
     ) -> PatchEvaluation:
         return PatchEvaluation(
             patch_id=candidate.id_,
@@ -58,6 +60,7 @@ class PatchEvaluation:
             test_time_seconds=test_time_seconds,
             tests_passed=tests_passed,
             tests_failed=tests_failed,
+            test_outcomes=test_outcomes,
         )
 
     @classmethod
@@ -67,6 +70,7 @@ class PatchEvaluation:
         compile_time_seconds: float,
         test_time_seconds: float,
         tests_passed: t.Collection[Test],
+        test_outcomes: t.Collection[TestOutcome],
     ) -> PatchEvaluation:
         return PatchEvaluation(
             patch_id=candidate.id_,
@@ -75,6 +79,7 @@ class PatchEvaluation:
             compile_time_seconds=compile_time_seconds,
             test_time_seconds=test_time_seconds,
             tests_passed=tests_passed,
+            test_outcomes=test_outcomes,
         )
 
     def to_dict(self) -> t.Dict[str, t.Any]:
@@ -92,6 +97,7 @@ class PatchEvaluation:
                 "executed": len(self.tests_passed) + len(self.tests_failed),
                 "passed": len(self.tests_passed),
                 "failed": len(self.tests_failed),
+                "outcomes": [outcome.to_dict() for outcome in self.test_outcomes],
             },
         }
 

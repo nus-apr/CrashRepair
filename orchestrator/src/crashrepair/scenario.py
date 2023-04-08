@@ -23,7 +23,7 @@ from .report import (
 )
 from .shell import Shell
 from .stopwatch import Stopwatch
-from .test import Test
+from .test import Test, TestOutcome
 
 # TODO allow these to be customized via environment variables
 CRASHREPAIRFIX_PATH = "/opt/crashrepair/bin/crashrepairfix"
@@ -522,9 +522,12 @@ class Scenario:
             all_tests: t.Sequence[Test] = [self.crash_test] + self.fuzzer_tests
             tests_passed: t.List[Test] = []
             tests_failed: t.List[Test] = []
+            test_outcomes: t.List[TestOutcome] = []
             for test in all_tests:
                 logger.debug(f"testing candidate #{candidate.id_} against test #{test.name}...")
-                if test.run(self.time_limit_seconds_single_test, halt_on_error=self.halt_on_error):
+                outcome = test.run(self.time_limit_seconds_single_test, halt_on_error=self.halt_on_error)
+                test_outcomes.append(outcome)
+                if outcome:
                     logger.info(f"candidate #{candidate.id_} passes test #{test.name}")
                     tests_passed.append(test)
                 else:
@@ -534,6 +537,7 @@ class Scenario:
                         candidate=candidate,
                         compile_time_seconds=timer_compile.duration,
                         test_time_seconds=timer_tests.duration,
+                        test_outcomes=test_outcomes,
                         tests_passed=tests_passed,
                         tests_failed=tests_failed,
                     )
@@ -548,6 +552,7 @@ class Scenario:
             candidate=candidate,
             compile_time_seconds=timer_compile.duration,
             test_time_seconds=timer_tests.duration,
+            test_outcomes=test_outcomes,
             tests_passed=tests_passed,
         )
 
