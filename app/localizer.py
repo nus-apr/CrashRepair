@@ -879,8 +879,7 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
     localization_list = list()
     localized_loc_list = list()
     trace_list = []
-    for taint_loc in taint_symbolic:
-        taint_loc = ":".join(taint_loc.split(":")[:-1])
+    for taint_loc in reversed(values.TRACE_CONCRETE):
         if taint_loc not in trace_list:
             trace_list.append(taint_loc)
 
@@ -900,10 +899,9 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
             localized_src_loc = f"{src_file}:{localized_line}:{localized_col}"
 
             if localized_src_loc in trace_list:
-                distance = len(trace_list) - trace_list.index(localized_src_loc)
+                distance = trace_list.index(localized_src_loc) + 1
             elif taint_src_loc in trace_list:
-                distance = len(trace_list) - trace_list.index(taint_src_loc) + (
-                int(taint_line) - int(localized_line))
+                distance = trace_list.index(taint_src_loc) + 1 + (int(taint_line) - int(localized_line))
             else:
                 distance = 0
                 emitter.warning("\t\t[warning] location not found in taint trace {}".format(taint_src_loc))

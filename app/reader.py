@@ -447,6 +447,7 @@ def read_concrete_values(trace_file_path):
 def read_tainted_expressions(taint_log_path):
     emitter.normal("\tcollecting tainted expressions")
     taint_map = OrderedDict()
+    trace_list = []
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
             for line in taint_file:
@@ -455,8 +456,9 @@ def read_tainted_expressions(taint_log_path):
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_value = line.strip().split(": ")
-                    # src_file, src_line, src_col, _ = source_loc.split(":")
-                    # source_loc = ":".join(src_file, src_line, src_col)
+                    src_file, src_line, _, _ = source_loc.split(":")
+                    taint_loc = ":".join([src_file, src_line])
+                    trace_list.append(":".join(taint_loc))
                     if source_loc not in taint_map.keys():
                         taint_map[source_loc] = []
                     taint_value = taint_value.replace("\n", "")
@@ -471,7 +473,7 @@ def read_tainted_expressions(taint_log_path):
             if v not in unique_var_expr_list:
                 unique_var_expr_list.append(v)
         taint_map[taint_loc] = list(reversed(unique_var_expr_list))
-    return taint_map
+    return taint_map, trace_list
 
 
 def read_memory_values(memory_log_path):
