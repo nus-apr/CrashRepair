@@ -90,6 +90,9 @@ class Scenario:
         Optional, custom ASAN options that should be used when validating patches.
     ubsan_options: t.Optional[str]
         Optional, custom UBSAN options that should be used when validating patches.
+    use_ghost_functions: bool
+        Inject the necessary compilation options to allow support for ghost functions during validation.
+        Should only be used when ASAN is enabled and must not be used during analysis.
     """
     subject: str
     name: str
@@ -118,6 +121,7 @@ class Scenario:
     rebuild_for_validation: bool = attrs.field(default=False)
     asan_options: t.Optional[str] = attrs.field(default=None)
     ubsan_options: t.Optional[str] = attrs.field(default=None)
+    use_ghost_functions: bool = attrs.field(default=False)
 
     @property
     def compile_commands_path(self) -> str:
@@ -184,6 +188,7 @@ class Scenario:
         halt_on_error: bool = True,
         ubsan_options: t.Optional[str] = None,
         asan_options: t.Optional[str] = None,
+        use_ghost_functions: bool = False,
     ) -> Scenario:
         directory = os.path.dirname(filename)
         directory = os.path.abspath(directory)
@@ -235,6 +240,7 @@ class Scenario:
             halt_on_error=halt_on_error,
             ubsan_options=ubsan_options,
             asan_options=asan_options,
+            use_ghost_functions=use_ghost_functions,
         )
 
         if fuzzer_config:
@@ -274,6 +280,7 @@ class Scenario:
             build_command = build_commands["build"]
             sanitizer_flags = build_dict.get("sanitizerflags", "")
             rebuild_for_validation = build_dict.get("rebuild-for-validation", False)
+            use_ghost_functions = build_dict.get("use-ghost-functions", False)
 
             crash_dict = bug_dict["crash"]
             crashing_command = crash_dict["command"]
@@ -312,6 +319,7 @@ class Scenario:
             halt_on_error=halt_on_error,
             ubsan_options=ubsan_options,
             asan_options=asan_options,
+            use_ghost_functions=use_ghost_functions,
         )
 
     @classmethod
@@ -353,16 +361,16 @@ class Scenario:
         )
         cflags = f"{generic_cflags} {klee_cflags} {crepair_cflags}"
 
+        if self.use_ghost_functions:
+            ghost_flags = "-lcrepair_ghost"
+            logger.debug(f"injecting ghost function into CFLAGS during build: {ghost_flags}")
+            cflags = f"{cflags} {ghost_flags}"
+
         if use_sanitizers:
             cflags = f"{cflags} {self.sanitizer_flags}"
 
         # if CC/CXX aren't specified, use LLVM/Clang 11
         default_env = {
-            # "CC": "/opt/llvm11/bin/clang",
-            # "CXX": "/opt/llvm11/bin/clang++",
-            # "CFLAGS": cflags,
-            # "CXXFLAGS": cflags,
-            # "LDFLAGS": cflags,
             "INJECT_CFLAGS": cflags,
             "INJECT_CXXFLAGS": cflags,
             "INJECT_LDFLAGS": cflags,
@@ -389,9 +397,6 @@ class Scenario:
         if self.analysis_results_exist():
             logger.info(f"skipping analysis: results already exist [{self.analysis_directory}]")
             return
-
-        # the analysis takes care of its own build
-        # self.rebuild(use_sanitizers=False)
 
         analyzer = Analyzer.for_scenario(
             self,

@@ -15,10 +15,11 @@
     "directory": "src",
     "binary": "test",
     "sanitizerflags": "-fsanitize=address",
+    "use-ghost-functions": true,
     "commands": {
       "prebuild": "exit 0",
       "clean": "make clean",
-      "build": "make"
+      "build": "make CFLAGS=\"${INJECT_CFLAGS}\" LDFLAGS=\"${INJECT_LDFLAGS}\""
     }
   }
 }
