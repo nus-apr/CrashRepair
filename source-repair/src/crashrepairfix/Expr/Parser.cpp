@@ -35,14 +35,15 @@ struct type_float : string<'f', 'l', 'o', 'a', 't'> {};
 struct type_pointer : string<'p', 'o', 'i', 'n', 't', 'e', 'r'> {};
 struct type_name : sor<type_int, type_float, type_pointer> {};
 
-struct var_name : seq<
+struct basic_var_name : seq<
   sor<identifier_first, plusplus>,
   star<sor<identifier_other, digit, dot, arrow, plusplus, open_square_bracket, closed_square_bracket>>
 > {};
-struct crepair_size : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 's', 'i', 'z', 'e', '('>, var_name, one<')'>> {};
-struct crepair_base : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 'b', 'a', 's', 'e', '('>, var_name, one<')'>> {};
+struct crepair_size : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 's', 'i', 'z', 'e', '('>, basic_var_name, one<')'>> {};
+struct crepair_base : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 'b', 'a', 's', 'e', '('>, basic_var_name, one<')'>> {};
+struct var_name : sor<crepair_size, crepair_base, basic_var_name> {};
 struct integer : seq<opt<sign>, plus<digit>> {};
-struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, sor<crepair_size, crepair_base, var_name>, close_bracket> {};
+struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, star<space>, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
 
 struct null : string<'N', 'U', 'L', 'L'> {};
@@ -132,6 +133,7 @@ using selector = parse_tree::selector<
     type_name
   >,
   parse_tree::remove_content::on<
+    basic_var_name,
     result,
     null,
     crepair_size,
