@@ -895,8 +895,8 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
             localized_cfc, localized_loc, taint_loc = candidate_info
             localized_line, localized_col = localized_loc
             taint_line, taint_col = taint_loc
-            taint_src_loc = f"{src_file}:{taint_line}:{taint_col}"
-            localized_src_loc = f"{src_file}:{localized_line}:{localized_col}"
+            taint_src_loc = f"{src_file}:{taint_line}"
+            localized_src_loc = f"{src_file}:{localized_line}"
 
             if localized_src_loc in trace_list:
                 distance = trace_list.index(localized_src_loc) + 1
