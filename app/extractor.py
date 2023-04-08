@@ -1272,8 +1272,17 @@ def get_var_list(ast_var_list, cfc, crash_loc):
                 for var_node in ast_var_list:
                     var_name = var_node[0]
                     if var_name == symbol_ptr:
+                        if "sizeof " in symbol:
+                            base_var = f"(base  @var(pointer, {symbol_ptr}))"
+                            if base_var not in cfc_symbol_list:
+                                var_list.append((base_var, var_node[1], var_node[2], var_node[3], "logical"))
                         var_list.append((symbol, var_node[1], var_node[2], var_node[3], "logical"))
+
             else:
+                if "sizeof " in symbol:
+                    base_var = f"(base  @var(pointer, {symbol_ptr}))"
+                    if base_var not in cfc_symbol_list:
+                        var_list.append((base_var, crash_loc[1], crash_loc[2], "void *", "logical"))
                 var_list.append((symbol, crash_loc[1], crash_loc[2], "void *", "logical"))
         else:
             for var_node in ast_var_list:

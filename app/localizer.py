@@ -529,6 +529,15 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                                                    function_ast, cfc_var_info_list)
 
     cfc_tokens = cfc_expr.get_symbol_list()
+    injected_cfc_tokens = []
+    for cfc_token in cfc_tokens:
+        if "sizeof " in cfc_token:
+            symbol_ptr = re.search(r'pointer, (.*)\)\)', cfc_token).group(1)
+            base_var = f"(base  @var(pointer, {symbol_ptr}))"
+            if base_var not in cfc_tokens:
+                injected_cfc_tokens.append(base_var)
+        injected_cfc_tokens.append(cfc_token)
+    cfc_tokens = injected_cfc_tokens
     logger.track_localization("CFC Tokens {}".format(cfc_tokens))
     cfc_token_mappings = []
     for c_t_lookup in cfc_tokens:
@@ -590,22 +599,40 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                         else:
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
-            else:
-                if "sizeof " in c_t_lookup:
-                    ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                    if ptr_name in localized_tokens:
-                        mapped_ptr = localized_tokens[ptr_name]
+
+        for c_t_lookup in sorted_cfc_tokens:
+            if c_t_lookup in localized_tokens:
+                continue
+            if "sizeof " in c_t_lookup:
+                ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
+                base_ptr = f"(base  @var(pointer, {ptr_name}))"
+                mapped_ptr = None
+                if base_ptr in localized_tokens:
+                    mapped_ptr = localized_tokens[base_ptr]
+                elif ptr_name in localized_tokens:
+                    mapped_ptr = localized_tokens[ptr_name]
+                if mapped_ptr:
+                    if "malloc(" in mapped_ptr:
+                        malloc_size = re.search(r'malloc\((.*)\)', mapped_ptr).group(1)
+                        localized_tokens[c_t_lookup] = malloc_size
+                    elif "malloc (" in mapped_ptr:
+                        malloc_size = re.search(r'malloc \((.*)\)', mapped_ptr).group(1)
+                        localized_tokens[c_t_lookup] = malloc_size
+                    else:
                         localized_tokens[c_t_lookup] = f"crepair_size({mapped_ptr})"
-                if "diff " in c_t_lookup:
-                    ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                    if ptr_name in localized_tokens:
-                        mapped_ptr = localized_tokens[ptr_name]
-                        localized_tokens[c_t_lookup] = f"{mapped_ptr} - crepair_base({mapped_ptr})"
-                if "base " in c_t_lookup:
-                    ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                    if ptr_name in localized_tokens:
-                        mapped_ptr = localized_tokens[ptr_name]
-                        localized_tokens[c_t_lookup] = f"crepair_base({mapped_ptr})"
+            if "diff " in c_t_lookup:
+                ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
+                if ptr_name in localized_tokens:
+                    mapped_ptr = localized_tokens[ptr_name]
+                    localized_tokens[c_t_lookup] = f"{mapped_ptr} - crepair_base({mapped_ptr})"
+            if "base " in c_t_lookup:
+                ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
+                if "malloc(" in ptr_name or "malloc (" in ptr_name:
+                    continue
+                if ptr_name in localized_tokens:
+                    mapped_ptr = localized_tokens[ptr_name]
+                    localized_tokens[c_t_lookup] = f"crepair_base({mapped_ptr})"
+
 
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
         if len(localized_tokens.keys()) == len(cfc_tokens):
