@@ -54,8 +54,7 @@ SymbolType = {
     "OP_SHIFT_LEFT": "<<",
 
     "NULL_VAL": "null",
-    "OP_SIZE_OF": "sizeof ",
-    "OP_DIFF": "diff ",
+    "OP_SIZE": "size ",
     "OP_BASE": "base "
 }
 
@@ -131,8 +130,8 @@ class ConstraintSymbol:
     def is_var_name(self):
         return self._m_cons_type == "VAR_NAME"
 
-    def is_sizeof(self):
-        return self._m_cons_type == "OP_SIZE_OF"
+    def is_size(self):
+        return self._m_cons_type == "OP_SIZE"
 
     def is_diff(self):
         return self._m_cons_type == "OP_DIFF"
@@ -146,7 +145,7 @@ class ConstraintSymbol:
 
 class ConstraintExpression:
     _m_symbol: ConstraintSymbol
-    _m_sizeof_mapping: t.Optional[ConstraintExpression]
+    _m_size_mapping: t.Optional[ConstraintExpression]
     _m_diff_mapping:t.Optional[ConstraintExpression]
     _m_base_mapping: t.Optional[ConstraintExpression]
     _m_lvalue: t.Optional[ConstraintExpression]
@@ -161,7 +160,7 @@ class ConstraintExpression:
         self._m_symbol = c_symbol
         self._m_lvalue = l_expr
         self._m_rvalue = r_expr
-        self._m_sizeof_mapping = None
+        self._m_size_mapping = None
         self._m_diff_mapping = None
         self._m_base_mapping = None
 
@@ -209,8 +208,8 @@ class ConstraintExpression:
         if self._m_rvalue:
             rhs_str = self._m_rvalue.to_string()
 
-        if self._m_symbol.is_sizeof():
-            resolved_expr = self.get_sizeof()
+        if self._m_symbol.is_size():
+            resolved_expr = self.get_size()
             if resolved_expr is not None:
                 return resolved_expr.to_string()
             return f"({expr_str} {rhs_str})"
@@ -247,8 +246,8 @@ class ConstraintExpression:
         if self._m_rvalue:
             rhs_str = self._m_rvalue.to_expression()
 
-        if self._m_symbol.is_sizeof():
-            resolved_expr = self.get_sizeof()
+        if self._m_symbol.is_size():
+            resolved_expr = self.get_size()
             if resolved_expr is not None:
                 return resolved_expr.to_expression()
             return f"({expr_str} {rhs_str})"
@@ -283,7 +282,7 @@ class ConstraintExpression:
             return []
         if self._m_symbol.is_var_int() or self._m_symbol.is_var_real() or self._m_symbol.is_ptr():
             symbol_list = [self.get_symbol()]
-        elif self._m_symbol.is_sizeof():
+        elif self._m_symbol.is_size():
             return [self.to_string()]
         elif self._m_symbol.is_diff():
             return [self.to_string()]
@@ -295,8 +294,8 @@ class ConstraintExpression:
             symbol_list = symbol_list + self._m_rvalue.get_symbol_list()
         return list(set(symbol_list))
 
-    def get_sizeof(self):
-        return self._m_sizeof_mapping
+    def get_size(self):
+        return self._m_size_mapping
 
     def get_diff(self):
         return self._m_diff_mapping
@@ -314,14 +313,9 @@ class ConstraintExpression:
         if self._m_lvalue:
             left_symbol = self._m_lvalue._m_symbol
             if left_symbol.is_operator():
-                if left_symbol.is_sizeof():
+                if left_symbol.is_size():
                     lhs_str = self._m_lvalue.to_string()
-                    resolve_cfc = resolve_sizeof(lhs_str, symbol_mapping)
-                    if resolve_cfc:
-                        self._m_lvalue = resolve_cfc
-                elif left_symbol.is_diff():
-                    lhs_str = self._m_lvalue.to_string()
-                    resolve_cfc = resolve_diff(lhs_str, symbol_mapping)
+                    resolve_cfc = resolve_size(lhs_str, symbol_mapping)
                     if resolve_cfc:
                         self._m_lvalue = resolve_cfc
                 elif left_symbol.is_base():
@@ -359,14 +353,9 @@ class ConstraintExpression:
         if self._m_rvalue:
             right_symbol = self._m_rvalue._m_symbol
             if right_symbol.is_operator():
-                if right_symbol.is_sizeof():
+                if right_symbol.is_size():
                     rhs_str = self._m_rvalue.to_string()
-                    resolve_cfc = resolve_sizeof(rhs_str, symbol_mapping)
-                    if resolve_cfc:
-                        self._m_rvalue = resolve_cfc
-                elif right_symbol.is_diff():
-                    rhs_str = self._m_rvalue.to_string()
-                    resolve_cfc = resolve_diff(rhs_str, symbol_mapping)
+                    resolve_cfc = resolve_size(rhs_str, symbol_mapping)
                     if resolve_cfc:
                         self._m_rvalue = resolve_cfc
                 elif right_symbol.is_base():
@@ -445,7 +434,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     translated_map = dict()
     token_num = 0
     try:
-        if any(c in expr_str for c in ["[", "]", ".", "->", "++","--", "len", "field"]):
+        if any(c in expr_str for c in ["[", "]", ".", "->", "++","--", "len", "field", "(", ")"]):
             token_list = expr_str.split(" ")
             new_token_list = []
             for token in token_list:
@@ -454,7 +443,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
                     stripped_token = token.replace("(", "").replace(")", "")
                     transformed_token = transform_increment_decrement(stripped_token)
                     new_token = transformed_token
-                if any(c in token for c in ["[", "]", ".", "->", "len", "field"]):
+                if any(c in token for c in ["[", "]", ".", "->", "len", "field", "(", ")"]):
                     token_name = "__token_{}".format(token_num)
                     token_num = token_num + 1
                     new_token = token_name
@@ -522,7 +511,7 @@ def generate_expr_for_str(expr_str, data_type)->ConstraintExpression:
     constraint_expr.update_symbols(translated_map)
     return constraint_expr
 
-def resolve_sizeof(expr_str, symbolic_mapping):
+def resolve_size(expr_str, symbolic_mapping):
     resolved_cfc = None
     if expr_str in symbolic_mapping:
         mapping = symbolic_mapping[expr_str]
@@ -534,26 +523,13 @@ def resolve_sizeof(expr_str, symbolic_mapping):
             constant = str(int(mapping["size"]/ int(mapping["width"])))
             mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
             resolved_cfc = make_symbolic_expression(mapped_symbol)
+        elif "crepair_size" in mapping:
+            constraint_symbol = make_constraint_symbol(mapping, "VAR_INT")
+            resolved_cfc = make_symbolic_expression(constraint_symbol)
         else:
             resolved_cfc = generate_expr_for_str(mapping, "VAR_INT")
     return resolved_cfc
 
-def resolve_diff(expr_str, symbolic_mapping):
-    resolved_cfc = None
-    if expr_str in symbolic_mapping:
-        mapping = symbolic_mapping[expr_str]
-        mapping = transform_increment_decrement(mapping)
-        # assumption: mapping is either constant or variable, not an expression i.e. a+b
-        if str(mapping).isnumeric():
-            mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
-            resolved_cfc = make_symbolic_expression(mapped_symbol)
-        elif isinstance(mapping, dict):
-            constant = str(int(mapping["size"]/ int(mapping["width"])))
-            mapped_symbol = make_constraint_symbol(constant, "CONST_INT")
-            resolved_cfc = make_symbolic_expression(mapped_symbol)
-        else:
-            resolved_cfc = generate_expr_for_str(mapping, "VAR_INT")
-    return resolved_cfc
 
 def resolve_base(expr_str, symbolic_mapping):
     resolved_cfc = None
@@ -563,6 +539,9 @@ def resolve_base(expr_str, symbolic_mapping):
         if str(mapping).isnumeric():
             mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
             resolved_cfc = make_symbolic_expression(mapped_symbol)
+        elif "crepair_base" in mapping:
+            constraint_symbol = make_constraint_symbol(mapping, "PTR")
+            resolved_cfc = make_symbolic_expression(constraint_symbol)
         else:
             resolved_cfc = generate_expr_for_str(mapping, "PTR")
     return resolved_cfc
@@ -785,50 +764,39 @@ def generate_type_overflow_constraint(ast_node):
 
 
 def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address, src_file):
+    constraint_expr = None
     if not reference_node:
-        sizeof_op = build_op_symbol("sizeof ")
+        size_op = build_op_symbol("size ")
         ptr_expr = generate_expr_for_str("ghost pointer", "PTR")
-        sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
-
-        diff_op = build_op_symbol("diff ")
-        diff_expr = make_unary_expression(diff_op, ptr_expr)
+        size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+        base_op = build_op_symbol("base ")
+        base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
         lt_op = build_op_symbol("<")
-        constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
+        arith_plus_op = build_op_symbol("+")
+        lhs_constraint = ptr_expr
+        rhs_constraint = make_binary_expression(arith_plus_op, base_expr, size_expr)
+        constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
         return constraint_expr
     ref_node_type = reference_node["kind"]
     if ref_node_type == "ArraySubscriptExpr":
-        iterator_node = reference_node["inner"][1]
         array_node = reference_node["inner"][0]
-        iterator_constraint = generate_iterator_constraint(iterator_node, src_file, array_node)
-        if iterator_constraint:
-            return iterator_constraint
-
-        # pointer_diff = get_pointer_diff(array_node, src_file)
-        # if pointer_diff is not None:
-        #     diff_op = build_op_symbol("diff ")
-        #     ptr_expr = generate_expr_for_ast(array_node)
-        #     diff_expr = make_unary_expression(diff_op, ptr_expr)
-        #     iterator_expr = generate_expr_for_ast(iterator_node)
-        #     lte_op = build_op_symbol("<=")
-        #     if int(pointer_diff) < 0:
-        #         arith_plus_op = build_op_symbol("+")
-        #         range_expr = make_binary_expression(arith_plus_op, diff_expr, iterator_expr)
-        #         zero_symbol = make_constraint_symbol("0", "CONST_INT")
-        #         zero_expr = make_symbolic_expression(zero_symbol)
-        #         constraint_expr = make_binary_expression(lte_op, zero_expr, range_expr)
-        #         return constraint_expr
-            # else:
-            #     arith_minus_op = build_op_symbol("-")
-            #     sizeof_op = build_op_symbol("sizeof ")
-            #     ptr_expr = generate_expr_for_ast(array_node)
-            #     size_expr = make_unary_expression(sizeof_op, ptr_expr)
-            #     range_expr = make_binary_expression(arith_minus_op, diff_expr, size_expr)
-            #     constraint_expr = make_binary_expression(lte_op, iterator_expr, range_expr)
-            #     return constraint_expr
-
-        array_pointer_constraint = generate_out_of_bound_ptr_constraint(array_node, src_file)
+        iterator_node = reference_node["inner"][1]
+        array_pointer_constraint = generate_out_of_bound_ptr_constraint(array_node, src_file, iterator_node)
         if array_pointer_constraint:
             return array_pointer_constraint
+        pointer_offset = get_pointer_diff(array_node, src_file, iterator_node)
+        if pointer_offset == 0:
+            iterator_constraint = generate_iterator_constraint(iterator_node, src_file, array_node)
+            if iterator_constraint:
+                return iterator_constraint
+        else:
+            iterator_node = reference_node["inner"][1]
+            iterator_offset_constraint = generate_iterator_offset_constraint(iterator_node,
+                                                                             array_node,
+                                                                             src_file
+                                                                             )
+            if iterator_offset_constraint:
+                return iterator_offset_constraint
 
     else:
         ptr_node = None
@@ -890,33 +858,35 @@ def generate_memory_overflow_constraint(reference_node, crash_loc, crash_address
                         alloc_info = values.MEMORY_TRACK_CONCRETE[base_pointer]
                         concrete_value = alloc_info["con_size"]
                         if int(concrete_value) == 0:
-                            sizeof_op = build_op_symbol("sizeof ")
+                            size_op = build_op_symbol("size ")
                             ptr_expr = generate_expr_for_ast(ptr_node)
-                            sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
+                            size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
                             zero_symbol = make_constraint_symbol("0", "CONST_INT")
                             zero_expr = make_symbolic_expression(zero_symbol)
                             gt_op = build_op_symbol("<")
-                            constraint_expr = make_binary_expression(gt_op, zero_expr, sizeof_expr)
+                            constraint_expr = make_binary_expression(gt_op, zero_expr, size_expr)
                             return constraint_expr
 
 
-
-        sizeof_op = build_op_symbol("sizeof ")
+        size_op = build_op_symbol("size ")
         ptr_expr = generate_expr_for_ast(ptr_node)
-        sizeof_expr = make_unary_expression(sizeof_op, ptr_expr)
+        size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
 
-        diff_op = build_op_symbol("diff ")
-        diff_expr = make_unary_expression(diff_op, ptr_expr)
+        base_op = build_op_symbol("base ")
+        base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
         lt_op = build_op_symbol("<")
 
         pointer_diff = get_pointer_diff(ptr_node, src_file)
         if pointer_diff < 0:
             lte_op = build_op_symbol("<=")
             base_op = build_op_symbol("base ")
-            base_expr = make_unary_expression(base_op, ptr_expr)
-            constraint_expr = make_binary_expression(lte_op, base_expr, diff_expr)
+            base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
+            constraint_expr = make_binary_expression(lte_op, base_expr, ptr_expr)
         else:
-            constraint_expr = make_binary_expression(lt_op, diff_expr, sizeof_expr)
+            lhs_constraint = ptr_expr
+            arith_plus_op = build_op_symbol("+")
+            rhs_constraint = make_binary_expression(arith_plus_op, base_expr, size_expr)
+            constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
 
     return constraint_expr
 
@@ -1025,16 +995,45 @@ def generate_assertion_constraint(call_node, func_node, src_file):
         utilities.error_exit("Not implemented: handling more than 3 tokens in assertion constraint")
     return constraint_expr
 
-
-def generate_iterator_constraint(iterator_node, src_file, ptr_node):
+def generate_iterator_location(iterator_node, src_file):
     if iterator_node["kind"] == "BinaryOperator":
         iterator_range = iterator_node["inner"][1]["range"]["begin"]
         source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
         source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2] - 2}"
+    elif iterator_node["kind"] == "ImplicitCastExpr":
+        iterator_range = iterator_node["range"]["end"]
+        source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
+        source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     else:
         iterator_range = iterator_node["range"]["begin"]
         source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
         source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    return source_ptr_loc_str
+
+def generate_iterator_offset_constraint(iterator_node, ptr_node, src_file):
+    constraint_expr = None
+    array_offset = get_pointer_diff(ptr_node, src_file, iterator_node)
+    if array_offset > 0:
+        ptr_expr = generate_expr_for_ast(ptr_node)
+        base_op = build_op_symbol("base ")
+        base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
+        arith_plus_op = build_op_symbol("+")
+        size_op = build_op_symbol("size ")
+        size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+        iterator_expr = generate_expr_for_ast(iterator_node)
+        lt_op = build_op_symbol("<")
+        lhs_constraint = make_binary_expression(arith_plus_op, ptr_expr, iterator_expr)
+        rhs_constraint = make_binary_expression(arith_plus_op, base_expr, size_expr)
+        constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
+
+    else:
+        utilities.error_exit("unhandled offset in generate_iterator_offset_constraint")
+
+    return constraint_expr
+
+
+def generate_iterator_constraint(iterator_node, src_file, ptr_node):
+    source_ptr_loc_str = generate_iterator_location(iterator_node, src_file)
     constraint_expr = None
     result_data_type = extractor.extract_data_type(iterator_node)
     is_signed = "unsigned" not in result_data_type
@@ -1061,17 +1060,17 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                                 size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
                                 size_expr = make_symbolic_expression(size_symbol)
                             else:
-                                sizeof_op = build_op_symbol("sizeof ")
+                                size_op = build_op_symbol("size ")
                                 ptr_expr = generate_expr_for_ast(ptr_node)
-                                size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                                size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
                             iterator_expr = generate_expr_for_ast(iterator_node)
                             constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
                     else:
                         iterator_expr = generate_expr_for_ast(iterator_node)
                         lt_op = build_op_symbol("<")
-                        sizeof_op = build_op_symbol("sizeof ")
+                        size_op = build_op_symbol("size ")
                         ptr_expr = generate_expr_for_ast(ptr_node)
-                        size_expr = make_unary_expression(sizeof_op, ptr_expr)
+                        size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
                         constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
     return constraint_expr
 
@@ -1129,9 +1128,17 @@ def get_pointer_base(ptr_node, src_file):
     return base_pointer
 
 
-def get_pointer_diff(ptr_node, src_file):
+def generate_pointer_loc(ptr_node, src_file):
     node_kind = ptr_node["kind"]
-    if node_kind == "UnaryOperator":
+    if node_kind in ["ImplicitCastExpr"]:
+        return generate_pointer_loc(ptr_node["inner"][0], src_file)
+    elif node_kind in ["MemberExpr"]:
+        source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["end"])
+        source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    elif node_kind in ["ArraySubscriptExpr"]:
+        source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
+        source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    elif node_kind == "UnaryOperator":
         op_code = ptr_node["opcode"]
         if op_code in ["++", "--"]:
             is_postfix = ptr_node["isPostfix"]
@@ -1148,8 +1155,19 @@ def get_pointer_diff(ptr_node, src_file):
     else:
         source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
         source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
+    return source_ptr_loc_str
+
+def get_pointer_diff(ptr_node, src_file, iterator_node=None):
+    source_ptr_loc_str = generate_pointer_loc(ptr_node, src_file)
     pointer_diff = None
+    iterator_loc = None
+    if iterator_node is not None:
+        iterator_loc = generate_iterator_location(iterator_node, src_file)
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
+        if iterator_loc is not None:
+            if iterator_loc in taint_loc:
+                iterator_loc = None
+            continue
         if source_ptr_loc_str in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
             if expr_list and "pointer" in expr_list[0]:
@@ -1164,17 +1182,15 @@ def get_pointer_diff(ptr_node, src_file):
     return pointer_diff
 
 
-def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
+def generate_out_of_bound_ptr_constraint(ptr_node, src_file, iterator_node=None):
     constraint_expr = None
-    pointer_diff = get_pointer_diff(ptr_node, src_file)
+    pointer_diff = get_pointer_diff(ptr_node, src_file, iterator_node)
     if pointer_diff is not None and pointer_diff < 0:
-        diff_op = build_op_symbol("diff ")
         ptr_expr = generate_expr_for_ast(ptr_node)
-        diff_expr = make_unary_expression(diff_op, ptr_expr)
         lte_op = build_op_symbol("<=")
         base_op = build_op_symbol("base ")
-        base_expr = make_unary_expression(base_op, ptr_expr)
-        constraint_expr = make_binary_expression(lte_op, base_expr, diff_expr)
+        base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
+        constraint_expr = make_binary_expression(lte_op, base_expr, ptr_expr)
 
     alloc_size, is_static = get_pointer_size(ptr_node, src_file)
     if alloc_size.isnumeric():
@@ -1184,19 +1200,16 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file):
                 size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
                 size_expr = make_symbolic_expression(size_symbol)
             else:
-                sizeof_op = build_op_symbol("sizeof ")
-                size_expr = make_unary_expression(sizeof_op, ptr_expr)
-            diff_op = build_op_symbol("diff ")
-            diff_expr = make_unary_expression(diff_op, ptr_expr)
+                size_op = build_op_symbol("size ")
+                size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+
+            base_op = build_op_symbol("base ")
+            base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
+            arith_plus_op = build_op_symbol("+")
             lt_op = build_op_symbol("<")
-            constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
-    else:
-        lt_op = build_op_symbol("<")
-        diff_op = build_op_symbol("diff ")
-        ptr_expr = generate_expr_for_ast(ptr_node)
-        size_expr = generate_expr_for_str(alloc_size, "VAR_INT")
-        diff_expr = make_unary_expression(diff_op, ptr_expr)
-        constraint_expr = make_binary_expression(lt_op, diff_expr, size_expr)
+            lhs_constraint = ptr_expr
+            rhs_constraint = make_binary_expression(arith_plus_op, base_expr, size_expr)
+            constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
     return constraint_expr
 
 

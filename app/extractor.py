@@ -304,7 +304,7 @@ def extract_var_ref_list(ast_node, file_path):
             op_position = source_line.index(op_code, col_number-1) + 1
             assignment_var_name = converter.get_node_value(left_side)
             # print("ADD", (str(assignment_var_name), line_number, op_position, data_type))
-            var_list.append((str(assignment_var_name), line_number, op_position, data_type, "ref"))
+            var_list.append((str(assignment_var_name), line_number, op_position, data_type, "dec"))
         for var_name, line_number, col_number, var_type, _ in operands_var_list:
             var_list.append((str(var_name), line_number, col_number, str(var_type), "ref"))
         return var_list
@@ -1250,12 +1250,12 @@ def extract_taint_sources(taint_expr_list, taint_memory_list, taint_loc):
     taint_source_list = set()
     for taint_expr in taint_expr_list:
         taint_data_type, taint_expr = taint_expr.split(":")
-        taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
-        taint_source = extract_input_bytes_used(taint_expr_code)
-        if not taint_source and "bv" in taint_expr:
-            taint_value = taint_expr.split(" ")[1]
-            if taint_value in taint_memory_list:
-                taint_source = [taint_value]
+        taint_source = []
+        if taint_memory_list:
+            taint_source = [x for x in taint_memory_list if x in taint_expr]
+        else:
+            taint_expr_code = generator.generate_z3_code_for_var(taint_expr, "TAINT")
+            taint_source = extract_input_bytes_used(taint_expr_code)
         if taint_source:
             taint_source_list.update(taint_source)
     return taint_loc, list(taint_source_list)
@@ -1265,25 +1265,27 @@ def get_var_list(ast_var_list, cfc, crash_loc):
     var_list = []
 
     for symbol in cfc_symbol_list:
-        if "sizeof " in symbol or "base " in symbol or "diff " in symbol:
-            search_ex = re.search(r'pointer, (.*)\)\)', symbol)
+        if "size " in symbol or "base " in symbol:
+            search_ex = re.search(r'pointer, (.*?)\)\)', symbol)
             symbol_ptr = search_ex.group(1)
             if ast_var_list:
                 for var_node in ast_var_list:
                     var_name = var_node[0]
                     if var_name == symbol_ptr:
-                        if "sizeof " in symbol:
+                        if "size " in symbol:
                             base_var = f"(base  @var(pointer, {symbol_ptr}))"
                             if base_var not in cfc_symbol_list:
                                 var_list.append((base_var, var_node[1], var_node[2], var_node[3], "logical"))
                         var_list.append((symbol, var_node[1], var_node[2], var_node[3], "logical"))
+                        var_list.append((symbol_ptr, var_node[1], var_node[2], var_node[3], var_node[4]))
 
             else:
-                if "sizeof " in symbol:
+                if "size " in symbol:
                     base_var = f"(base  @var(pointer, {symbol_ptr}))"
                     if base_var not in cfc_symbol_list:
                         var_list.append((base_var, crash_loc[1], crash_loc[2], "void *", "logical"))
                 var_list.append((symbol, crash_loc[1], crash_loc[2], "void *", "logical"))
+                var_list.append((symbol_ptr, crash_loc[1], crash_loc[2], "void *", "ref"))
         else:
             for var_node in ast_var_list:
                 var_name = var_node[0]
@@ -1292,4 +1294,4 @@ def get_var_list(ast_var_list, cfc, crash_loc):
                 elif f"++{symbol}" == var_name or f"--{symbol}" == var_name or \
                         f"{symbol}++" == var_name or f"{symbol}--" == var_name :
                     var_list.append((symbol, var_node[1], var_node[2], var_node[3], var_node[4]))
-    return var_list
+    return list(set(var_list))

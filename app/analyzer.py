@@ -146,8 +146,8 @@ def get_crash_values(argument_list, program_path):
         v_info["expr_list"] = []
         var_info[v_name] = v_info
         v_loc = "{}:{}:{}".format(c_src_file, v_line, v_col)
-        if any( t in v_name for t in ["sizeof ", "base ", "diff "]):
-            search_ex = re.search(r'pointer, (.*)\)\)', v_name)
+        if any( t in v_name for t in ["size ", "base "]):
+            search_ex = re.search(r'pointer, (.*?)\)\)', v_name)
             v_name = search_ex.group(1)
             #v_name = v_name.split(" ")[-1].replace(")", "")
         var_loc_map[v_loc] = v_name
@@ -185,16 +185,16 @@ def extract_value_list(value_map, crash_info):
                 if data_type == var_type and var_name in value_info:
                     value_info[var_name]["expr_list"] = [expr]
                 if data_type == "pointer":
-                    sizeof_expr = "(sizeof  @var(pointer, {}))".format(var_name)
+                    size_expr = "(size  @var(pointer, {}))".format(var_name)
                     base_expr = "(base  @var(pointer, {}))".format(var_name)
                     diff_expr = "(diff  @var(pointer, {}))".format(var_name)
-                    if sizeof_expr in var_info:
-                        value_info[sizeof_expr] = {
+                    if size_expr in var_info:
+                        value_info[size_expr] = {
                             "expr_list": [],
                             "loc": loc_info,
                             "data_type": "integer",
                             "meta_data": expr,
-                            "static_size": var_info[sizeof_expr]["static_size"]
+                            "static_size": var_info[size_expr]["static_size"]
                         }
 
                     if base_expr in var_info:
@@ -215,9 +215,17 @@ def extract_value_list(value_map, crash_info):
                 break
     return value_info
 
+def get_concrete_pointer(symbolic_ptr):
+    pointer_tokens = symbolic_ptr.split(" ")
+    if "bvadd" in pointer_tokens[0]:
+        concrete_ptr = re.search(r'bvadd  \(_ bv(.*?) 64\) ', symbolic_ptr).group(1)
+    else:
+        concrete_ptr = pointer_tokens[1].replace("bv", "")
+    return concrete_ptr
+
 
 def get_base_address(symbolic_ptr, memory_track, pointer_track):
-    concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
+    concrete_ptr = get_concrete_pointer(symbolic_ptr)
     if str(concrete_ptr).isnumeric():
         concrete_ptr = int(concrete_ptr)
     base_address = None
@@ -253,120 +261,92 @@ def get_base_address(symbolic_ptr, memory_track, pointer_track):
                     base_address = address
     return base_address
 
-def get_sizeof_pointer(base_address, memory_track, static_size):
-    sizeof_expr_list = []
+def get_size_pointer(base_address, memory_track, static_size):
+    size_expr_list = []
     concrete_value = None
     if base_address in memory_track:
         alloc_info = memory_track[base_address]
         sym_size_expr = alloc_info["sym_size"]
         concrete_value = alloc_info["con_size"]
         if "A-data" in sym_size_expr or "arg" in sym_size_expr:
-            sizeof_expr_list = [sym_size_expr]
+            size_expr_list = [sym_size_expr]
         elif static_size and str(static_size).isnumeric():
-            sizeof_expr_list = {"width": "1", "con_size": static_size}
+            size_expr_list = {"width": "1", "con_size": static_size}
             concrete_value = static_size
         else:
             sym_size_val = sym_size_expr.split(" ")[1].replace("bv", "")
-            sizeof_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
-    return sizeof_expr_list, concrete_value
+            size_expr_list = {"width": alloc_info["width"], "con_size": sym_size_val}
+    return size_expr_list, concrete_value
 
 
-def get_diff_pointer(symbolic_ptr, memory_track, pointer_track):
-    base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-    if not base_address:
-        symbolic_ptr = list(pointer_track.keys())[-1]
-        base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-    if "A-data" in symbolic_ptr or "arg" in symbolic_ptr:
-        # base_expr = "(_ bv{} 64)".format(base_address)
-        # diff_expr = "(bvsub {} {})".format(symbolic_ptr, base_expr)
-        diff_expr = symbolic_ptr
-        diff_val = 0
-    else:
-        concrete_ptr = symbolic_ptr.split(" ")[1].replace("bv", "")
-        diff_val = int(concrete_ptr) - int(base_address)
-        diff_expr = "(_ bv{} 64)".format(diff_val)
-
-    return diff_expr, diff_val
-
-
-def pointer_analysis(var_info, memory_track, pointer_track, concrete_var_info=None):
+def pointer_analysis(var_info, memory_track, pointer_track,
+                     taint_expressions,
+                     concrete_var_info=None):
     updated_var_info = dict()
-    shadow_var_info = dict()
     for var_name in var_info:
         var_loc = var_info[var_name]["loc"]
         value_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         updated_var_info[var_name] = var_info[var_name]
-        if "sizeof " in var_name:
+        if "size " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
             static_size = var_info[var_name]["static_size"]
-            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
-            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-            shadow_var_info[pointer_name] = {
-                "expr_list": [symbolic_ptr],
-                "data_type": "pointer",
-            }
-            # if "[" in static_size:
-            #     static_size = static_size.split("[")[-1].split("]")[0]
-            # if str(static_size).isnumeric():
-            #     sizeof_expr_list = {"width": 1, "con_size": var_info[var_name]["meta_data"]}
-
+            pointer_name = re.search(r'pointer, (.*?)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             if not base_address:
                 symbolic_ptr = list(pointer_track.keys())[-1]
                 base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-            sizeof_expr_list, concrete_value = get_sizeof_pointer(base_address, memory_track, static_size)
+            size_expr_list, concrete_value = get_size_pointer(base_address, memory_track, static_size)
+            meta_ptr = get_concrete_pointer(symbolic_ptr)
+
+            if meta_ptr not in taint_expressions:
+                meta_ptr = get_base_address(f"bv{meta_ptr}", memory_track, pointer_track)
             updated_var_info[var_name] = {
-                "expr_list": sizeof_expr_list,
+                "expr_list": size_expr_list,
                 "data_type": "integer",
-                "concrete_value": concrete_value
+                "concrete_value": concrete_value,
+                "meta_data": f"bv{meta_ptr}"
             }
 
         elif "base " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
-            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
+            pointer_name = re.search(r'pointer, (.*?)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-            shadow_var_info[pointer_name] = {
-                "expr_list": [symbolic_ptr],
-                "data_type": "pointer",
-            }
-
+            if not base_address:
+                symbolic_ptr = list(pointer_track.keys())[-1]
+                base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            meta_ptr = get_concrete_pointer(symbolic_ptr)
+            if meta_ptr not in taint_expressions:
+                meta_ptr = get_base_address(f"(_ bv{meta_ptr} 64)", memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [f"(_ bv{base_address} 64)"],
+                "data_type": "pointer",
+                "meta_data": f"bv{meta_ptr}"
+            }
+
+
+        elif var_type == "pointer":
+            symbolic_ptr = var_info[var_name]["expr_list"][0]
+            pointer_name = var_name
+            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            if symbolic_ptr not in list(pointer_track.keys()) or \
+                symbolic_ptr not in taint_expressions:
+                if base_address:
+                    symbolic_ptr = f"(_ bv{base_address} 64)"
+                else:
+                    symbolic_ptr = list(pointer_track.keys())[-1]
+                    base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            updated_var_info[var_name] = {
+                "expr_list": [symbolic_ptr],
                 "data_type": "pointer"
             }
-
-        elif "diff " in var_name:
-            symbolic_ptr = var_info[var_name]["meta_data"]
-            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
-            base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-            shadow_var_info[pointer_name] = {
-                "expr_list": [symbolic_ptr],
-                "data_type": "pointer",
-            }
-
-            diff_expr, concrete_value = get_diff_pointer(symbolic_ptr, memory_track, pointer_track)
-            if concrete_value == 0:
-                if concrete_var_info:
-                    concrete_value = concrete_var_info[var_name]["concrete_value"]
-                    # diff_expr = concrete_var_info[var_name]["expr_list"][0]
-            updated_var_info[var_name] = {
-                "expr_list": [diff_expr],
-                "data_type": "pointer",
-                "concrete_value": concrete_value
-            }
-    updated_var_info["shadow"] = shadow_var_info
     return updated_var_info
 
 
 def identify_sources(var_info):
     taint_byte_list = []
     taint_memory_list = []
-    shadow_memory_list = []
-    shadow_var_info = var_info["shadow"]
     for var_name in var_info:
-        if var_name == "shadow":
-            continue
         sym_expr_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         byte_list = []
@@ -377,52 +357,22 @@ def identify_sources(var_info):
         byte_list = list(set(byte_list))
         taint_byte_list = taint_byte_list + byte_list
         taint_sources = sorted([str(i) for i in byte_list])
-        if var_type == "pointer" and not any( t in var_name for t in ["base ", "diff "]):
+        if var_type == "pointer":
             memory_list = []
-            value_list = var_info[var_name]["expr_list"]
-            for expr in value_list:
-                expr_tokens = expr.strip().split(" ")
-                if "A-data" in expr or "arg" in expr:
-                    memory_address = expr_tokens[3]
-                    if "(bvsub" in expr_tokens[0]:
-                        memory_address = expr_tokens[4]
-                else:
-                    memory_address = expr_tokens[1]
-                    if "(bvsub" in expr_tokens[0]:
-                        memory_address = expr_tokens[2]
-                memory_list.append(memory_address)
+            if "size " in var_name or "base " in var_name:
+                memory_list.append(var_info[var_name]["meta_data"])
+            else:
+                value_list = var_info[var_name]["expr_list"]
+                for expr in value_list:
+                    memory_address = get_concrete_pointer(expr)
+                    memory_list.append(memory_address)
             memory_list = list(set(memory_list))
             taint_memory_list = taint_memory_list + memory_list
             tainted_addresses = sorted([str(i) for i in memory_list])
             taint_sources = taint_sources + tainted_addresses
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
-        elif not byte_list and any( t in var_name for t in ["sizeof ", "base ", "diff "]):
-            pointer_name = re.search(r'pointer, (.*)\)\)', var_name).group(1)
-            if pointer_name not in shadow_var_info:
-                continue
-            value_list = shadow_var_info[pointer_name]["expr_list"]
-            for expr in value_list:
-                expr_tokens = expr.strip().split(" ")
-                if "A-data" in expr or "arg" in expr:
-                    memory_address = expr_tokens[3]
-                    if "(bvsub" in expr_tokens[0]:
-                        memory_address = expr_tokens[4]
-                else:
-                    memory_address = expr_tokens[1]
-                    if "(bvsub" in expr_tokens[0]:
-                        memory_address = expr_tokens[2]
-                shadow_memory_list.append(memory_address)
-            shadow_memory_list = list(set(shadow_memory_list))
-            taint_memory_list = taint_memory_list + shadow_memory_list
-            tainted_addresses = sorted([str(i) for i in shadow_memory_list])
-            taint_sources = taint_sources + tainted_addresses
-            emitter.highlight("\t\t[info] Shadow Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
         else:
             emitter.highlight("\t\t[info] Symbolic Mapping: {} -> [{}]".format(var_name, ",".join(taint_sources)))
-    if len(taint_byte_list) == 0 and len(taint_memory_list) == 0:
-        if len(shadow_memory_list) > 0:
-            taint_memory_list = shadow_memory_list
-            emitter.warning("\t\tusing shadow symbolic sources for localization")
 
     taint_byte_list = list(set(taint_byte_list))
     taint_memory_list = list(set(taint_memory_list))
@@ -454,15 +404,25 @@ def analyze():
         values.TIME_CONCRETE_ANALYSIS = format((concrete_end - concrete_start) / 60, '.3f')
         crash_info = get_crash_values(argument_list, program_path)
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
+        taint_expressions = []
+        for taint_loc in taint_values_concrete:
+            taint_expressions = taint_expressions + taint_values_concrete[taint_loc]
+        taint_expressions = list(set(taint_expressions))
         con_var_info = pointer_analysis(crash_var_concrete_info,
                                         values.MEMORY_TRACK_CONCRETE,
-                                        values.POINTER_TRACK_CONCRETE)
+                                        values.POINTER_TRACK_CONCRETE,
+                                        taint_expressions)
 
         concolic_start = time.time()
         taint_values_symbolic, concolic_crash = get_tainted_values(argument_list,
                                                                    program_path,
                                                                    output_dir_path,
                                                                    test_case_id)
+
+        taint_expressions = []
+        for taint_loc in taint_values_symbolic:
+            taint_expressions = taint_expressions + taint_values_symbolic[taint_loc]
+        taint_expressions = list(set(taint_expressions))
         concolic_end = time.time()
         values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
 
@@ -473,6 +433,7 @@ def analyze():
             sym_var_info = pointer_analysis(crash_var_symbolic_info,
                                             values.MEMORY_TRACK_SYMBOLIC,
                                             values.POINTER_TRACK_SYMBOLIC,
+                                            taint_expressions,
                                             con_var_info)
             var_info = sym_var_info
             value_map = taint_values_symbolic

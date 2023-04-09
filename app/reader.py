@@ -451,7 +451,7 @@ def read_tainted_expressions(taint_log_path):
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
             for line in taint_file:
-                if "no debug info" in line:
+                if "no debug info" in line or "/opt/zlib" in line:
                     continue
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]

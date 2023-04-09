@@ -141,8 +141,8 @@ def generate_z3_code_for_var(var_expr, var_name):
         dummy_count = dummy_count + 1
         var_name = f"_dummy_a_{dummy_count}"
 
-    if "sizeof " in var_name or "diff " in var_name:
-        var_name = "sizeof_" + var_name.split(" ")[3]
+    if "size " in var_name:
+        var_name = "size_" + var_name.split(" ")[3]
     bit_size = 2
     code = ""
     while True:
@@ -172,7 +172,7 @@ def generate_source_declarations(sym_expr_a, sym_expr_b):
     source_list = list(set(source_list_a + source_list_b))
     unique_source_list = []
     for source in source_list:
-        source_name = re.search(r'select  (.*) \(',source).group(1)
+        source_name = re.search(r'select  (.*?) \(',source).group(1)
         if source_name in unique_source_list:
             continue
         unique_source_list.append(source_name)
@@ -277,7 +277,7 @@ def generate_z3_code_for_combination_add(sym_expr_list, ref_sym_expr):
 
     for dec in list(set(complete_decl_list)):
         if ref_name in dec or "expr_" in dec:
-            bit_size = re.search(r'\(_ BitVec (.*)\)', dec).group(0)
+            bit_size = re.search(r'\(_ BitVec (.*?)\)', dec).group(0)
             dec = dec.replace(bit_size, "(_ BitVec {}))".format(max_bit_size))
         code += dec + "\n"
 
@@ -336,7 +336,7 @@ def generate_z3_code_for_combination_mul(sym_expr_list, ref_sym_expr):
         max_bit_size = ref_bit_size
     for dec in list(set(complete_decl_list)):
         if ref_name in dec or "expr_" in dec:
-            bit_size = re.search(r'\(_ BitVec (.*)\)', dec).group(0)
+            bit_size = re.search(r'\(_ BitVec (.*?)\)', dec).group(0)
             dec = dec.replace(bit_size, "(_ BitVec {}))".format(max_bit_size))
         code += dec + "\n"
 

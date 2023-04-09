@@ -22,7 +22,11 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     logger.track_localization("generating fix locations\n")
     fix_locations = dict()
     taint_analysis_summary = dict()
-    is_taint_influenced = len(marked_byte_list) > 0 or len(taint_memory_list) > 0
+    if taint_memory_list:
+        taint_sources = taint_memory_list
+    else:
+        taint_sources = marked_byte_list
+    is_taint_influenced = len(taint_sources) > 0
     taint_source_loc_map, taint_sink_loc_list = parallel.generate_taint_sink_info(taint_symbolic,
                                                                                   taint_memory_list,
                                                                                   is_taint_influenced)
@@ -76,7 +80,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                     observed_tainted_bytes.update(taint_source_loc_map[source_loc])
                     if not observed_tainted_bytes:
                         continue
-                    if set(marked_byte_list + taint_memory_list) <= set(observed_tainted_bytes):
+                    if set(taint_sources) <= set(observed_tainted_bytes):
                         fix_locations[source_loc] = func_name
     logger.track_localization("found {} fix locations".format(len(fix_locations)))
     logger.track_localization("sorting fix location based on trace")
@@ -166,7 +170,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
             elif int(e_line) == int(line) and int(col) == int(e_col):
             # if int(e_line) == int(line) and int(col) in range(int(e_col), int(e_col) + len(e_str)):
                 # print(var_name, v_line, v_col, line, col, range(int(v_col), int(v_col) + len(var_name)))
-                var_info_index = (e_str, e_line, e_col, inst_add)
+                var_info_index = (e_str, e_line, e_col, int(inst_add))
                 if var_info_index not in expr_taint_list:
                     filtered_taint_list = []
                     data_type = None
@@ -187,13 +191,11 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
     # print(var_taint_list)
     logger.track_localization("VAR TAINT LIST: {}".format(expr_taint_list))
     candidate_mapping = collections.OrderedDict()
-    shadow_var_info = cfc_var_info_list["shadow"]
+
     for crash_var_name in cfc_var_info_list:
-        if crash_var_name == "shadow":
-            continue
         crash_var_type = cfc_var_info_list[crash_var_name]['data_type']
         crash_var_expr_list = cfc_var_info_list[crash_var_name]['expr_list']
-        if ("sizeof " in crash_var_name or "diff " in crash_var_name) and \
+        if ("size " in crash_var_name) and \
                 "con_size" in crash_var_expr_list:
             crash_var_expr_list = ["(_ bv{} 64)".format(crash_var_expr_list["con_size"])]
         crash_var_input_byte_list = []
@@ -223,10 +225,11 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                         logger.track_localization("NO TAINT SOURCES FOR {} and {}".format(crash_var_name, expr_str))
                         if not expr_str or expr_str.strip() in ["()"]:
                             continue
-                        if crash_var_type == "pointer" and e_type == "pointer" and "diff " not in crash_var_name and "base " not in crash_var_name:
+                        if crash_var_type == "pointer" and e_type == "pointer" and "base " not in crash_var_name:
                             if var_expr in crash_var_expr_list:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
+                                expr_str = constraints.transform_increment_decrement(expr_str)
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
                                 logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                                 logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
@@ -241,6 +244,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                         elif var_expr == crash_var_expr and crash_var_name == expr_str:
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
+                            expr_str = constraints.transform_increment_decrement(expr_str)
                             logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
                             logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
@@ -255,38 +259,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
                             candidate_mapping[crash_var_name].add((crash_var_name, e_line, e_col, e_addr, is_exp_dec))
-                        elif any(token in crash_var_name for token in ["base "]) and "bv" in var_expr:
+                        elif any(token in crash_var_name for token in ["base ", "size "]) and "bv" in var_expr:
                             if var_expr == crash_var_expr:
-                                if crash_var_name not in candidate_mapping:
-                                    candidate_mapping[crash_var_name] = set()
-                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
-                                logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
-                                logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))
-                                candidate_mapping[crash_var_name].add(
-                                    (expr_str, e_line, e_col, e_addr, is_exp_dec))
-                        elif any(token in crash_var_name for token in ["diff "]) and "bv" in var_expr:
-                            if "++" in expr_str or "--" in expr_str:
-                                continue
-                            concrete_val_var_expr = int(var_expr.split(" ")[1].replace("bv", ""))
-                            bit_size_var_expr = int(var_expr.split(" ")[-1].replace(")", ""))
-                            signed_val_var_expr = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
-                            concrete_val_crash_var_expr = int(crash_var_expr.split(" ")[1].replace("bv", ""))
-                            bit_size_crash_var_expr = int(crash_var_expr.split(" ")[-1].replace(")", ""))
-                            signed_val_crash_var_expr = solver.solve_sign(concrete_val_crash_var_expr, bit_size_crash_var_expr)
-
-                            diff_ptr_name =  re.search(r'pointer, (.*)\)\)', crash_var_name).group(1)
-                            diff_pointer_val = shadow_var_info[diff_ptr_name]["expr_list"][0].split(" ")[1].replace("bv", "")
-
-                            is_match = False
-                            if diff_pointer_val.isnumeric():
-                                if int(diff_pointer_val) == int(concrete_val_var_expr) and any(token in expr_str for token in ["+", "-"]):
-                                    is_match = True
-                            else:
-                                diff_pointer_expr = shadow_var_info[diff_ptr_name]["expr_list"][0]
-                                var_expr
-                            if signed_val_crash_var_expr < 0 and signed_val_crash_var_expr == signed_val_var_expr:
-                                is_match = True
-                            if is_match:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
@@ -370,7 +344,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
         candidate_list = candidate_mapping[crash_var_name]
         index = 0
         for candidate_info in candidate_list:
-            constant_mapping, e_line, e_col, e_addr, is_exp_dec = candidate_info
+            constant_mapping, _, _, _, _ = candidate_info
             edit_distance = solver.levenshtein_distance(crash_var_name, constant_mapping)
             edit_distance_index.append((index, edit_distance))
             index = index + 1
@@ -513,7 +487,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     crash_loc = cfc_info["loc"]
     cfc_expr = cfc_info["expr"]
     cfc_var_info_list = cfc_info["var-info"]
-    # cfc_expr.resolve_sizeof(cfc_var_info_list)
+    # cfc_expr.resolve_size(cfc_var_info_list)
     cfc_expr_str = cfc_expr.to_string()
     if not os.path.isfile(src_file):
         emitter.warning("\t\t[warning] source file not found for ast lookup {}".format(src_file))
@@ -531,7 +505,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     cfc_tokens = cfc_expr.get_symbol_list()
     injected_cfc_tokens = []
     for cfc_token in cfc_tokens:
-        if "sizeof " in cfc_token:
+        if "size " in cfc_token:
             symbol_ptr = re.search(r'pointer, (.*)\)\)', cfc_token).group(1)
             base_var = f"(base  @var(pointer, {symbol_ptr}))"
             if base_var not in cfc_tokens:
@@ -541,10 +515,10 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
     logger.track_localization("CFC Tokens {}".format(cfc_tokens))
     cfc_token_mappings = []
     for c_t_lookup in cfc_tokens:
-        if c_t_lookup in candidate_mapping:
+        if any(token in c_t_lookup for token in ["size ", "base "]):
+            cfc_token_mappings.append((c_t_lookup, 100))
+        elif c_t_lookup in candidate_mapping:
             cfc_token_mappings.append((c_t_lookup, len(candidate_mapping[c_t_lookup])))
-        elif any (token in c_t_lookup for token in ["sizeof ", "diff " ,"base "]):
-            cfc_token_mappings.append((c_t_lookup, 1))
     sorted_cfc_tokens = sorted(cfc_token_mappings, key=lambda x:x[1])
     sorted_cfc_tokens = [x[0] for x in sorted_cfc_tokens]
     logger.track_localization("Sorted CFC Tokens {}".format(sorted_cfc_tokens))
@@ -576,7 +550,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                 selected_expr = None
                 selected_line = 0
                 selected_col = 0
-                for mapping in c_t_map:
+                sorted_mapping = sorted(c_t_map, key=lambda x:(x[3], -len(x[0])), reverse=True)
+                for mapping in sorted_mapping:
                     m_expr, m_line, m_col, _, is_dec = mapping
                     if m_line > candidate_line:
                         continue
@@ -591,19 +566,19 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     selected_line = m_line
                     if selected_expr:
                         if c_t_lookup in localized_tokens:
-                            current_mapping = localized_tokens[c_t_lookup]
-                            if current_mapping != c_t_lookup:
-                                if len(current_mapping) > len(selected_expr):
-                                    localized_tokens[c_t_lookup] = selected_expr
-                                    used_candidates.append(selected_expr)
-                        else:
+                            # favors non-array access
+                            mapped_expr = localized_tokens[c_t_lookup]
+                            if "[" in mapped_expr and "[" not in selected_expr:
+                                localized_tokens[c_t_lookup] = selected_expr
+                        if c_t_lookup not in localized_tokens:
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
+
 
         for c_t_lookup in sorted_cfc_tokens:
             if c_t_lookup in localized_tokens:
                 continue
-            if "sizeof " in c_t_lookup:
+            if "size " in c_t_lookup:
                 ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
                 base_ptr = f"(base  @var(pointer, {ptr_name}))"
                 mapped_ptr = None
@@ -613,18 +588,14 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     mapped_ptr = localized_tokens[ptr_name]
                 if mapped_ptr:
                     if "malloc(" in mapped_ptr:
-                        malloc_size = re.search(r'malloc\((.*)\)', mapped_ptr).group(1)
+                        malloc_size = re.search(r'malloc\((.*?)\)', mapped_ptr).group(1)
                         localized_tokens[c_t_lookup] = malloc_size
                     elif "malloc (" in mapped_ptr:
-                        malloc_size = re.search(r'malloc \((.*)\)', mapped_ptr).group(1)
+                        malloc_size = re.search(r'malloc \((.*?)\)', mapped_ptr).group(1)
                         localized_tokens[c_t_lookup] = malloc_size
                     else:
                         localized_tokens[c_t_lookup] = f"crepair_size({mapped_ptr})"
-            if "diff " in c_t_lookup:
-                ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
-                if ptr_name in localized_tokens:
-                    mapped_ptr = localized_tokens[ptr_name]
-                    localized_tokens[c_t_lookup] = f"{mapped_ptr} - crepair_base({mapped_ptr})"
+
             if "base " in c_t_lookup:
                 ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
                 if "malloc(" in ptr_name or "malloc (" in ptr_name:
@@ -634,8 +605,9 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     localized_tokens[c_t_lookup] = f"crepair_base({mapped_ptr})"
 
 
+        cfc_tokens = cfc_expr.get_symbol_list()
         logger.track_localization("Localized Tokens {}".format(localized_tokens))
-        if len(localized_tokens.keys()) == len(cfc_tokens):
+        if all(token in localized_tokens for token in cfc_tokens):
             localized_cfc = copy.deepcopy(cfc_expr)
             localized_cfc.update_symbols(localized_tokens)
             candidate_constraints.append((localized_cfc, candidate_line, candidate_col))
@@ -770,7 +742,7 @@ def update_result_nodes(cfc, expr_str, data_type):
     if cfc.get_l_expr():
         cfc_lhs_str = cfc.get_l_expr().to_expression()
 
-    if not any (op in cfc_lhs_str for op in ["sizeof ", "diff ", "base "]):
+    if not any (op in cfc_lhs_str for op in ["size ", "base "]):
         if oracle.is_expression_equal(cfc_lhs_str, expr_str):
             # print("MATCH LHS", cfc.to_string(), expr_str)
             result_symbol = constraints.make_constraint_symbol(expr_str, data_type)
@@ -784,7 +756,7 @@ def update_result_nodes(cfc, expr_str, data_type):
                 updated_cfc = cfc
     if updated_cfc is not None:
         cfc = updated_cfc
-    if not any (op in cfc_rhs_str for op in ["sizeof ", "diff ", "base "]):
+    if not any (op in cfc_rhs_str for op in ["size ", "base "]):
         if oracle.is_expression_equal(cfc_rhs_str, expr_str):
             # print("MATCH RHS", cfc.to_string(), expr_str)
             result_symbol = constraints.make_constraint_symbol(expr_str, data_type)
