@@ -279,28 +279,23 @@ def get_size_pointer(base_address, memory_track, static_size):
     return size_expr_list, concrete_value
 
 
-def pointer_analysis(var_info, memory_track, pointer_track,
-                     taint_expressions,
-                     concrete_var_info=None):
+def pointer_analysis(var_info, memory_track,
+                     pointer_track, taint_memory_list):
     updated_var_info = dict()
     for var_name in var_info:
-        var_loc = var_info[var_name]["loc"]
-        value_list = var_info[var_name]["expr_list"]
         var_type = var_info[var_name]["data_type"]
         updated_var_info[var_name] = var_info[var_name]
         if "size " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
             static_size = var_info[var_name]["static_size"]
-            pointer_name = re.search(r'pointer, (.*?)\)\)', var_name).group(1)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
+            meta_ptr = get_concrete_pointer(symbolic_ptr)
             if not base_address:
                 symbolic_ptr = list(pointer_track.keys())[-1]
                 base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             size_expr_list, concrete_value = get_size_pointer(base_address, memory_track, static_size)
-            meta_ptr = get_concrete_pointer(symbolic_ptr)
-
-            if meta_ptr not in taint_expressions:
-                meta_ptr = get_base_address(f"bv{meta_ptr}", memory_track, pointer_track)
+            if symbolic_ptr not in taint_memory_list:
+                meta_ptr = get_base_address(f"(_ bv{meta_ptr} 64)", memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": size_expr_list,
                 "data_type": "integer",
@@ -310,13 +305,12 @@ def pointer_analysis(var_info, memory_track, pointer_track,
 
         elif "base " in var_name:
             symbolic_ptr = var_info[var_name]["meta_data"]
-            pointer_name = re.search(r'pointer, (.*?)\)\)', var_name).group(1)
+            meta_ptr = get_concrete_pointer(symbolic_ptr)
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             if not base_address:
                 symbolic_ptr = list(pointer_track.keys())[-1]
                 base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
-            meta_ptr = get_concrete_pointer(symbolic_ptr)
-            if meta_ptr not in taint_expressions:
+            if symbolic_ptr not in taint_memory_list:
                 meta_ptr = get_base_address(f"(_ bv{meta_ptr} 64)", memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [f"(_ bv{base_address} 64)"],
@@ -327,15 +321,13 @@ def pointer_analysis(var_info, memory_track, pointer_track,
 
         elif var_type == "pointer":
             symbolic_ptr = var_info[var_name]["expr_list"][0]
-            pointer_name = var_name
             base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             if symbolic_ptr not in list(pointer_track.keys()) or \
-                symbolic_ptr not in taint_expressions:
+                symbolic_ptr not in taint_memory_list:
                 if base_address:
                     symbolic_ptr = f"(_ bv{base_address} 64)"
                 else:
                     symbolic_ptr = list(pointer_track.keys())[-1]
-                    base_address = get_base_address(symbolic_ptr, memory_track, pointer_track)
             updated_var_info[var_name] = {
                 "expr_list": [symbolic_ptr],
                 "data_type": "pointer"
@@ -404,14 +396,17 @@ def analyze():
         values.TIME_CONCRETE_ANALYSIS = format((concrete_end - concrete_start) / 60, '.3f')
         crash_info = get_crash_values(argument_list, program_path)
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
-        taint_expressions = []
+        taint_memory_addresses = []
         for taint_loc in taint_values_concrete:
-            taint_expressions = taint_expressions + taint_values_concrete[taint_loc]
-        taint_expressions = list(set(taint_expressions))
+            expr_list = taint_values_concrete[taint_loc]
+            if expr_list and "pointer" in expr_list[0]:
+                for symbolic_ptr in expr_list:
+                    if symbolic_ptr not in taint_memory_addresses:
+                        taint_memory_addresses.append(symbolic_ptr.replace("pointer:", ""))
         con_var_info = pointer_analysis(crash_var_concrete_info,
                                         values.MEMORY_TRACK_CONCRETE,
                                         values.POINTER_TRACK_CONCRETE,
-                                        taint_expressions)
+                                        taint_memory_addresses)
 
         concolic_start = time.time()
         taint_values_symbolic, concolic_crash = get_tainted_values(argument_list,
@@ -419,10 +414,14 @@ def analyze():
                                                                    output_dir_path,
                                                                    test_case_id)
 
-        taint_expressions = []
+        taint_memory_addresses = []
         for taint_loc in taint_values_symbolic:
-            taint_expressions = taint_expressions + taint_values_symbolic[taint_loc]
-        taint_expressions = list(set(taint_expressions))
+            expr_list = taint_values_symbolic[taint_loc]
+            if expr_list and "pointer" in expr_list[0]:
+                for symbolic_ptr in expr_list:
+                    if symbolic_ptr not in taint_memory_addresses:
+                        taint_memory_addresses.append(symbolic_ptr.replace("pointer:", ""))
+
         concolic_end = time.time()
         values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
 
@@ -433,8 +432,8 @@ def analyze():
             sym_var_info = pointer_analysis(crash_var_symbolic_info,
                                             values.MEMORY_TRACK_SYMBOLIC,
                                             values.POINTER_TRACK_SYMBOLIC,
-                                            taint_expressions,
-                                            con_var_info)
+                                            taint_memory_addresses
+                                            )
             var_info = sym_var_info
             value_map = taint_values_symbolic
         else:

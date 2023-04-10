@@ -550,14 +550,14 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                 selected_expr = None
                 selected_line = 0
                 selected_col = 0
-                sorted_mapping = sorted(c_t_map, key=lambda x:(x[3], -len(x[0])), reverse=True)
+                sorted_mapping = sorted(c_t_map, key=lambda x:(x[3], -len(x[0]), 1 - int(x[4])), reverse=True)
                 for mapping in sorted_mapping:
                     m_expr, m_line, m_col, _, is_dec = mapping
                     if m_line > candidate_line:
                         continue
                     if selected_line > m_line:
                         continue
-                    if m_line == candidate_line and is_dec:
+                    if m_line == candidate_line:
                         continue
                     selected_expr = m_expr
                     if selected_expr in used_candidates:
@@ -568,6 +568,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                         if c_t_lookup in localized_tokens:
                             # favors non-array access
                             mapped_expr = localized_tokens[c_t_lookup]
+                            if "(" in mapped_expr and "(" not in selected_expr:
+                                localized_tokens[c_t_lookup] = selected_expr
                             if "[" in mapped_expr and "[" not in selected_expr:
                                 localized_tokens[c_t_lookup] = selected_expr
                         if c_t_lookup not in localized_tokens:
