@@ -1035,8 +1035,10 @@ def generate_iterator_offset_constraint(iterator_node, ptr_node, src_file):
 def generate_iterator_constraint(iterator_node, src_file, ptr_node):
     source_ptr_loc_str = generate_iterator_location(iterator_node, src_file)
     constraint_expr = None
-    result_data_type = extractor.extract_data_type(iterator_node)
-    is_signed = "unsigned" not in result_data_type
+    result_iterator_type = extractor.extract_data_type(iterator_node)
+    result_ptr_type = extractor.extract_data_type(ptr_node)
+    result_ptr_width = get_type_width(result_ptr_type)
+    is_signed = "unsigned" not in result_iterator_type
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if source_ptr_loc_str in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
@@ -1054,7 +1056,8 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                 else:
                     alloc_size, is_static = get_pointer_size(ptr_node, src_file)
                     if alloc_size.isnumeric():
-                        if (0 < int(alloc_size) <= int(last_value)) or (int(last_value) < 0 and not is_signed):
+                        if (0 < int(alloc_size) <= (int(last_value) * result_ptr_width)) or \
+                                (int(last_value) < 0 and not is_signed):
                             lt_op = build_op_symbol("<")
                             if is_static:
                                 size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
@@ -1322,12 +1325,16 @@ def get_type_limits(data_type):
 
 
 def get_type_width(data_type):
-    if data_type in ["int", "unsigned int"]:
-        return 32
-    elif data_type == "short":
+    if data_type in ["char", "unsigned char", "int8_t", "uint8_t"]:
         return 8
-    elif data_type == "long":
+    elif data_type in ["short", "int16_t", "uint16_t", "float"]:
+        return 16
+    elif data_type in ["int", "unsigned int", "long", "int32_t", "uint32_t", "double"]:
+        return 32
+    elif data_type in ["long long", "int64_t", "uint64_t"] or "*" in data_type or "[" in data_type:
         return 64
+    elif data_type in ["long double"]:
+        return 128
     else:
         utilities.error_exit("Unknown data type for width constraints: {}".format(data_type))
 

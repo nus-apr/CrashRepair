@@ -557,8 +557,6 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                         continue
                     if selected_line > m_line:
                         continue
-                    if m_line == candidate_line:
-                        continue
                     selected_expr = m_expr
                     if selected_expr in used_candidates:
                         continue
