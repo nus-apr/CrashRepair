@@ -39,8 +39,8 @@ struct basic_var_name : seq<
   sor<identifier_first, plusplus>,
   star<sor<identifier_other, digit, dot, arrow, plusplus, open_square_bracket, closed_square_bracket>>
 > {};
-struct crepair_size : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 's', 'i', 'z', 'e', '('>, basic_var_name, one<')'>> {};
 struct crepair_base : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 'b', 'a', 's', 'e', '('>, basic_var_name, one<')'>> {};
+struct crepair_size : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 's', 'i', 'z', 'e', '('>, sor<crepair_base, basic_var_name>, one<')'>> {};
 struct var_name : sor<crepair_size, crepair_base, basic_var_name> {};
 struct integer : seq<opt<sign>, plus<digit>> {};
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, star<space>, var_name, close_bracket> {};
