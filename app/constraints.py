@@ -1020,9 +1020,20 @@ def generate_iterator_offset_constraint(iterator_node, ptr_node, src_file):
         arith_plus_op = build_op_symbol("+")
         size_op = build_op_symbol("size ")
         size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
-        iterator_expr = generate_expr_for_ast(iterator_node)
+        result_ptr_type = extractor.extract_data_type(ptr_node)
+        result_ptr_width = get_type_width(result_ptr_type)
         lt_op = build_op_symbol("<")
-        lhs_constraint = make_binary_expression(arith_plus_op, ptr_expr, iterator_expr)
+        iterator_expr = generate_expr_for_ast(iterator_node)
+        ptr_width_bytes = int(result_ptr_width / 8)
+        if ptr_width_bytes > 1:
+            width_symbol = make_constraint_symbol(str(ptr_width_bytes), "CONST_INT")
+            width_expr = make_symbolic_expression(width_symbol)
+            arith_mul_op = build_op_symbol("*")
+            iterator_offset_expr = make_binary_expression(arith_mul_op, width_expr, iterator_expr)
+        else:
+
+            iterator_offset_expr = iterator_expr
+        lhs_constraint = make_binary_expression(arith_plus_op, ptr_expr, iterator_offset_expr)
         rhs_constraint = make_binary_expression(arith_plus_op, base_expr, size_expr)
         constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
 
