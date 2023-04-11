@@ -195,13 +195,17 @@ void ProgramMutator::strengthenBranchCondition(AstLinkedFixLocation &location) {
 }
 
 void ProgramMutator::prependConditionalControlFlow(AstLinkedFixLocation &location) {
+  bool isInsideLoop = location.isInsideLoop();
+
   addConditionalExit(location);
 
   if (location.isInsideFunction()) {
     addConditionalReturn(location);
   }
-  if (location.isInsideLoop()) {
+  if (isInsideLoop || location.isInsideSwitch()) {
     addConditionalBreak(location);
+  }
+  if (isInsideLoop) {
     addConditionalContinue(location);
   }
 }

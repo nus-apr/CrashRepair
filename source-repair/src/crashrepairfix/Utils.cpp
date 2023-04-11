@@ -292,6 +292,24 @@ bool isInsideLoop(clang::DynTypedNode const &node, clang::ASTContext &context) {
   return false;
 }
 
+bool isInsideSwitch(clang::DynTypedNode const &node, clang::ASTContext &context) {
+  for (auto const parent : context.getParents(node)) {
+    std::string nodeKind = parent.getNodeKind().asStringRef().str();
+    if (nodeKind == "SwitchStmt") {
+      return true;
+    }
+    if (isInsideSwitch(parent, context)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool isInsideSwitch(clang::Stmt const *stmt, clang::ASTContext &context) {
+  auto node = clang::DynTypedNode::create(*stmt);
+  return isInsideSwitch(node, context);
+}
+
 bool isInsideLoop(clang::Stmt const *stmt, clang::ASTContext &context) {
   auto node = clang::DynTypedNode::create(*stmt);
   return isInsideLoop(node, context);

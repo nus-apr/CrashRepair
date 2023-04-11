@@ -139,6 +139,10 @@ public:
     return crashrepairfix::isInsideLoop(stmt, context);
   }
 
+  bool isInsideSwitch() const {
+    return crashrepairfix::isInsideSwitch(stmt, context);
+  }
+
   bool isInsideFunction() const {
     return parentFunction != nullptr;
   }
