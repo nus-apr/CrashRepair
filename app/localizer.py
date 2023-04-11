@@ -127,7 +127,6 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
         return global_candidate_mapping[function_name]
     function_range = function_ast["range"]
     func_line_range = extractor.extract_line_range(src_file, function_range)
-
     var_info_list = extractor.extract_ast_var_list(function_ast, src_file)
     expr_info_list = extractor.extract_expression_list(function_ast, src_file)
     expr_taint_list = collections.OrderedDict()
@@ -493,6 +492,20 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         emitter.warning("\t\t[warning] source file not found for ast lookup {}".format(src_file))
         return []
     func_name, function_ast = extractor.extract_func_ast(src_file, taint_line)
+    compound_range = list()
+    var_scope_list = dict()
+    var_info_list = extractor.extract_ast_var_list(function_ast, src_file)
+    compound_list = extractor.extract_custom_type_node_list(function_ast, ["CompoundStmt"])
+    for comp_node in compound_list:
+        comp_range = comp_node["range"]
+        comp_range_line = extractor.extract_line_range(src_file, comp_range)
+        compound_range.append(comp_range_line)
+    for var_info in var_info_list:
+        e_str, e_line, _, _, dec_or_ref = var_info
+        if dec_or_ref == "dec":
+            for _range in compound_range:
+                if e_line in _range:
+                    var_scope_list[e_str] = _range
     call_node_list = extractor.extract_call_node_list(function_ast)
     taint_src_loc = (src_file, int(taint_line), int(taint_col))
     if oracle.is_top_assertion(taint_src_loc, call_node_list) or \
@@ -557,7 +570,12 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                         continue
                     if selected_line > m_line:
                         continue
+                    if m_expr in var_scope_list:
+                        if int(taint_line) not in var_scope_list[m_expr]:
+                            continue
+
                     selected_expr = m_expr
+
                     if selected_expr in used_candidates:
                         continue
                     selected_col = m_col
