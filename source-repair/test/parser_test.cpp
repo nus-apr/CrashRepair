@@ -104,6 +104,10 @@ TEST(ParserTest, CRepairSizeCRepairBaseConstraint) {
   ASSERT_NE(parse("((@var(pointer, bytecounts) + @var(integer, s)) < (@var(pointer, crepair_base(bytecounts)) + @var(integer, crepair_size(crepair_base(bytecounts)))))"), nullptr);
 }
 
+TEST(ParserTest, Issue149) {
+  ASSERT_NE(parse("(@var(pointer, crepair_base(ctxt->input->cur - len)) <= (@var(pointer, ctxt->input->cur) - @var(pointer, len)))"), nullptr);
+}
+
 // https://stackoverflow.com/questions/37276015/how-do-i-generate-an-ast-from-a-string-of-c-using-clang
 TEST(UtilsTest, ForLoopTopLevelStmt) {
   auto filename = fs::absolute("test.cpp").string();

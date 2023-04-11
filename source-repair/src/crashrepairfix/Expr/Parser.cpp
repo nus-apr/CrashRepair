@@ -39,7 +39,11 @@ struct basic_var_name : seq<
   sor<identifier_first, plusplus>,
   star<sor<identifier_other, digit, dot, arrow, plusplus, open_square_bracket, closed_square_bracket>>
 > {};
-struct crepair_base : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 'b', 'a', 's', 'e', '('>, basic_var_name, one<')'>> {};
+struct basic_var_expr : sor<
+  seq<basic_var_name, star<space>, sign, star<space>, basic_var_name>,
+  basic_var_name
+> {};
+struct crepair_base : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 'b', 'a', 's', 'e', '('>, basic_var_expr, one<')'>> {};
 struct crepair_size : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 's', 'i', 'z', 'e', '('>, sor<crepair_base, basic_var_name>, one<')'>> {};
 struct var_name : sor<crepair_size, crepair_base, basic_var_name> {};
 struct integer : seq<opt<sign>, plus<digit>> {};
@@ -134,6 +138,7 @@ using selector = parse_tree::selector<
   >,
   parse_tree::remove_content::on<
     basic_var_name,
+    basic_var_expr,
     result,
     null,
     crepair_size,
