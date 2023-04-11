@@ -1067,7 +1067,7 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                                 ptr_expr = generate_expr_for_ast(ptr_node)
                                 size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
                             iterator_expr = generate_expr_for_ast(iterator_node)
-                            ptr_width_bytes = result_ptr_width / 8
+                            ptr_width_bytes = int(result_ptr_width / 8)
                             if ptr_width_bytes > 1:
                                 width_symbol = make_constraint_symbol(str(ptr_width_bytes), "CONST_INT")
                                 width_expr = make_symbolic_expression(width_symbol)
