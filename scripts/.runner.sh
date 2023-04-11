@@ -13,6 +13,7 @@ SCENARIO=$2
 
 REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT:-45}"
 TEST_TIME_LIMIT="${TEST_TIME_LIMIT:-30}"
+PATCH_LIMIT="${PATCH_LIMIT:-10}"
 
 WORKDIR="/data/vulnloc/${PROGRAM}/${SCENARIO}"
 RESULTS_DIR="/results/${PROGRAM}/${SCENARIO}"
@@ -27,6 +28,7 @@ stty rows 100
 crashrepair repair \
   --time-limit-minutes-validation "${REPAIR_TIME_LIMIT}" \
   --time-limit-seconds-test "${TEST_TIME_LIMIT}" \
+  --patch-limit "${PATCH_LIMIT}" \
   --no-fuzz bug.json \
   2>1 |& tee "${LOG_FILENAME}"
 

@@ -93,6 +93,8 @@ class Scenario:
     use_ghost_functions: bool
         Inject the necessary compilation options to allow support for ghost functions during validation.
         Should only be used when ASAN is enabled and must not be used during analysis.
+    acceptable_patch_limit: t.Optional[int]
+        The maximum number of acceptable patches that should be found before the repair process is halted.
     """
     subject: str
     name: str
@@ -122,6 +124,7 @@ class Scenario:
     asan_options: t.Optional[str] = attrs.field(default=None)
     ubsan_options: t.Optional[str] = attrs.field(default=None)
     use_ghost_functions: bool = attrs.field(default=False)
+    acceptable_patch_limit: t.Optional[int] = attrs.field(default=None)
 
     @property
     def compile_commands_path(self) -> str:
@@ -471,6 +474,7 @@ class Scenario:
         candidates = PatchCandidate.load_all(self.patch_candidates_path)
         candidates = PatchCandidate.rank(candidates, self.localization_path)
         evaluations: t.List[PatchEvaluation] = []
+        num_repairs_found = 0
 
         # rebuild the whole project once before using incremental builds for each patch
         # don't bother rebuilding if we don't use additional sanitizer flags
@@ -484,10 +488,15 @@ class Scenario:
                 logger.info("reached candidate patch evaluation time limit")
                 break
 
+            if self.acceptable_patch_limit and num_repairs_found >= self.acceptable_patch_limit:
+                logger.info(f"reached acceptable patch limit ({self.acceptable_patch_limit})")
+                break
+
             outcome = self.evaluate(candidate)
             evaluations.append(outcome)
             if outcome:
                 logger.info(f"saving successful patch #{candidate.id_}...")
+                num_repairs_found += 1
                 patch_filename = f"{candidate.id_}.diff"
                 patch_filename = os.path.join(self.patches_directory, patch_filename)
                 candidate.write(patch_filename)

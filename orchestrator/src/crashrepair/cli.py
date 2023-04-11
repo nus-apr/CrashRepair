@@ -16,6 +16,8 @@ def do_repair(args: argparse.Namespace) -> None:
     scenario.time_limit_minutes_analysis = args.time_limit_minutes_analysis
     if args.time_limit_seconds_test:
         scenario.time_limit_seconds_single_test = args.time_limit_seconds_test
+    if args.patch_limit:
+        scenario.acceptable_patch_limit = args.patch_limit
     scenario.repair()
 
 
@@ -48,6 +50,11 @@ def parse_args() -> argparse.Namespace:
     parser_repair.add_argument(
         "filename",
         help="the path to the bug.json file for the bug scenario",
+    )
+    parser_repair.add_argument(
+        "--patch-limit",
+        type=int,
+        help="enforces a limit on the maximum number of acceptable patches",
     )
     parser_repair.add_argument(
         "--time-limit-minutes-analysis",
