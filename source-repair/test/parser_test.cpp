@@ -99,8 +99,9 @@ TEST(ParserTest, Issue144) {
   ASSERT_NE(parse("(@result(integer) < @var(integer, crepair_size(ptr)))"), nullptr);
 }
 
-TEST(ParserTest, Issue147) {
+TEST(ParserTest, CRepairSizeCRepairBaseConstraint) {
   ASSERT_NE(parse("((@var(pointer, colormap) + @var(integer, t)) < (@var(pointer, crepair_base(colormap)) + @var(integer, crepair_size(crepair_base(colormap)))))"), nullptr);
+  ASSERT_NE(parse("((@var(pointer, bytecounts) + @var(integer, s)) < (@var(pointer, crepair_base(bytecounts)) + @var(integer, crepair_size(crepair_base(bytecounts)))))"), nullptr);
 }
 
 // https://stackoverflow.com/questions/37276015/how-do-i-generate-an-ast-from-a-string-of-c-using-clang
