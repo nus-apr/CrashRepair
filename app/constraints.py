@@ -1108,7 +1108,8 @@ def get_pointer_size(ptr_node, src_file):
     if "[" in var_type:
         is_static = True
         static_size = var_type.split("[")[-1].split("]")[0]
-        alloc_size = static_size
+        ptr_width = get_type_width(var_type)
+        alloc_size = str(int(static_size) * int(ptr_width/8))
 
     if not static_size:
         for taint_loc in values.VALUE_TRACK_CONCRETE:
@@ -1184,12 +1185,20 @@ def get_pointer_diff(ptr_node, src_file, iterator_node=None):
     source_ptr_loc_str = generate_pointer_loc(ptr_node, src_file)
     pointer_diff = None
     iterator_loc = None
+    if "castKind" in ptr_node:
+        ptr_cast_kind = ptr_node["castKind"]
+        if ptr_cast_kind == "ArrayToPointerDecay":
+            return 0
+    else:
+        ptr_result_type = extractor.extract_data_type(ptr_node)
+        if "[" in ptr_result_type:
+            return 0
     if iterator_node is not None:
         iterator_node_kind = iterator_node["kind"]
+        iterator_loc = generate_iterator_location(iterator_node, src_file)
         if iterator_node_kind == "IntegerLiteral":
             iterator_loc = None
-        else:
-            iterator_loc = generate_iterator_location(iterator_node, src_file)
+
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if iterator_loc is not None:
             if iterator_loc in taint_loc:
