@@ -1345,13 +1345,17 @@ def get_type_limits(data_type):
 
 
 def get_type_width(data_type):
+
+    if "**" in data_type or "][" in data_type:
+        return 64
+    
     if any(t in data_type for t in ["char", "unsigned char", "int8_t", "uint8_t"]):
         return 8
     elif data_type in ["short", "int16_t", "uint16_t", "float"]:
         return 16
     elif data_type in ["int", "unsigned int", "long", "int32_t", "uint32_t", "double"]:
         return 32
-    elif data_type in ["long long", "int64_t", "uint64_t"] or "**" in data_type or "][" in data_type:
+    elif data_type in ["long long", "int64_t", "uint64_t"]:
         return 64
     elif data_type in ["long double"]:
         return 128
