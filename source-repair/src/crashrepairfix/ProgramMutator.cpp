@@ -255,7 +255,7 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
 
   auto restrictConstantsToFile = location.getFilename();
   auto parentFunction = location.getParentFunction();
-  auto translationUnit = location.getParentTranslationUnit();
+  // auto translationUnit = location.getParentTranslationUnit();
   auto returnType = parentFunction->getReturnType();
   auto returnTypeInfo = returnType.getTypePtr();
 
