@@ -414,13 +414,6 @@ def analyze():
                                                                    output_dir_path,
                                                                    test_case_id)
 
-        taint_memory_addresses = []
-        for taint_loc in taint_values_symbolic:
-            expr_list = taint_values_symbolic[taint_loc]
-            if expr_list and "pointer" in expr_list[0]:
-                for symbolic_ptr in expr_list:
-                    if symbolic_ptr not in taint_memory_addresses:
-                        taint_memory_addresses.append(symbolic_ptr.replace("pointer:", ""))
 
         concolic_end = time.time()
         values.TIME_CONCOLIC_ANALYSIS = format((concolic_end - concolic_start) / 60, '.3f')
@@ -428,6 +421,14 @@ def analyze():
         var_info = con_var_info
         value_map = taint_values_concrete
         if concolic_crash == concrete_crash:
+            taint_memory_addresses = []
+            for taint_loc in taint_values_symbolic:
+                expr_list = taint_values_symbolic[taint_loc]
+                if expr_list and "pointer" in expr_list[0]:
+                    for symbolic_ptr in expr_list:
+                        if symbolic_ptr not in taint_memory_addresses:
+                            taint_memory_addresses.append(symbolic_ptr.replace("pointer:", ""))
+
             crash_var_symbolic_info = extract_value_list(taint_values_symbolic, crash_info)
             sym_var_info = pointer_analysis(crash_var_symbolic_info,
                                             values.MEMORY_TRACK_SYMBOLIC,
