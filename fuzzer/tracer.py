@@ -4,6 +4,8 @@ import env
 import subprocess
 from bisect import bisect_left
 from collections import defaultdict
+import time # (YN: added import for proces killing timeout)
+
 
 def ifTracer(cmd_list):
 	# craft tracing command
@@ -21,8 +23,19 @@ def ifTracer(cmd_list):
 
 
 def exe_bin(cmd_list):
+	global SubProcessTimeout
 	p1 = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	out, err = p1.communicate()
+	# (YN: added timeout handling)
+	# out, err = p1.communicate()
+	try:
+		out, err = p1.communicate(timeout=SubProcessTimeout)
+	except subprocess.TimeoutExpired:
+		print("subprocess.TimeoutExpired")
+		p1.terminate()
+		time.sleep(5)
+		if p1.poll() is None:
+			p1.kill()
+		out, err = p1.communicate()
 	return out, err
 
 def readCBR(cmdFile):

@@ -12,6 +12,7 @@ import shutil
 import tracer
 import itertools
 import json
+import multiprocessing
 from multiprocessing import Pool
 
 DefaultItems = ['trace_cmd', 'crash_cmd', 'poc', 'poc_fmt', 'folder', 'mutate_range', 'crash_tag']
@@ -142,10 +143,20 @@ def parse_args():
 	if 'tmp_filename_len' in detailed_config: # read the length of temperol filename
 		utils.FileNameLen = int(detailed_config['tmp_filename_len'][0])
 	# (YN: added optional storage of all generated inputs files)
-	if 'store_all_inputs' not in detailed_config: # read the randomization seed
+	if 'store_all_inputs' not in detailed_config: # read the folder to store all inputs
 		detailed_config['store_all_inputs'] = False
 	else:
 		detailed_config['store_all_inputs'] = detailed_config['store_all_inputs'][0] == 'True'
+	# (YN: added optional parameter to set timeout of running subprocesses for input execution)
+	if 'subprocess_timeout' in detailed_config:
+		detailed_config['subprocess_timeout'] = int(detailed_config['subprocess_timeout'][0])
+	else:
+		detailed_config['subprocess_timeout'] = 5 # default value 5 seconds
+	# (YN: added optional parameter to set the maximum number of subprocesses)
+	if 'process_max_number' in detailed_config:
+		detailed_config['process_max_number'] = np.min((int(detailed_config['process_max_number'][0]), multiprocessing.cpu_count()))
+	else:
+		detailed_config['process_max_number'] = np.min((10, multiprocessing.cpu_count()))
 	# get all the replace idx in the cmd
 	tmp = ';'.join(detailed_config['trace_cmd']).split('***')
 	detailed_config['trace_cmd'] = []
@@ -436,13 +447,15 @@ def store_input(output_folder, input_counter, config_info, content):
 	return input_counter
 
 def concentrate_fuzz(config_info):
-	global TraceHashCollection, ReportCollection, SeedPool, SeedTraceHashList, TraceFolder, TmpFolder, ConcentratedInputCounter, AllInputCounter, StoreAllInputs
+	global TraceHashCollection, ReportCollection, SeedPool, SeedTraceHashList, TraceFolder, TmpFolder, ConcentratedInputCounter, AllInputCounter, StoreAllInputs, ProcessNum, SubProcessTimeout
 
 	# (YN: added some info output)
 	logging.info('Input format: %s' % config_info['input_format'])
 	logging.info('Store all input files: %s' % str(config_info['store_all_inputs']))
 
 	StoreAllInputs = config_info['store_all_inputs']
+	ProcessNum = config_info['process_max_number']
+	SubProcessTimeout = config_info['subprocess_timeout']
 
 	# init the randomization function
 	np.random.seed(config_info['rand_seed'])
@@ -505,7 +518,7 @@ def concentrate_fuzz(config_info):
 			# execute all the mutated inputs
 			result_collection = [] # each element is in the fmt of [id, trace, trace_hash, crash_result, trace_diff_id]
 			input_num = len(inputs)
-			pool = Pool(utils.ProcessNum)
+			pool = Pool(ProcessNum)
 			for input_no in range(input_num):
 				pool.apply_async(
 					gen_report,
