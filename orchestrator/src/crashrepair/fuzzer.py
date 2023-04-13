@@ -162,7 +162,7 @@ class Fuzzer:
             self.scenario.shell(command, cwd=self.scenario.directory)
 
         # if we store all inputs, copy across those inputs into the test directory
-        fuzzer_directory = os.path.join(self.scenario.directory, "scenario")
+        fuzzer_directory = os.path.join(self.scenario.directory, "fuzzer")
         all_inputs_directory = os.path.join(fuzzer_directory, "all_inputs")
         concentrated_inputs_directory = os.path.join(fuzzer_directory, "concentrated_inputs")
 
