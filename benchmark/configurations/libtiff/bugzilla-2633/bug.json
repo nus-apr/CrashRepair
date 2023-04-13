@@ -14,6 +14,7 @@
   "build": {
     "directory": "src",
     "binary": "/data/vulnloc/libtiff/bugzilla-2633/src/tools/tiff2ps",
+    "use-ghost-functions": true,
     "sanitizerflags": "-fsanitize=address",
     "commands": {
       "prebuild": "./configure --enable-static --disable-shared",

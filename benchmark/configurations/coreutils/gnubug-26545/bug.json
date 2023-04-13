@@ -15,6 +15,7 @@
   "build": {
     "directory": "src",
     "binary": "/data/vulnloc/coreutils/gnubug-26545/src/src/shred",
+    "use-ghost-functions": true,
     "sanitizerflags": "-fsanitize=address",
     "commands": {
       "prebuild": "exit 0",
