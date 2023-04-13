@@ -108,6 +108,10 @@ TEST(ParserTest, Issue149) {
   ASSERT_NE(parse("(@var(pointer, crepair_base(ctxt->input->cur - len)) <= (@var(pointer, ctxt->input->cur) - @var(pointer, len)))"), nullptr);
 }
 
+TEST(ParserTest, Issue153) {
+  ASSERT_NE(parse("(@var(pointer, block->z_diskstart) < (@var(pointer, block) + @var(integer, *header->z_extras)))"), nullptr);
+}
+
 // https://stackoverflow.com/questions/37276015/how-do-i-generate-an-ast-from-a-string-of-c-using-clang
 TEST(UtilsTest, ForLoopTopLevelStmt) {
   auto filename = fs::absolute("test.cpp").string();
