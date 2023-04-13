@@ -264,11 +264,11 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
     returnValues.insert("0");
     returnValues.insert("1");
 
-    auto constants = ConstantFinder::findIntegers(context, translationUnit, restrictConstantsToFile);
-    for (auto &integer : constants) {
-      // TODO ensure that constant fits within return type!
-      returnValues.insert(convertAPIntToString(integer));
-    }
+    // auto constants = ConstantFinder::findIntegers(context, translationUnit, restrictConstantsToFile);
+    // for (auto &integer : constants) {
+    //   // TODO ensure that constant fits within return type!
+    //   returnValues.insert(convertAPIntToString(integer));
+    // }
   }
 
   if (returnTypeInfo->isRealType()) {
@@ -276,11 +276,11 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
     returnValues.insert("0.0");
     returnValues.insert("1.0");
 
-    auto constants = ConstantFinder::findReals(context, translationUnit, restrictConstantsToFile);
-    for (auto &real : constants) {
-      // TODO ensure that constant fits within return type!
-      returnValues.insert(convertAPFloatToString(real));
-    }
+    // auto constants = ConstantFinder::findReals(context, translationUnit, restrictConstantsToFile);
+    // for (auto &real : constants) {
+    //   // TODO ensure that constant fits within return type!
+    //   returnValues.insert(convertAPFloatToString(real));
+    // }
   }
 
   if (returnTypeInfo->isPointerType()) {
