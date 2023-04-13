@@ -444,15 +444,18 @@ def read_concrete_values(trace_file_path):
     return var_value_map
 
 
-def read_tainted_expressions(taint_log_path):
+def read_tainted_expressions(taint_log_path, crash_loc):
     emitter.normal("\tcollecting tainted expressions")
     taint_map = OrderedDict()
     trace_list = []
     if os.path.exists(taint_log_path):
         with open(taint_log_path, 'r') as taint_file:
             for line in taint_file:
-                if "no debug info" in line or "/opt/zlib" in line:
+                if "no debug info" in line:
                     continue
+                if "/opt/zlib" in line:
+                    if crash_loc and crash_loc not in line:
+                        continue
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_value = line.strip().split(": ")

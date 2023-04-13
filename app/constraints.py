@@ -1185,7 +1185,11 @@ def get_pointer_diff(ptr_node, src_file, iterator_node=None):
     pointer_diff = None
     iterator_loc = None
     if iterator_node is not None:
-        iterator_loc = generate_iterator_location(iterator_node, src_file)
+        iterator_node_kind = iterator_node["kind"]
+        if iterator_node_kind == "IntegerLiteral":
+            iterator_loc = None
+        else:
+            iterator_loc = generate_iterator_location(iterator_node, src_file)
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if iterator_loc is not None:
             if iterator_loc in taint_loc:
@@ -1345,20 +1349,19 @@ def get_type_limits(data_type):
 
 
 def get_type_width(data_type):
-
+    data_type = str(data_type).lower()
     if "**" in data_type or "][" in data_type:
         return 64
-    
-    if any(t in data_type for t in ["char", "unsigned char", "int8_t", "uint8_t"]):
-        return 8
-    elif data_type in ["short", "int16_t", "uint16_t", "float"]:
-        return 16
-    elif data_type in ["int", "unsigned int", "long", "int32_t", "uint32_t", "double"]:
-        return 32
-    elif data_type in ["long long", "int64_t", "uint64_t"]:
-        return 64
-    elif data_type in ["long double"]:
+    elif any(t in data_type for t in ["long double"]):
         return 128
+    elif any(t in data_type for t in ["char", "unsigned char", "int8_t", "uint8_t"]):
+        return 8
+    elif any(t in data_type for t in ["short", "int16_t", "uint16_t", "float", "uint16"]):
+        return 16
+    elif any(t in data_type for t in ["long long", "int64_t", "uint64_t", "uint64"]):
+        return 64
+    elif any(t in data_type for t in ["int", "unsigned int", "long", "int32_t", "uint32_t", "double", "uint32"]):
+        return 32
     else:
         utilities.error_exit("Unknown data type for width constraints: {}".format(data_type))
 

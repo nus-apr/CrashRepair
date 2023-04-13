@@ -1206,6 +1206,8 @@ def extract_data_type(ast_node):
             data_type = type_node["desugaredQualType"]
         elif "qualType" in type_node:
             data_type = type_node["qualType"]
+    if node_kind == "ArraySubscriptExpr":
+        data_type = f"{data_type}*"
     return data_type
 
 

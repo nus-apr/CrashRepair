@@ -47,10 +47,11 @@ def get_concrete_values(arguments_str, output_dir_path, test_case_id, program_pa
     values.IS_CRASH = False
     c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
     concrete_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
+    crash_loc = ":".join([c_file, str(c_line)])
     taint_log_path = klee_concrete_out_dir + "/taint.log"
 
     # Retrieve concrete values from the taint.log file.
-    taint_values_concrete, trace_list_concrete = reader.read_tainted_expressions(taint_log_path)
+    taint_values_concrete, trace_list_concrete = reader.read_tainted_expressions(taint_log_path, crash_loc)
     values.TRACE_CONCRETE = trace_list_concrete
     values.VALUE_TRACK_CONCRETE = taint_values_concrete
     state_value_map = reader.read_state_values(taint_log_path)
@@ -97,13 +98,13 @@ def get_tainted_values(arguments_str, program_path, output_dir_path, test_case_i
                                             klee_taint_out_dir)
     c_type, c_file, c_line, c_column, _ = reader.collect_klee_crash_info(values.get_file_message_log())
     concolic_crash = None
-    if c_type is not None:
-        concolic_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
     if c_type is None:
         return None, concolic_crash
+    concolic_crash = ":".join([str(c_type), c_file, str(c_line), str(c_column)])
+    crash_loc = ":".join([c_file, str(c_line)])
     taint_log_path = klee_taint_out_dir + "/taint.log"
     # Retrieve symbolic expressions from taint.log of concolic run.
-    taint_values_symbolic, trace_symbolic = reader.read_tainted_expressions(taint_log_path)
+    taint_values_symbolic, trace_symbolic = reader.read_tainted_expressions(taint_log_path, crash_loc)
     values.TRACE_SYMBOLIC = trace_symbolic
     values.VALUE_TRACK_SYMBOLIC = taint_values_symbolic
     memory_track_log = klee_taint_out_dir + "/memory.log"
@@ -357,7 +358,7 @@ def identify_sources(var_info):
                 value_list = var_info[var_name]["expr_list"]
                 for expr in value_list:
                     memory_address = get_concrete_pointer(expr)
-                    memory_list.append(memory_address)
+                    memory_list.append(f"bv{memory_address}")
             memory_list = list(set(memory_list))
             taint_memory_list = taint_memory_list + memory_list
             tainted_addresses = sorted([str(i) for i in memory_list])
@@ -398,6 +399,8 @@ def analyze():
         crash_var_concrete_info = extract_value_list(taint_values_concrete, crash_info)
         taint_memory_addresses = []
         for taint_loc in taint_values_concrete:
+            if values.CONF_DIR_SRC not in taint_loc:
+                continue
             expr_list = taint_values_concrete[taint_loc]
             if expr_list and "pointer" in expr_list[0]:
                 for symbolic_ptr in expr_list:
@@ -423,6 +426,8 @@ def analyze():
         if concolic_crash == concrete_crash:
             taint_memory_addresses = []
             for taint_loc in taint_values_symbolic:
+                if values.CONF_DIR_SRC not in taint_loc:
+                    continue
                 expr_list = taint_values_symbolic[taint_loc]
                 if expr_list and "pointer" in expr_list[0]:
                     for symbolic_ptr in expr_list:
@@ -435,8 +440,9 @@ def analyze():
                                             values.POINTER_TRACK_SYMBOLIC,
                                             taint_memory_addresses
                                             )
-            var_info = sym_var_info
-            value_map = taint_values_symbolic
+            if sym_var_info:
+                var_info = sym_var_info
+                value_map = taint_values_symbolic
         else:
             emitter.warning("\t[warning] taint analysis failed, using concrete values")
         crash_info["var-info"] = var_info

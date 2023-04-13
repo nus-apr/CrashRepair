@@ -599,9 +599,14 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
             if "size " in c_t_lookup:
                 ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
                 base_ptr = f"(base  @var(pointer, {ptr_name}))"
+
+
                 mapped_ptr = None
                 if base_ptr in localized_tokens:
                     mapped_ptr = localized_tokens[base_ptr]
+                    base_func_ptr = f"crepair_base({ptr_name})"
+                    if base_func_ptr == mapped_ptr:
+                        mapped_ptr = ptr_name
                 elif ptr_name in localized_tokens:
                     mapped_ptr = localized_tokens[ptr_name]
                 if mapped_ptr:
