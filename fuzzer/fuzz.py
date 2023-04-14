@@ -151,7 +151,7 @@ def parse_args():
 	if 'subprocess_timeout' in detailed_config:
 		detailed_config['subprocess_timeout'] = int(detailed_config['subprocess_timeout'][0])
 	else:
-		detailed_config['subprocess_timeout'] = 5 # default value 5 seconds
+		detailed_config['subprocess_timeout'] = 15 # default value 15 seconds
 	utils.SubProcessTimeout = detailed_config['subprocess_timeout'] 
 	# (YN: added optional parameter to set the maximum number of subprocesses)
 	if 'process_max_number' in detailed_config:
