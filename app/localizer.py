@@ -317,7 +317,7 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             if constant_mapping:
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
-                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
+                                logger.track_localization("MAPPING {} with {}".format(crash_var_name, constant_mapping))
                                 logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                                 logger.track_localization("{}->[{}]".format(constant_mapping, var_expr_list))
                                 candidate_mapping[crash_var_name].add((constant_mapping, e_line, e_col, e_addr, is_exp_dec))
@@ -563,7 +563,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                 selected_expr = None
                 selected_line = 0
                 selected_col = 0
-                sorted_mapping = sorted(c_t_map, key=lambda x:(x[3], -len(x[0]), 1 - int(x[4])), reverse=True)
+                sorted_mapping = sorted(c_t_map, key=lambda x:(x[3], 1 - int(x[4]), -len(x[0])), reverse=True)
                 for mapping in sorted_mapping:
                     m_expr, m_line, m_col, _, is_dec = mapping
                     if m_line > candidate_line:
