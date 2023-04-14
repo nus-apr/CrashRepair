@@ -535,7 +535,7 @@ def resolve_base(expr_str, symbolic_mapping):
     resolved_cfc = None
     if expr_str in symbolic_mapping:
         mapping = symbolic_mapping[expr_str]
-        # assumption: mapping is either constant or variable, not an expression i.e. a+b
+        mapping = transform_increment_decrement(mapping)
         if str(mapping).isnumeric():
             mapped_symbol = make_constraint_symbol(mapping, "CONST_INT")
             resolved_cfc = make_symbolic_expression(mapped_symbol)
