@@ -285,6 +285,10 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
 
   if (returnTypeInfo->isPointerType()) {
     returnValues.insert("NULL");
+
+    if (returnTypeInfo->getPointeeType().getTypePtr()->isCharType()) {
+      returnValues.insert("\"\"");
+    }
   }
 
   // find reaching in-scope local variables with the same type
