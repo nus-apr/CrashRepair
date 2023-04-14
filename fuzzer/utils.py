@@ -7,6 +7,8 @@ import multiprocessing
 FileNameChars = list(string.letters + string.digits)
 FileNameLen = 30
 
+SubProcessTimeout = 5
+
 '''
 Process the binary file
 '''

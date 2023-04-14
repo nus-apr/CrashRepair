@@ -5,14 +5,29 @@ import subprocess
 from bisect import bisect_left
 from collections import defaultdict
 import time # (YN: added import for proces killing timeout)
-
+import logging # (YN: added to log timeouts)
+import os
+import signal
 
 def ifTracer(cmd_list):
 	# craft tracing command
 	tracer_cmd_list = [env.dynamorio_path, '-c', env.iftracer_path, '--'] + cmd_list
 	# execute command
 	p1 = subprocess.Popen(tracer_cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+	# (YN: added timeout handling)
+	t_end = time.time() + utils.SubProcessTimeout
+	while p1.poll() is None and time.time() < t_end:
+		time.sleep(1)
+	if p1.poll() is None:
+		logging.warn('ifTracer timeout occured with > %s sec' % str(utils.SubProcessTimeout))
+		p1.terminate()
+		time.sleep(5)
+		if p1.poll() is None:
+			p1.kill()
+			time.sleep(5)	
 	out, err = p1.communicate()
+
 	# parse the output
 	if_list = []
 	for aline in out.split("\n"):
@@ -25,17 +40,20 @@ def ifTracer(cmd_list):
 def exe_bin(cmd_list):
 	global SubProcessTimeout
 	p1 = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 	# (YN: added timeout handling)
-	# out, err = p1.communicate()
-	try:
-		out, err = p1.communicate(timeout=SubProcessTimeout)
-	except subprocess.TimeoutExpired:
-		print("subprocess.TimeoutExpired")
+	t_end = time.time() + utils.SubProcessTimeout
+	while p1.poll() is None and time.time() < t_end:
+		time.sleep(1)
+	if p1.poll() is None:
+		logging.warn('exe_bin timeout occured with > %s sec' % str(utils.SubProcessTimeout))
 		p1.terminate()
 		time.sleep(5)
 		if p1.poll() is None:
 			p1.kill()
-		out, err = p1.communicate()
+			time.sleep(5)
+	
+	out, err = p1.communicate()
 	return out, err
 
 def readCBR(cmdFile):

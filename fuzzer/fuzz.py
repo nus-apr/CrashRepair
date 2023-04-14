@@ -152,6 +152,7 @@ def parse_args():
 		detailed_config['subprocess_timeout'] = int(detailed_config['subprocess_timeout'][0])
 	else:
 		detailed_config['subprocess_timeout'] = 5 # default value 5 seconds
+	utils.SubProcessTimeout = detailed_config['subprocess_timeout'] 
 	# (YN: added optional parameter to set the maximum number of subprocesses)
 	if 'process_max_number' in detailed_config:
 		detailed_config['process_max_number'] = np.min((int(detailed_config['process_max_number'][0]), multiprocessing.cpu_count()))
@@ -447,7 +448,7 @@ def store_input(output_folder, input_counter, config_info, content):
 	return input_counter
 
 def concentrate_fuzz(config_info):
-	global TraceHashCollection, ReportCollection, SeedPool, SeedTraceHashList, TraceFolder, TmpFolder, ConcentratedInputCounter, AllInputCounter, StoreAllInputs, ProcessNum, SubProcessTimeout
+	global TraceHashCollection, ReportCollection, SeedPool, SeedTraceHashList, TraceFolder, TmpFolder, ConcentratedInputCounter, AllInputCounter, StoreAllInputs, ProcessNum
 
 	# (YN: added some info output)
 	logging.info('Input format: %s' % config_info['input_format'])
@@ -455,7 +456,6 @@ def concentrate_fuzz(config_info):
 
 	StoreAllInputs = config_info['store_all_inputs']
 	ProcessNum = config_info['process_max_number']
-	SubProcessTimeout = config_info['subprocess_timeout']
 
 	# init the randomization function
 	np.random.seed(config_info['rand_seed'])
