@@ -36,8 +36,8 @@
       "format": ["int", "int"],
       "values": ["7", "75"],
       "commands": {
-        "crash": ["/data/vulnloc/coreutils/gnubug-25003/src/split", "-n***/***", "out2"],
-        "trace": ["/data/vulnloc/coreutils/gnubug-25003/src/split", "-n***/***", "out1"]
+        "crash": ["/data/vulnloc/coreutils/gnubug-25003/src/src/split", "-n***/***", "out2"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-25003/src/src/split", "-n***/***", "out1"]
       }
     }
   }

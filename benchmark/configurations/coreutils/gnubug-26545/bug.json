@@ -35,8 +35,8 @@
       "format": ["int", "int"],
       "values": ["4", "7"],
       "commands": {
-        "crash": ["/data/vulnloc/coreutils/gnubug-26545/src/pr", "-n***", "-s***", "abc2"],
-        "trace": ["/data/vulnloc/coreutils/gnubug-26545/src/pr", "-n***", "-s***", "abc2"]
+        "crash": ["/data/vulnloc/coreutils/gnubug-26545/src/src/pr", "-n***", "-s***", "abc2"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-26545/src/src/pr", "-n***", "-s***", "abc2"]
       }
     }
   }

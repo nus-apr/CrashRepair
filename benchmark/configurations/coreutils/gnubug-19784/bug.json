@@ -35,8 +35,8 @@
       "format": ["int"],
       "values": ["5"],
       "commands": {
-        "crash": ["/data/vulnloc/coreutils/gnubug-19784/src/make-prime-list", "***"],
-        "trace": ["/data/vulnloc/coreutils/gnubug-19784/src/make-prime-list", "***"]
+        "crash": ["/data/vulnloc/coreutils/gnubug-19784/src/src/make-prime-list", "***"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-19784/src/src/make-prime-list", "***"]
       }
     }
   }

@@ -35,8 +35,8 @@
       "format": ["str", "str", "str", "str", "str", "str"],
       "values": ["\\", "t", "\\", "t", "\\", "t"],
       "commands": {
-        "crash": ["/data/vulnloc/coreutils/gnubug-25023/src/pr", "-S***", "tmp2", "-m", "tmp2"],
-        "trace": ["/data/vulnloc/coreutils/gnubug-25023/src/pr", "-S***", "tmp2", "-m", "tmp2"]
+        "crash": ["/data/vulnloc/coreutils/gnubug-25023/src/src/pr", "-S***", "tmp2", "-m", "tmp2"],
+        "trace": ["/data/vulnloc/coreutils/gnubug-25023/src/src/pr", "-S***", "tmp2", "-m", "tmp2"]
       }
     }
   }
