@@ -1359,7 +1359,7 @@ def get_type_limits(data_type):
 
 def get_type_width(data_type):
     data_type = str(data_type).lower()
-    if "**" in data_type or "][" in data_type:
+    if "**" in data_type or "][" in data_type or ("*" in data_type and "[" in data_type):
         return 64
     elif any(t in data_type for t in ["long double"]):
         return 128
