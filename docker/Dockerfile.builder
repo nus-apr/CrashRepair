@@ -125,11 +125,11 @@ RUN apt-get update -qq \
       yasm
 
 # install automake 1.16+
-RUN cd /tmp \
- && wget -O /tmp/automake.tgz -nv https://ftp.gnu.org/gnu/automake/automake-1.16.3.tar.gz \
- && tar -xf automake.tgz \
- && cd automake* \
- && ./configure \
- && make \
- && make install \
- && rm -rf /tmp/automake*
+# RUN cd /tmp \
+#  && wget -O /tmp/automake.tgz -nv https://ftp.gnu.org/gnu/automake/automake-1.16.3.tar.gz \
+#  && tar -xf automake.tgz \
+#  && cd automake* \
+#  && ./configure \
+#  && make \
+#  && make install \
+#  && rm -rf /tmp/automake*
