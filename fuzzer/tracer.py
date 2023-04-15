@@ -6,39 +6,61 @@ from bisect import bisect_left
 from collections import defaultdict
 import time # (YN: added import for proces killing timeout)
 import logging # (YN: added to log timeouts)
+import tempfile
 import os
 import signal
 
+DEVNULL = open(os.devnull, 'w')
+
+
 def ifTracer(cmd_list):
+	_, trace_filename = tempfile.mkstemp(suffix=".trace")
+
 	# craft tracing command
-	tracer_cmd_list = [env.dynamorio_path, '-c', env.iftracer_path, '--'] + cmd_list
-	# execute command
-	p1 = subprocess.Popen(tracer_cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	tracer_cmd_list = [env.dynamorio_path, '-c', env.iftracer_path, '--'] + cmd_list + ['2>&1', '>', trace_filename]
+	tracer_cmd = " ".join(tracer_cmd_list)
+	# logging.info("Trace command: %s" % tracer_cmd)
+
+	p1 = subprocess.Popen(tracer_cmd, shell=True)
 
 	# (YN: added timeout handling)
 	t_end = time.time() + utils.SubProcessTimeout
-	while p1.poll() is None and time.time() < t_end:
+	while True:
+		if time.time() >= t_end:
+			break
+		if p1.poll() is not None:
+			break
 		time.sleep(1)
+
 	if p1.poll() is None:
 		logging.warn('ifTracer timeout occured with > %s sec' % str(utils.SubProcessTimeout))
 		p1.terminate()
 		time.sleep(5)
 		if p1.poll() is None:
 			p1.kill()
-			time.sleep(5)	
+			time.sleep(5)
 	out, err = p1.communicate()
+
+	# logging.info("finished running trace command. parsing trace output...")
+
+	# TODO check for errors
 
 	# parse the output
 	if_list = []
-	for aline in out.split("\n"):
-		if '0x00000000004' in aline:
-			t = aline.split(' => ')
-			if_list.append(t[0])
+	with open(trace_filename, "r") as fh:
+		for aline in fh:
+			if '0x00000000004' in aline:
+				t = aline.split(' => ')
+				if_list.append(t[0])
+
+	# destroy the temporary trace file
+	os.remove(trace_filename)
 	return if_list
 
 
 def exe_bin(cmd_list):
 	global SubProcessTimeout
+	logging.info("Input command: %s" % ' '.join(cmd_list))
 	p1 = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 	# (YN: added timeout handling)
@@ -52,7 +74,7 @@ def exe_bin(cmd_list):
 		if p1.poll() is None:
 			p1.kill()
 			time.sleep(5)
-	
+
 	out, err = p1.communicate()
 	return out, err
 
