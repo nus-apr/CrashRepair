@@ -141,6 +141,10 @@ class Fuzzer:
         # the fuzzer requires that the output directory exists
         os.makedirs(self.tests_directory, exist_ok=True)
 
+        env: t.Dict[str, str] = {}
+        if "LD_LIBRARY_PATH_ORIG" in os.environ:
+            env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH_ORIG"]
+
         # are there any generated tests?
         if os.listdir(self.tests_directory):
             logger.info(f"skipping fuzzing: outputs already exist [{self.tests_directory}]")
@@ -159,7 +163,7 @@ class Fuzzer:
                 "--tag",
                 self.scenario.tag_id,
             ))
-            self.scenario.shell(command, cwd=self.scenario.directory)
+            self.scenario.shell(command, cwd=self.scenario.directory, env=env)
 
         # if we store all inputs, copy across those inputs into the test directory
         fuzzer_directory = os.path.join(self.scenario.directory, "fuzzer")
