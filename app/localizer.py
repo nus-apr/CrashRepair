@@ -588,6 +588,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                                 localized_tokens[c_t_lookup] = selected_expr
                             if "[" in mapped_expr and "[" not in selected_expr:
                                 localized_tokens[c_t_lookup] = selected_expr
+                            if c_t_lookup == selected_expr:
+                                localized_tokens[c_t_lookup] = selected_expr
                         if c_t_lookup not in localized_tokens:
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
