@@ -260,6 +260,9 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             candidate_mapping[crash_var_name].add((crash_var_name, e_line, e_col, e_addr, is_exp_dec))
                         elif any(token in crash_var_name for token in ["base ", "size "]) and "bv" in var_expr:
                             if var_expr == crash_var_expr:
+                                # avoid mapping array access variables
+                                if "[" in expr_str:
+                                    continue
                                 if crash_var_name not in candidate_mapping:
                                     candidate_mapping[crash_var_name] = set()
                                 logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
