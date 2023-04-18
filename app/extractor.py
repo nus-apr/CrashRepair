@@ -1221,6 +1221,8 @@ def extract_crash_type(crash_reason):
         crash_type = definitions.CRASH_TYPE_INT_ADD_OVERFLOW
     elif "overflow on subtraction" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
+    elif "memory error" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
     elif "out of bound pointer" in crash_reason:
         if "memory read error" in crash_reason:
             crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
