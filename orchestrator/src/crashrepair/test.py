@@ -24,6 +24,15 @@ class TestFailureReason(enum.Enum):
 
 
 @attrs.define(auto_attribs=True, slots=True)
+class RawTestOutcome:
+    duration: float
+    stdout: t.Optional[str] = attrs.field(default=None)
+    stderr: t.Optional[str] = attrs.field(default=None)
+    return_code: t.Optional[int] = attrs.field(default=None)
+    failure: t.Optional[TestFailureReason] = attrs.field(default=None)
+
+
+@attrs.define(auto_attribs=True, slots=True)
 class TestOutcome:
     name: str
     successful: bool
@@ -48,16 +57,25 @@ class TestOutcome:
 class Test:
     name: str
     command: str
-    expected_exit_code: int
     cwd: str = attrs.field(repr=False)
     _shell: Shell = attrs.field(repr=False)
+    expected_exit_code: t.Optional[int] = attrs.field(default=None)
     bad_output: t.Optional[str] = attrs.field(default=None)
     asan_options: t.Optional[str] = attrs.field(default=None)
     ubsan_options: t.Optional[str] = attrs.field(default=None)
 
-    def run(self, timeout_seconds: int, *, halt_on_error: bool = True) -> TestOutcome:
-        """Runs this test and returns :code:`True` if it passes."""
-        capture_output = self.bad_output is not None
+    def raw_execute(
+        self,
+        timeout_seconds: int,
+        *,
+        halt_on_error: bool = True,
+    ) -> RawTestOutcome:
+        """Returns the raw output of executing this test."""
+        failure: t.Optional[TestFailureReason] = None
+        return_code: t.Optional[int] = None
+        stdout: t.Optional[str] = None
+        stderr: t.Optional[str] = None
+
         env: t.Dict[str, str] = {}
         timer = Stopwatch()
 
@@ -75,75 +93,75 @@ class Test:
 
         try:
             timer.start()
-            raw_test_outcome = self._shell(
+            raw_outcome = self._shell(
                 self.command,
                 cwd=self.cwd,
                 env=env,
-                check_returncode=False,
                 timeout_seconds=timeout_seconds,
-                capture_output=capture_output,
+                check_returncode=False,
+                capture_output=True,
             )
             timer.stop()
         except subprocess.TimeoutExpired:
-            logger.debug("test failed: timeout")
-            return TestOutcome(
-                name=self.name,
-                successful=False,
-                duration=timer.duration,
-                failure_reason=TestFailureReason.TIMEOUT,
-            )
+            failure = TestFailureReason.TIMEOUT
         except UnicodeDecodeError:
-            logger.debug("test failed: unable to decode output")
-            return TestOutcome(
-                name=self.name,
-                successful=False,
-                duration=timer.duration,
-                failure_reason=TestFailureReason.DECODE_ERROR,
-            )
+            failure = TestFailureReason.DECODE_ERROR
+        else:
+            stdout = raw_outcome.stdout
+            stderr = raw_outcome.stderr
 
-        actual_returncode = raw_test_outcome.returncode
+        return_code = raw_outcome.returncode
 
+        return RawTestOutcome(
+            duration=timer.duration,
+            stdout=stdout,
+            stderr=stderr,
+            return_code=return_code,
+            failure=failure,
+        )
+
+    def run(self, timeout_seconds: int, *, halt_on_error: bool = True) -> TestOutcome:
+        """Runs this test and returns :code:`True` if it passes."""
+        raw_outcome = self.raw_execute(
+            timeout_seconds=timeout_seconds,
+            halt_on_error=halt_on_error,
+        )
+
+        if raw_outcome.failure is TestFailureReason.TIMEOUT:
+            logger.debug(f"test failed: timeout ({timeout_seconds}s)")
+
+        if raw_outcome.failure is TestFailureReason.DECODE_ERROR:
+            logger.debug("test failed: decode error")
+
+        # bad output in stdout/stderr?
         if self.bad_output:
-            stdout = raw_test_outcome.stdout or ""
-            stderr = raw_test_outcome.stderr or ""
-            logger.debug(f"test output [stdout]: {stdout}")
-            logger.debug(f"test output [stderr]: {stderr}")
+            stdout = raw_outcome.stdout or ""
+            stderr = raw_outcome.stderr or ""
+            # logger.debug(f"test output [stdout]: {stdout}")
+            # logger.debug(f"test output [stderr]: {stderr}")
 
             if self.bad_output in stdout:
                 logger.debug(f"test failed: stdout contains bad output substring ({self.bad_output})")
-                return TestOutcome(
-                    name=self.name,
-                    successful=False,
-                    duration=timer.duration,
-                    return_code=actual_returncode,
-                    failure_reason=TestFailureReason.BAD_OUTPUT,
-                )
+                raw_outcome.failure = TestFailureReason.BAD_OUTPUT
+
             if self.bad_output in stderr:
                 logger.debug(f"test failed: stderr contains bad output substring ({self.bad_output})")
-                return TestOutcome(
-                    name=self.name,
-                    successful=False,
-                    duration=timer.duration,
-                    return_code=actual_returncode,
-                    failure_reason=TestFailureReason.BAD_OUTPUT,
-                )
+                raw_outcome.failure = TestFailureReason.BAD_OUTPUT
 
-        if actual_returncode != self.expected_exit_code:
-            logger.debug(
-                f"test failed: unexpected exit code (actual: {actual_returncode},"
-                f" expected: {self.expected_exit_code})",
-            )
-            return TestOutcome(
-                name=self.name,
-                successful=False,
-                duration=timer.duration,
-                return_code=actual_returncode,
-                failure_reason=TestFailureReason.BAD_EXIT_CODE,
-            )
+        # unexpected exit code?
+        if self.expected_exit_code is not None:
+            actual_returncode = raw_outcome.return_code
+            if actual_returncode != self.expected_exit_code:
+                logger.debug(
+                    f"test failed: unexpected exit code (actual: {actual_returncode},"
+                    f" expected: {self.expected_exit_code})",
+                )
+                raw_outcome.failure = TestFailureReason.BAD_EXIT_CODE
 
         return TestOutcome(
             name=self.name,
-            successful=True,
-            duration=timer.duration,
-            return_code=actual_returncode,
+            successful=(raw_outcome.failure is None),
+            duration=raw_outcome.duration,
+            return_code=raw_outcome.return_code,
+            failure_reason=raw_outcome.failure,
         )
