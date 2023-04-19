@@ -21,7 +21,7 @@ def ifTracer(cmd_list):
 	tracer_cmd = " ".join(tracer_cmd_list)
 	# logging.info("Trace command: %s" % tracer_cmd)
 
-	p1 = subprocess.Popen(tracer_cmd, shell=True)
+	p1 = subprocess.Popen(tracer_cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
 
 	# (YN: added timeout handling)
 	t_end = time.time() + utils.SubProcessTimeout
