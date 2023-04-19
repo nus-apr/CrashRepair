@@ -13,11 +13,17 @@ from loguru import logger
 from .shell import Shell
 from .stopwatch import Stopwatch
 
+SANITIZER_ERROR_STRINGS = (
+    "AddressSanitizer",
+    "runtime error",
+)
+
 
 class TestFailureReason(enum.Enum):
     """The reason why a test failed."""
     TIMEOUT = "timeout"
     BAD_OUTPUT = "bad-output"
+    INCORRECT_STDOUT = "incorrect-stdout"
     BAD_EXIT_CODE = "bad-exit-code"
     DECODE_ERROR = "decode-error"
     UNKNOWN = "unknown"
@@ -30,6 +36,29 @@ class RawTestOutcome:
     stderr: t.Optional[str] = attrs.field(default=None)
     return_code: t.Optional[int] = attrs.field(default=None)
     failure: t.Optional[TestFailureReason] = attrs.field(default=None)
+
+    def contains_sanitizer_error(self) -> bool:
+        """Returns true if the output contains a sanitizer error."""
+        return any(
+            self.contains_bad_output(error_string)
+            for error_string in SANITIZER_ERROR_STRINGS
+        )
+
+    def stdout_contains_bad_output(self, bad_output: str) -> bool:
+        """Returns true if the stdout contains a given taboo string."""
+        stdout = self.stdout or ""
+        return bad_output in stdout
+
+    def stderr_contains_bad_output(self, bad_output: str) -> bool:
+        """Returns true if the stderr contains a given taboo string."""
+        stderr = self.stderr or ""
+        return bad_output in stderr
+
+    def contains_bad_output(self, bad_output: str) -> bool:
+        """Returns true if the output contains a given taboo string."""
+        if self.stdout_contains_bad_output(bad_output):
+            return True
+        return self.stderr_contains_bad_output(bad_output)
 
 
 @attrs.define(auto_attribs=True, slots=True)
@@ -60,6 +89,7 @@ class Test:
     cwd: str = attrs.field(repr=False)
     _shell: Shell = attrs.field(repr=False)
     expected_exit_code: t.Optional[int] = attrs.field(default=None)
+    expected_stdout: t.Optional[str] = attrs.field(default=None)
     bad_output: t.Optional[str] = attrs.field(default=None)
     asan_options: t.Optional[str] = attrs.field(default=None)
     ubsan_options: t.Optional[str] = attrs.field(default=None)
@@ -135,18 +165,23 @@ class Test:
 
         # bad output in stdout/stderr?
         if self.bad_output:
-            stdout = raw_outcome.stdout or ""
-            stderr = raw_outcome.stderr or ""
-            # logger.debug(f"test output [stdout]: {stdout}")
-            # logger.debug(f"test output [stderr]: {stderr}")
-
-            if self.bad_output in stdout:
+            if raw_outcome.stdout_contains_bad_output(self.bad_output):
                 logger.debug(f"test failed: stdout contains bad output substring ({self.bad_output})")
                 raw_outcome.failure = TestFailureReason.BAD_OUTPUT
 
-            if self.bad_output in stderr:
+            if raw_outcome.stderr_contains_bad_output(self.bad_output):
                 logger.debug(f"test failed: stderr contains bad output substring ({self.bad_output})")
                 raw_outcome.failure = TestFailureReason.BAD_OUTPUT
+
+        # unexpected stdout?
+        if self.expected_stdout is not None:
+            actual_stdout = raw_outcome.stdout
+            if actual_stdout != self.expected_stdout:
+                logger.debug(
+                    f"test failed: unexpected stdout (actual: {actual_stdout},"
+                    f" expected: {self.expected_stdout})",
+                )
+                raw_outcome.failure = TestFailureReason.INCORRECT_STDOUT
 
         # unexpected exit code?
         if self.expected_exit_code is not None:
