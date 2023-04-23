@@ -32,6 +32,7 @@ trace_cmd={trace_cmd}
 crash_cmd={crash_cmd}
 poc={poc}
 poc_fmt={poc_fmt}
+process_max_number={num_workers}
 """
 
 
@@ -48,6 +49,7 @@ class FuzzerConfig:
     seed: int = attrs.field(default=0)
     timeout_global: int = attrs.field(default=300)
     timeout_local: int = attrs.field(default=300)
+    num_workers: int = attrs.field(default=8)
 
     @classmethod
     def from_dict(cls, dict_: t.Dict[str, t.Any]) -> FuzzerConfig:
@@ -70,6 +72,8 @@ class FuzzerConfig:
             config.timeout_global = timeout_dict["global"]
         if "mutate-range" in dict_:
             config.mutate_range = dict_["mutate-range"]
+        if "num-workers" in dict_:
+            config.num_workers = dict_["num-workers"]
         return config
 
     def build(self, scenario: Scenario) -> Fuzzer:
@@ -104,6 +108,7 @@ class Fuzzer:
             local_timeout=config.timeout_local,
             max_combinations=config.max_combinations,
             mutate_range=config.mutate_range,
+            num_workers=config.num_workers,
             poc=poc,
             poc_fmt=poc_fmt,
             scenario_name=self.scenario.tag_id,
