@@ -39,10 +39,15 @@ RUN wget -nv https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.
 ARG DYNAMORIO_VERSION=cronbuild-9.0.19216
 RUN git clone https://github.com/DynamoRIO/dynamorio.git /opt/fuzzer/deps/dynamorio \
  && cd /opt/fuzzer/deps/dynamorio \
- && git checkout "${DYNAMORIO_VERSION}" \
- && mkdir build \
- && cd build \
- && cmake .. \
+ && git checkout "${DYNAMORIO_VERSION}"
+
+RUN cd /opt/fuzzer/deps/dynamorio \
+ ; mkdir build \
+ ; cd build \
+ ; cmake ..  \
+ ; rm -rf core
+
+RUN cd /opt/fuzzer/deps/dynamorio/build \
  && make -j32
 
 # Set up the tracer
