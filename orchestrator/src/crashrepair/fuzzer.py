@@ -227,7 +227,7 @@ class Fuzzer:
 
         # only bother rebuilding if we have additional sanitizer flags
         # if self.scenario.sanitizer_flags:
-        self.scenario.rebuild()
+        self.scenario.rebuild(use_sanitizers=True)
 
         # are there any generated tests?
         if os.listdir(self.tests_directory):
