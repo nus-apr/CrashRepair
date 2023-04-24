@@ -8,7 +8,8 @@
     "command": "$POC out.tiff",
     "input": "/CrashRepair/experiments/vulnloc/libtiff/bugzilla-2611/tests/1.tif",
     "extra-klee-flags": "",
-    "expected-exit-code": 0
+    "expected-exit-code": 0,
+    "bad_output":"UndefinedBehaviorSanitizer:"
   },
   "source-directory": "src",
   "build": {
@@ -19,7 +20,7 @@
       "clean": "make clean",
       "build": "make CFLAGS=\"-fsanitize=integer-divide-by-zero ${INJECT_CFLAGS:-}\" LDFLAGS=\"-fsanitize=integer-divide-by-zero ${INJECT_LDFLAGS:-}\""
     },
-    "sanitizerflags": ""
+    "sanitizerflags": "-fsanitize=integer-divide-by-zero"
   },
    "fuzzer": {
     "seed": 3,
