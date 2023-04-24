@@ -5,6 +5,7 @@ import os
 import utils
 import numpy as np
 from time import time
+from time import sleep
 import string
 from copy import deepcopy as dc
 import hashlib
@@ -151,7 +152,7 @@ def parse_args():
 	if 'subprocess_timeout' in detailed_config:
 		detailed_config['subprocess_timeout'] = int(detailed_config['subprocess_timeout'][0])
 	else:
-		detailed_config['subprocess_timeout'] = 15 # default value 15 seconds
+		detailed_config['subprocess_timeout'] = 40 # default value 15 seconds
 	utils.SubProcessTimeout = detailed_config['subprocess_timeout'] 
 	# (YN: added optional parameter to set the maximum number of subprocesses)
 	if 'process_max_number' in detailed_config:
@@ -519,6 +520,8 @@ def concentrate_fuzz(config_info):
 			result_collection = [] # each element is in the fmt of [id, trace, trace_hash, crash_result, trace_diff_id]
 			input_num = len(inputs)
 			pool = Pool(ProcessNum)
+			logging.info("input_num: %s" % str(input_num))
+ 			logging.info("ProcessNum: %s" % str(ProcessNum))
 			for input_no in range(input_num):
 				pool.apply_async(
 					gen_report,
@@ -527,7 +530,17 @@ def concentrate_fuzz(config_info):
 					callback = result_collection.append
 				)
 			pool.close()
-			pool.join()
+			remaining_time = int(config_info['global_timeout'] - (time() - stime))
+			logging.info("remaining_time: %s" % str(remaining_time))
+			while True:
+				if config_info['global_timeout'] - (time() - stime) <= 0:
+					logging.warning("kill process pool because of timeout")
+					break
+				if input_num-len(result_collection) <= 0:
+					break
+				sleep(1)
+			pool.terminate()
+			#sleep(5)
 			logging.debug("#(Missed): %d" % (input_num-len(result_collection)))
 			# Delete all the tmp files
 			shutil.rmtree(TmpFolder)
