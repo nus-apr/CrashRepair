@@ -413,7 +413,6 @@ class Scenario:
             logger.info("skipping fuzzing: fuzzer disabled")
             return
 
-        # FIXME all of these tests should pass on the original program (optionally verify this assumption)
         self.fuzzer_tests = list(self.fuzzer.fuzz())
 
     def _determine_implicated_files(self) -> t.Set[str]:
@@ -574,7 +573,8 @@ class Scenario:
         try:
             with Stopwatch() as timer_fuzz:  # noqa: F841
                 self.fuzz()
-                report.fuzzer = FuzzerReport(
+                report.fuzzer = FuzzerReport.build(
+                    fuzzer_tests=self.fuzzer_tests,
                     duration_seconds=timer_fuzz.duration,
                 )
 

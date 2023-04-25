@@ -11,6 +11,7 @@ from .exceptions import CrashRepairException
 
 if t.TYPE_CHECKING:
     from .candidate import PatchEvaluation
+    from .test import Test
 
 
 def compute_disk_usage_in_bytes(directory: str) -> int:
@@ -87,13 +88,39 @@ class ValidationReport:
 
 @attrs.define(slots=True, auto_attribs=True)
 class FuzzerReport:
+    num_tests_total: int
+    num_tests_passing: int
+    num_tests_crashing: int
     duration_seconds: float = attrs.field(default=0)
+
+    @classmethod
+    def build(
+        cls,
+        fuzzer_tests: t.Sequence[Test],
+        duration_seconds: float,
+    ) -> FuzzerReport:
+        num_tests_total = len(fuzzer_tests)
+        num_tests_passing = sum(
+            1 for test in fuzzer_tests if test.expected_stdout is not None
+        )
+        num_tests_crashing = num_tests_total - num_tests_passing
+        return FuzzerReport(
+            duration_second=duration_seconds,
+            num_tests_total=num_tests_total,
+            num_tests_crashing=num_tests_crashing,
+            num_tests_passing=num_tests_passing,
+        )
 
     def to_dict(self) -> t.Dict[str, t.Any]:
         duration_minutes = self.duration_seconds / 60
         output: t.Dict[str, t.Any] = {
             "summary": {
                 "duration-minutes": duration_minutes,
+                "num-tests": {
+                    "total": self.num_tests_total,
+                    "passing": self.num_tests_passing,
+                    "crashing": self.num_tests_crashing,
+                }
             },
         }
         return output
