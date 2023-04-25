@@ -105,7 +105,7 @@ class FuzzerReport:
         )
         num_tests_crashing = num_tests_total - num_tests_passing
         return FuzzerReport(
-            duration_second=duration_seconds,
+            duration_seconds=duration_seconds,
             num_tests_total=num_tests_total,
             num_tests_crashing=num_tests_crashing,
             num_tests_passing=num_tests_passing,
