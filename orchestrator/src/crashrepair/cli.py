@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import traceback
 
 from .scenario import Scenario
 
@@ -143,7 +144,8 @@ def main() -> None:
         print("Shutting down...")
     except Exception as error:
         print(f"ERROR: {error}")
-        raise error
+        print(traceback.format_exc())
+        sys.exit(1)
 
 
 if __name__ == "__main__":
