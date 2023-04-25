@@ -10,6 +10,7 @@ import typing as t
 import attrs
 from loguru import logger
 
+from .exceptions import FuzzerCrashed, FuzzerExhaustedMemory
 from .test import Test
 
 if t.TYPE_CHECKING:
@@ -243,7 +244,20 @@ class Fuzzer:
                 "--tag",
                 self.scenario.tag_id,
             ))
-            self.scenario.shell(command, cwd=self.scenario.directory, env=env)
+            outcome = self.scenario.shell(
+                command,
+                cwd=self.scenario.directory,
+                env=env,
+                check_returncode=False,
+            )
+            if outcome.returncode == 137:
+                raise FuzzerExhaustedMemory()
+            if outcome.returncode != 0:
+                tail = "\n".join(outcome.stderr.splitlines()[-10:])
+                raise FuzzerCrashed(
+                    tail=tail,
+                    return_code=outcome.returncode,
+                )
 
         # if we store all inputs, copy across those inputs into the test directory
         fuzzer_directory = os.path.join(self.scenario.directory, "fuzzer")
