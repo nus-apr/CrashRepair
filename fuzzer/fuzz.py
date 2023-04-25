@@ -539,8 +539,8 @@ def concentrate_fuzz(config_info):
 				if input_num-len(result_collection) <= 0:
 					break
 				sleep(1)
-			pool.terminate()
-			#sleep(5)
+			#logging.info("Terminate the worker pool...")
+			#pool.terminate()
 			logging.debug("#(Missed): %d" % (input_num-len(result_collection)))
 			# Delete all the tmp files
 			shutil.rmtree(TmpFolder)
