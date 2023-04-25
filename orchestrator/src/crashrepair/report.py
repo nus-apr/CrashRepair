@@ -120,7 +120,7 @@ class FuzzerReport:
                     "total": self.num_tests_total,
                     "passing": self.num_tests_passing,
                     "crashing": self.num_tests_crashing,
-                }
+                },
             },
         }
         return output
