@@ -4,6 +4,7 @@ import logging
 import os
 import utils
 import numpy as np
+import traceback
 from time import time
 from time import sleep
 import string
@@ -14,7 +15,7 @@ import tracer
 import itertools
 import json
 import multiprocessing
-from multiprocessing import Pool
+from multiprocessing import active_children, Pool
 
 DefaultItems = ['trace_cmd', 'crash_cmd', 'poc', 'poc_fmt', 'folder', 'mutate_range', 'crash_tag']
 OutFolder = ''
@@ -153,7 +154,7 @@ def parse_args():
 		detailed_config['subprocess_timeout'] = int(detailed_config['subprocess_timeout'][0])
 	else:
 		detailed_config['subprocess_timeout'] = 40 # default value 15 seconds
-	utils.SubProcessTimeout = detailed_config['subprocess_timeout'] 
+	utils.SubProcessTimeout = detailed_config['subprocess_timeout']
 	# (YN: added optional parameter to set the maximum number of subprocesses)
 	if 'process_max_number' in detailed_config:
 		detailed_config['process_max_number'] = np.min((int(detailed_config['process_max_number'][0]), multiprocessing.cpu_count()))
@@ -213,7 +214,7 @@ def init_log(tag, verbose, folder):
 	else:
 		pass
 	console = logging.StreamHandler()
-	console.setLevel(logging.INFO)
+	console.setLevel(logging.DEBUG)
 	console_fmt = logging.Formatter(fmt="[%(asctime)s-%(funcName)s-%(levelname)s]: %(message)s", datefmt="%d-%b-%y %H:%M:%S")
 	console.setFormatter(console_fmt)
 	logging.getLogger().addHandler(console)
@@ -331,15 +332,22 @@ def trace_cmp(seed_trace, trace):
 	return min_len
 
 def gen_report(input_no, raw_args, poc_fmt, trace_cmd, trace_replace_idx, crash_cmd, crash_replace_idx, crash_info, seed_trace):
-	processed_args = prepare_args(input_no, raw_args, poc_fmt)
-	trace_cmd = prepare_cmd(trace_cmd, trace_replace_idx, processed_args)
-	trace = tracer.ifTracer(trace_cmd)
-	trace_diff_id = trace_cmp(seed_trace, trace)
-	trace_hash = calc_trace_hash(trace)
-	crash_cmd = prepare_cmd(crash_cmd, crash_replace_idx, processed_args)
-	_, err = tracer.exe_bin(crash_cmd)
-	crash_result = check_exploit(err, crash_info)
-	return [input_no, trace, trace_hash, crash_result, trace_diff_id]
+	try:
+		processed_args = prepare_args(input_no, raw_args, poc_fmt)
+		trace_cmd = prepare_cmd(trace_cmd, trace_replace_idx, processed_args)
+  		logging.debug("tracing input #{}".format(input_no))
+		trace = tracer.ifTracer(trace_cmd)
+		logging.debug("traced input #{}".format(input_no))
+		trace_diff_id = trace_cmp(seed_trace, trace)
+		trace_hash = calc_trace_hash(trace)
+		crash_cmd = prepare_cmd(crash_cmd, crash_replace_idx, processed_args)
+		logging.debug("executing input #{}".format(input_no))
+		_, err = tracer.exe_bin(crash_cmd)
+  		logging.debug("executed input #{}".format(input_no))
+		crash_result = check_exploit(err, crash_info)
+		return [input_no, trace, trace_hash, crash_result, trace_diff_id]
+	except:
+		print("report generation error: {}".format(traceback.format_exc()))
 
 def init_sensitivity_map(seed_len, seed_trace_len, max_combination):
 	global MaxCombineNum
@@ -483,6 +491,7 @@ def concentrate_fuzz(config_info):
 	round_no = 0
 	while(True):
 		round_no += 1
+		logging.debug("starting fuzzing round {}".format(round_no))
 		# choose seed & load seed_trace
 		result = choose_seed()
 		if len(result) == 0:
@@ -505,12 +514,14 @@ def concentrate_fuzz(config_info):
 
 		# check each selected seed
 		subround_no = 0
-		while(True):
+		while True:
 			subround_no += 1
+
 			# select mutate byte
 			mutate_idx = select_mutate_idx(loc_sensitivity_map, seed_len, config_info['#combination'])
-			if mutate_idx == None: # exist if all the bytes get mutated
+			if mutate_idx == None: # exit if all the bytes get mutated
 				break
+
 			logging.debug('[R-%d-%d] Select the mutate idx -> %s: %s' % (round_no, subround_no, str(mutate_idx), str(loc_sensitivity_map['idx'][mutate_idx])))
 			loc_sensitivity_map['tag'][mutate_idx] = 1
 			# mutate inputs
@@ -522,37 +533,40 @@ def concentrate_fuzz(config_info):
 			pool = Pool(ProcessNum)
 			logging.info("input_num: %s" % str(input_num))
  			logging.info("ProcessNum: %s" % str(ProcessNum))
+
 			for input_no in range(input_num):
 				pool.apply_async(
 					gen_report,
 					args = (input_no, inputs[input_no], config_info['poc_fmt'], config_info['trace_cmd'], config_info['trace_replace_idx'],
 						   config_info['crash_cmd'], config_info['crash_replace_idx'], config_info['crash_tag'], selected_seed_trace),
-					callback = result_collection.append
+					callback = result_collection.append,
 				)
 			pool.close()
+
 			remaining_time = int(config_info['global_timeout'] - (time() - stime))
-			logging.info("remaining_time: %s" % str(remaining_time))
+			logging.info("remaining time: %d seconds" % remaining_time)
 			while True:
 				if config_info['global_timeout'] - (time() - stime) <= 0:
 					logging.warning("kill process pool because of timeout")
 					break
-				if input_num-len(result_collection) <= 0:
+				if (input_num - len(result_collection)) <= 0:
 					break
 				sleep(1)
-			#logging.info("Terminate the worker pool...")
-			#pool.terminate()
+
+			logging.debug("active children: {}".format(len(active_children())))
+			logging.info("terminating the worker pool...")
+			pool.terminate()
+			logging.debug("joining worker pool...")
+			pool.join()
+			logging.debug("active children: {}".format(len(active_children())))
 			logging.debug("#(Missed): %d" % (input_num-len(result_collection)))
+
 			# Delete all the tmp files
 			shutil.rmtree(TmpFolder)
 			os.mkdir(TmpFolder)
 			AllInputCounter += 1
-			# if input_num != len(result_collection):
-			# 	missed_ids = set(range(input_num)) - set([item[0] for item in result_collection])
-			# 	missed_inputs = [inputs[id] for id in missed_ids]
-			# 	output_path = os.path.join(OutFolder, 'missed_inputs.pkl')
-			# 	utils.write_pkl(output_path, missed_inputs)
-			# 	raise Exception("ERROR: #execution does not match with #input. -> Missed inputs can be found in %s" % output_path)
-			# collect all the trace
+
+			logging.info("processing results from fuzzing round {}".format(round_no))
 			diff_collection = set()
 			crash_collection = {'m'}
 			for item in result_collection:
@@ -579,8 +593,8 @@ def concentrate_fuzz(config_info):
 			loc_sensitivity_map, crash_sensitivity_map = update_sens_map(mutate_idx, diff_collection, crash_collection, loc_sensitivity_map, crash_sensitivity_map)
 			# check whether it timeouts or not
 			ctime = time()
-			duration = ctime-stime
-			if(duration >= config_info['local_timeout']): # exist if it timeouts
+			duration = ctime - stime
+			if duration >= config_info['local_timeout']:
 				logging.debug("[R-%d-%d] Timeout locally! -> Duration: %f (%f - %f) in seconds" % (round_no, subround_no, duration, ctime, stime))
 				break
 			# check whether all the locations get explored or not.
@@ -589,63 +603,14 @@ def concentrate_fuzz(config_info):
 			if len(unexplore_loc_idx_list) == 0:
 				logging.debug("[R-%d-%d] Finish exploring all the locs!" % (round_no, subround_no))
 				break
-			# loc_tag = np.where(np.sum(loc_sensitivity_map['value'], axis = 1) > 0)[0]
-			# if len(loc_tag) >= len(selected_seed_trace):
-			# 	logging.debug("[R-%d-%d] Finish exploring all the locs!" % (round_no, subround_no))
-			# 	break
-		# (YN: skipped processing and saving of sensitivity map to save time)
-		# processing the local sensitivity (for saving the hard disk)
-		#loc_sens = []
-		#loc_idxes = []
-		#loc_num = len(loc_sensitivity_map['value'])
-		#for loc_id in range(loc_num):
-		#	if len(loc_sensitivity_map['value'][loc_id]) > 0:
-		#		loc_idxes.append(loc_id)
-		#		loc_sens.append(loc_sensitivity_map['value'][loc_id])
-		# loc_sens = []
-		# loc_idxes = []
-		# loc_num = len(loc_sensitivity_map['value'])
-		# for loc_id in range(loc_num):
-		# 	tmp = np.where(loc_sensitivity_map['value'][loc_id]>0)[0]
-		# 	if len(tmp) > 0:
-		# 		loc_idxes.append(loc_id)
-		# 		loc_sens.append(tmp)
-		#
-		# save the sensitivity map
-		#sensitivity_filepath = os.path.join(OutFolder, 'sensitivity_%s.pkl' % selected_seed_trace_hash)
-		#logging.debug("Start saving the sensitivity map -> %s" % sensitivity_filepath)
-		#info = {
-		#	'idx': loc_sensitivity_map['idx'],
-		#	'loc_idx': loc_idxes,
-		#	'loc_sens': loc_sens,
-		#	'crash_sens': list(crash_sensitivity_map['value']),
-		#	'loc_tag': list(loc_sensitivity_map['tag'])
-		#}
-		#utils.write_pkl(sensitivity_filepath, info)
-		#logging.debug("Finish writing the sensitivity map -> %s" % sensitivity_filepath)
-		# check whether it timeouts
+
 		ctime = time()
 		duration = ctime - stime
-		if (duration >= config_info['global_timeout']):
+		if duration >= config_info['global_timeout']:
 			logging.debug("[R-%d] Timeout! -> Duration: %f (%f - %f) in seconds" % (round_no, duration, ctime, stime))
 			break
 
-	# (YN: skipped to save time due not needed)
-	# save all the remaining info
-	#report_filepath = os.path.join(OutFolder, 'reports.pkl')
-	#utils.write_pkl(report_filepath, ReportCollection)
-	#logging.debug("Finish writing all the reports!")
-
-	# (YN: skipped to save time due not needed)
-	#seed_filepath = os.path.join(OutFolder, 'seeds.pkl')
-	#utils.write_pkl(seed_filepath, SeedPool)
-	#logging.debug("Finish writing all the seeds!")
-
-	# (YN: skipped to save time due not needed)
-	#seed_hash_filepath = os.path.join(OutFolder, 'seed_hashes.pkl')
-	#utils.write_pkl(seed_hash_filepath, SeedTraceHashList)
-	#logging.debug("Finish writing all the hash of seeds!")
-	logging.debug('Done!')
+	logging.info('Finished fuzzing!')
 
 if __name__ == '__main__':
 	tag, config_info, verbose = parse_args()

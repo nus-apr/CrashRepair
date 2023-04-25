@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import shutil
 import tempfile
@@ -128,10 +129,23 @@ class Fuzzer:
         finally:
             os.remove(filename)
 
+    def _inject_arguments_into_template(self, arguments: t.List[str]) -> str:
+        template = ";;;".join(self.config.trace_command_template)
+        for argument in arguments:
+            template.replace("***", argument, 1)
+        return template.replace(";;;", " ")
+
     def _input_to_test_command(self, filename: str) -> str:
-        # TODO this doesn't support commands with positional arguments
         template = self.config.trace_command_template
-        return " ".join(part.replace("***", filename) for part in template)
+
+        if self.config.poc_format == ["bfile"]:
+            return " ".join(part.replace("***", filename) for part in template)
+        elif self.config.poc_format == ["int", "int"]:
+            with open(filename, "r") as fh:
+                arguments = [str(arg) for arg in json.load(fh)]
+            return self._inject_arguments_into_template(arguments)
+        else:
+            raise NotImplementedError(f"unsupported poc format: {self.config.poc_format}")
 
     def _load_raw_input(self, filename: str) -> Test:
         """Creates a test case with no oracle from a given input file."""
@@ -152,7 +166,12 @@ class Fuzzer:
         bad_output = proof_of_crash.bad_output
         assert bad_output is not None
 
-        test = self._load_raw_input(filename)
+        try:
+            test = self._load_raw_input(filename)
+        except NotImplementedError:
+            logger.error(f"failed to load test: unsupported poc format: {self.config.poc_format}")
+            return None
+
         halt_on_error = self.scenario.halt_on_error
         time_limit = self.scenario.time_limit_seconds_single_test
 
@@ -249,11 +268,13 @@ class Fuzzer:
                 cwd=self.scenario.directory,
                 env=env,
                 check_returncode=False,
+                # capture_output=True,
             )
             if outcome.returncode == 137:
                 raise FuzzerExhaustedMemory()
             if outcome.returncode != 0:
-                tail = "\n".join(outcome.stderr.splitlines()[-10:])
+                # tail = "\n".join(outcome.stderr.splitlines()[-10:])
+                tail = "TODO"
                 raise FuzzerCrashed(
                     tail=tail,
                     return_code=outcome.returncode,
