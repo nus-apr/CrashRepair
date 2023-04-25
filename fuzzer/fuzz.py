@@ -555,9 +555,10 @@ def concentrate_fuzz(config_info):
 
 			logging.debug("active children: {}".format(len(active_children())))
 			logging.info("terminating the worker pool...")
-			pool.terminate()
-			logging.debug("joining worker pool...")
-			pool.join()
+			# CT we need to switch to using ProcessPoolExecutor to avoid language issues
+			# pool.terminate()
+			# logging.debug("joining worker pool...")
+			# pool.join()
 			logging.debug("active children: {}".format(len(active_children())))
 			logging.debug("#(Missed): %d" % (input_num-len(result_collection)))
 
