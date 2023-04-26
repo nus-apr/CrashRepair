@@ -15,7 +15,7 @@ DEVNULL = open(os.devnull, 'w')
 
 def ifTracer(cmd_list):
 	if time.time() >= utils.GlobalEndTime:
-		return
+		return []
 
 	_, trace_filename = tempfile.mkstemp(suffix=".trace")
 
@@ -67,7 +67,7 @@ def exe_bin(cmd_list):
 	global SubProcessTimeout
 
 	if time.time() >= utils.GlobalEndTime:
-		return
+		return bytes(0), bytes(0)
 
 	logging.info("Input command: %s" % ' '.join(cmd_list))
 	p1 = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
