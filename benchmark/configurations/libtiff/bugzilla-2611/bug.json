@@ -24,7 +24,7 @@
   },
    "fuzzer": {
     "seed": 3,
-    "crash-tag": "runtime;tif_ojpeg.c:816",
+    "crash-tag": "assert;tif_ojpeg.c:816",
     "mutate-range": "default",
     "timeout": {
       "local": 300,
