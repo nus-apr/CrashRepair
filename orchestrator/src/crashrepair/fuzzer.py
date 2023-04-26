@@ -141,12 +141,10 @@ class Fuzzer:
 
         if self.config.poc_format == ["bfile"]:
             return " ".join(part.replace("***", filename) for part in template)
-        elif self.config.poc_format == ["int", "int"]:
+        else:
             with open(filename, "r") as fh:
                 arguments = [str(arg) for arg in json.load(fh)]
             return self._inject_arguments_into_template(arguments)
-        else:
-            raise NotImplementedError(f"unsupported poc format: {self.config.poc_format}")
 
     def _load_raw_input(self, filename: str) -> Test:
         """Creates a test case with no oracle from a given input file."""
