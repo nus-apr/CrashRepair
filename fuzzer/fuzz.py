@@ -16,6 +16,7 @@ import itertools
 import json
 import multiprocessing
 from multiprocessing import active_children, Pool
+from concurrent.futures import ProcessPoolExecutor
 
 DefaultItems = ['trace_cmd', 'crash_cmd', 'poc', 'poc_fmt', 'folder', 'mutate_range', 'crash_tag']
 OutFolder = ''
@@ -334,9 +335,11 @@ def trace_cmp(seed_trace, trace):
 
 def gen_report(input_no, raw_args, poc_fmt, trace_cmd, trace_replace_idx, crash_cmd, crash_replace_idx, crash_info, seed_trace):
 	try:
+		if time() >= utils.GlobalEndTime:
+			return []
 		processed_args = prepare_args(input_no, raw_args, poc_fmt)
 		trace_cmd = prepare_cmd(trace_cmd, trace_replace_idx, processed_args)
-  		logging.debug("tracing input #{}".format(input_no))
+		logging.debug("tracing input #{}".format(input_no))
 		trace = tracer.ifTracer(trace_cmd)
 		logging.debug("traced input #{}".format(input_no))
 		trace_diff_id = trace_cmp(seed_trace, trace)
@@ -344,11 +347,12 @@ def gen_report(input_no, raw_args, poc_fmt, trace_cmd, trace_replace_idx, crash_
 		crash_cmd = prepare_cmd(crash_cmd, crash_replace_idx, processed_args)
 		logging.debug("executing input #{}".format(input_no))
 		_, err = tracer.exe_bin(crash_cmd)
-  		logging.debug("executed input #{}".format(input_no))
+		logging.debug("executed input #{}".format(input_no))
 		crash_result = check_exploit(err, crash_info)
 		return [input_no, trace, trace_hash, crash_result, trace_diff_id]
 	except:
 		print("report generation error: {}".format(traceback.format_exc()))
+		return []
 
 def init_sensitivity_map(seed_len, seed_trace_len, max_combination):
 	global MaxCombineNum
@@ -531,18 +535,28 @@ def concentrate_fuzz(config_info):
 			# execute all the mutated inputs
 			result_collection = [] # each element is in the fmt of [id, trace, trace_hash, crash_result, trace_diff_id]
 			input_num = len(inputs)
-			pool = Pool(ProcessNum)
+			# pool = Pool(ProcessNum)
+			executor = ProcessPoolExecutor(max_workers=ProcessNum)
 			logging.info("input_num: %s" % str(input_num))
  			logging.info("ProcessNum: %s" % str(ProcessNum))
-
+			
+			workers = []
 			for input_no in range(input_num):
-				pool.apply_async(
+				# pool.apply_async(
+				# 	gen_report,
+				# 	args = (input_no, inputs[input_no], config_info['poc_fmt'], config_info['trace_cmd'], config_info['trace_replace_idx'],
+				# 		   config_info['crash_cmd'], config_info['crash_replace_idx'], config_info['crash_tag'], selected_seed_trace),
+				# 	callback = result_collection.append,
+				# )
+				job = executor.submit(
 					gen_report,
-					args = (input_no, inputs[input_no], config_info['poc_fmt'], config_info['trace_cmd'], config_info['trace_replace_idx'],
-						   config_info['crash_cmd'], config_info['crash_replace_idx'], config_info['crash_tag'], selected_seed_trace),
-					callback = result_collection.append,
+					input_no, inputs[input_no], config_info['poc_fmt'],
+					config_info['trace_cmd'], config_info['trace_replace_idx'],
+					config_info['crash_cmd'], config_info['crash_replace_idx'],
+					config_info['crash_tag'], selected_seed_trace
 				)
-			pool.close()
+				workers.append(job)
+			# pool.close()
 
 			remaining_time = int(config_info['global_timeout'] - (time() - stime))
 			logging.info("remaining time: %d seconds" % remaining_time)
@@ -560,6 +574,16 @@ def concentrate_fuzz(config_info):
 			logging.info("terminating the worker pool...")
 			# CT we need to switch to using ProcessPoolExecutor to avoid language issues
 			# pool.terminate()
+			#executor.shutdown(wait=True, cancel_futures=True)
+			for job in workers:
+				job.cancel()
+			for job in workers:
+				while not job.done():
+					sleep(1)
+				try:
+					result_collection.append(job.result())
+				except:
+					continue
 			# logging.debug("joining worker pool...")
 			# pool.join()
 			logging.debug("active children: {}".format(len(active_children())))
@@ -575,28 +599,30 @@ def concentrate_fuzz(config_info):
 			crash_collection = {'m'}
 			if hit_timeout: # only store the inputs if we hit the timeout
 				for item in result_collection:
-					if item[2] not in TraceHashCollection:
-						ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
+					if len(item) > 0:
+						if item[2] not in TraceHashCollection:
+							ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
 				break
 			else:
 				for item in result_collection:
-					diff_collection.add(item[4])
-					crash_collection.add(item[3])
-					# save the trace
-					if item[2] not in TraceHashCollection:
-						TraceHashCollection.append(item[2])
-						trace_path = os.path.join(TraceFolder, item[2])
-						# utils.write_pkl(trace_path, item[1])
-						np.savez(trace_path, trace=item[1])
-						# (YN: added to store "interesting" (concentrated) input files)
-						ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
-					# check whether to add it into the seed pool
-					if item[3] == 'm' and item[2] not in SeedTraceHashList:
-						SeedPool.append([False, inputs[item[0]]])
-						SeedTraceHashList.append(item[2])
-					# Update reports
-					if [item[2], item[3]] not in ReportCollection:
-						ReportCollection.append([item[2], item[3]])
+					if len(item) > 0:
+						diff_collection.add(item[4])
+						crash_collection.add(item[3])
+						# save the trace
+						if item[2] not in TraceHashCollection:
+							TraceHashCollection.append(item[2])
+							trace_path = os.path.join(TraceFolder, item[2])
+							# utils.write_pkl(trace_path, item[1])
+							np.savez(trace_path, trace=item[1])
+							# (YN: added to store "interesting" (concentrated) input files)
+							ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
+						# check whether to add it into the seed pool
+						if item[3] == 'm' and item[2] not in SeedTraceHashList:
+							SeedPool.append([False, inputs[item[0]]])
+							SeedTraceHashList.append(item[2])
+						# Update reports
+						if [item[2], item[3]] not in ReportCollection:
+							ReportCollection.append([item[2], item[3]])
 
 				logging.debug("#Diff: %d; #ExeResult: %d; #seed: %d" % (len(diff_collection), len(crash_collection), len(SeedPool)))
 				# update sensitivity map

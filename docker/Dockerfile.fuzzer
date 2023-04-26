@@ -24,6 +24,9 @@ RUN cd /opt/fuzzer/deps \
 # Install pyelftools
 RUN pip install --target=/opt/fuzzer/pypackages pyelftools==0.29
 
+# Install concurrent.futures
+RUN pip install --target=/opt/fuzzer/pypackages futures
+
 # Install CMake
 RUN wget -nv https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2.tar.gz \
  && tar -xvzf cmake-3.16.2.tar.gz \
