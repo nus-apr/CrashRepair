@@ -117,6 +117,7 @@ def parse_args():
 		detailed_config['global_timeout'] = GlobalTimeout
 	else:
 		detailed_config['global_timeout'] = int(detailed_config['global_timeout'][0])
+	utils.GlobalEndTime = time() + detailed_config['global_timeout']
 	if 'local_timeout' not in detailed_config: # read the local timeout for each seed
 		global LocalTimeout
 		detailed_config['local_timeout'] = LocalTimeout
@@ -545,8 +546,10 @@ def concentrate_fuzz(config_info):
 
 			remaining_time = int(config_info['global_timeout'] - (time() - stime))
 			logging.info("remaining time: %d seconds" % remaining_time)
+			hit_timeout = False
 			while True:
-				if config_info['global_timeout'] - (time() - stime) <= 0:
+				if time() >= utils.GlobalEndTime:
+					hit_timeout = True
 					logging.warning("kill process pool because of timeout")
 					break
 				if (input_num - len(result_collection)) <= 0:
@@ -570,44 +573,50 @@ def concentrate_fuzz(config_info):
 			logging.info("processing results from fuzzing round {}".format(round_no))
 			diff_collection = set()
 			crash_collection = {'m'}
-			for item in result_collection:
-				diff_collection.add(item[4])
-				crash_collection.add(item[3])
-				# save the trace
-				if item[2] not in TraceHashCollection:
-					TraceHashCollection.append(item[2])
-					trace_path = os.path.join(TraceFolder, item[2])
-					# utils.write_pkl(trace_path, item[1])
-					np.savez(trace_path, trace=item[1])
-					# (YN: added to store "interesting" (concentrated) input files)
-					ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
-				# check whether to add it into the seed pool
-				if item[3] == 'm' and item[2] not in SeedTraceHashList:
-					SeedPool.append([False, inputs[item[0]]])
-					SeedTraceHashList.append(item[2])
-				# Update reports
-				if [item[2], item[3]] not in ReportCollection:
-					ReportCollection.append([item[2], item[3]])
+			if hit_timeout: # only store the inputs if we hit the timeout
+				for item in result_collection:
+					if item[2] not in TraceHashCollection:
+						ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
+				break
+			else:
+				for item in result_collection:
+					diff_collection.add(item[4])
+					crash_collection.add(item[3])
+					# save the trace
+					if item[2] not in TraceHashCollection:
+						TraceHashCollection.append(item[2])
+						trace_path = os.path.join(TraceFolder, item[2])
+						# utils.write_pkl(trace_path, item[1])
+						np.savez(trace_path, trace=item[1])
+						# (YN: added to store "interesting" (concentrated) input files)
+						ConcentratedInputCounter = store_input(ConcentratedInputFolder, ConcentratedInputCounter, config_info, inputs[item[0]])
+					# check whether to add it into the seed pool
+					if item[3] == 'm' and item[2] not in SeedTraceHashList:
+						SeedPool.append([False, inputs[item[0]]])
+						SeedTraceHashList.append(item[2])
+					# Update reports
+					if [item[2], item[3]] not in ReportCollection:
+						ReportCollection.append([item[2], item[3]])
 
-			logging.debug("#Diff: %d; #ExeResult: %d; #seed: %d" % (len(diff_collection), len(crash_collection), len(SeedPool)))
-			# update sensitivity map
-			loc_sensitivity_map, crash_sensitivity_map = update_sens_map(mutate_idx, diff_collection, crash_collection, loc_sensitivity_map, crash_sensitivity_map)
-			# check whether it timeouts or not
-			ctime = time()
-			duration = ctime - stime
-			if duration >= config_info['local_timeout']:
-				logging.debug("[R-%d-%d] Timeout locally! -> Duration: %f (%f - %f) in seconds" % (round_no, subround_no, duration, ctime, stime))
-				break
-			# check whether all the locations get explored or not.
-			unexplore_loc_idx_list = np.where(np.asarray([len(item) for item in loc_sensitivity_map['value']]) == 0)[0]
-			logging.debug("[R-%d-%d] #(Unexplored Locs): %d" % (round_no, subround_no, len(unexplore_loc_idx_list)))
-			if len(unexplore_loc_idx_list) == 0:
-				logging.debug("[R-%d-%d] Finish exploring all the locs!" % (round_no, subround_no))
-				break
+				logging.debug("#Diff: %d; #ExeResult: %d; #seed: %d" % (len(diff_collection), len(crash_collection), len(SeedPool)))
+				# update sensitivity map
+				loc_sensitivity_map, crash_sensitivity_map = update_sens_map(mutate_idx, diff_collection, crash_collection, loc_sensitivity_map, crash_sensitivity_map)
+				# check whether it timeouts or not
+				ctime = time()
+				duration = ctime - stime
+				if duration >= config_info['local_timeout']:
+					logging.debug("[R-%d-%d] Timeout locally! -> Duration: %f (%f - %f) in seconds" % (round_no, subround_no, duration, ctime, stime))
+					break
+				# check whether all the locations get explored or not.
+				unexplore_loc_idx_list = np.where(np.asarray([len(item) for item in loc_sensitivity_map['value']]) == 0)[0]
+				logging.debug("[R-%d-%d] #(Unexplored Locs): %d" % (round_no, subround_no, len(unexplore_loc_idx_list)))
+				if len(unexplore_loc_idx_list) == 0:
+					logging.debug("[R-%d-%d] Finish exploring all the locs!" % (round_no, subround_no))
+					break
 
 		ctime = time()
 		duration = ctime - stime
-		if duration >= config_info['global_timeout']:
+		if ctime >= utils.GlobalEndTime:
 			logging.debug("[R-%d] Timeout! -> Duration: %f (%f - %f) in seconds" % (round_no, duration, ctime, stime))
 			break
 

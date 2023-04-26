@@ -14,6 +14,9 @@ DEVNULL = open(os.devnull, 'w')
 
 
 def ifTracer(cmd_list):
+	if time.time() >= utils.GlobalEndTime:
+		return
+
 	_, trace_filename = tempfile.mkstemp(suffix=".trace")
 
 	# craft tracing command
@@ -27,6 +30,8 @@ def ifTracer(cmd_list):
 	t_end = time.time() + utils.SubProcessTimeout
 	while True:
 		if time.time() >= t_end:
+			break
+		if time.time() >= utils.GlobalEndTime:
 			break
 		if p1.poll() is not None:
 			break
@@ -60,13 +65,24 @@ def ifTracer(cmd_list):
 
 def exe_bin(cmd_list):
 	global SubProcessTimeout
+
+	if time.time() >= utils.GlobalEndTime:
+		return
+
 	logging.info("Input command: %s" % ' '.join(cmd_list))
 	p1 = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 	# (YN: added timeout handling)
 	t_end = time.time() + utils.SubProcessTimeout
-	while p1.poll() is None and time.time() < t_end:
+	while True:
+		if time.time() >= t_end:
+			break
+		if time.time() >= utils.GlobalEndTime:
+			break
+		if p1.poll() is not None:
+			break
 		time.sleep(1)
+	
 	if p1.poll() is None:
 		logging.warn('exe_bin timeout occured with > %s sec' % str(utils.SubProcessTimeout))
 		p1.terminate()

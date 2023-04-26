@@ -8,6 +8,7 @@ FileNameChars = list(string.letters + string.digits)
 FileNameLen = 30
 
 SubProcessTimeout = 5
+GlobalEndTime = 0
 
 '''
 Process the binary file
