@@ -139,8 +139,7 @@ class Test:
         else:
             stdout = raw_outcome.stdout
             stderr = raw_outcome.stderr
-
-        return_code = raw_outcome.returncode
+            return_code = raw_outcome.returncode
 
         return RawTestOutcome(
             duration=timer.duration,
