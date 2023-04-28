@@ -22,8 +22,9 @@ If any acceptable patches are discovered they will be added to a `patches` direc
 The behavior of `scripts/run` can be customized via the following environment variables:
 
 * `REPAIR_TIME_LIMIT` specifies the maximum length of time (minutes) for which the repair can run. **(Default: 45 minutes.)**
+* `PATCH_LIMIT` specifies the maximum number of acceptable patches that can be produced before the repair is terminated. **(Default: 40)**
 * `TEST_TIME_LIMIT` specifies the maximum length of time (seconds) that the failing test case should be allowed to run. **(Default: 30 seconds.)**
-* `MEMORY_LIMIT` used to set Docker's `--memory` option (see https://docs.docker.com/config/containers/resource_constraints). **(Default: 16g.)**
+* `MEMORY_LIMIT` used to set Docker's `--memory` option (see https://docs.docker.com/config/containers/resource_constraints). **(Default: 64g.)**
 * `CPU_LIMIT` used to set Docker's `--cpus` option (see https://docs.docker.com/config/containers/resource_constraints). **(Default: 8.)**
 
 For example, to run CrashRepair with 8 CPU cores and 16 GiB RAM with a 60-minute time limit:
