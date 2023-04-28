@@ -29,12 +29,13 @@ crashrepair repair \
   --time-limit-minutes-validation "${REPAIR_TIME_LIMIT}" \
   --time-limit-seconds-test "${TEST_TIME_LIMIT}" \
   --patch-limit "${PATCH_LIMIT}" \
-  --no-fuzz bug.json \
+  bug.json \
   2>1 |& tee "${LOG_FILENAME}"
 
 if [[ -d patches ]]; then
   cp -r patches "${RESULTS_DIR}"
 fi
+cp -r analysis "${RESULTS_DIR}"
 cp report.json "${RESULTS_DIR}"
 
 # fix permissions

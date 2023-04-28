@@ -1,11 +1,11 @@
 #!/bin/bash
 set -eu
 
-export MEMORY_LIMIT="${MEMORY_LIMIT:-16g}"
+export MEMORY_LIMIT="${MEMORY_LIMIT:-64g}"
 export CPU_LIMIT="${CPU_LIMIT:-8}"
 export REPAIR_TIME_LIMIT="${REPAIR_TIME_LIMIT:-45}"
 export TEST_TIME_LIMIT="${TEST_TIME_LIMIT:-30}"
-export PATCH_LIMIT="${PATCH_LIMIT:-10}"
+export PATCH_LIMIT="${PATCH_LIMIT:-40}"
 
 HERE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXPERIMENTS_FILE="${HERE_DIR}/experiments.txt"
