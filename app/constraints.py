@@ -1001,7 +1001,7 @@ def generate_iterator_location(iterator_node, src_file):
         source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
         source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2] - 2}"
     elif iterator_node["kind"] in ["ImplicitCastExpr", "ParenExpr"]:
-        child_node = iterator_node["inner"][1]
+        child_node = iterator_node["inner"][0]
         source_ptr_loc_str = generate_iterator_location(child_node, src_file)
     else:
         iterator_range = iterator_node["range"]["begin"]
