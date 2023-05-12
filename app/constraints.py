@@ -1066,7 +1066,7 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                 else:
                     alloc_size, is_static = get_pointer_size(ptr_node, src_file)
                     if alloc_size.isnumeric():
-                        if (0 < int(alloc_size) <= (int(last_value) * result_ptr_width)) or \
+                        if (0 < int(alloc_size) <= (int(last_value + 1) * result_ptr_width)) or \
                                 (int(last_value) < 0 and not is_signed):
                             lt_op = build_op_symbol("<")
                             if is_static:
