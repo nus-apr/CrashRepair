@@ -56,11 +56,16 @@ def parse_args() -> argparse.Namespace:
         help="rebuilds the project from source",
     )
     parser_rebuild.add_argument(
+        "filename",
+        help="the path to the bug.json file for the bug scenario",
+    )
+    parser_rebuild.add_argument(
         "--prebuild",
         help="enables a prebuild step",
         dest="prebuild",
         action="store_true",
     )
+    parser_rebuild.set_defaults(func=do_rebuild)
 
     parser_repair = subparsers.add_parser(
         "repair",
