@@ -22,6 +22,13 @@ def do_repair(args: argparse.Namespace) -> None:
     scenario.repair()
 
 
+def do_rebuild(args: argparse.Namespace) -> None:
+    scenario = Scenario.for_file(args.filename)
+    scenario.rebuild(
+        prebuild=args.prebuild,
+    )
+
+
 def do_analyze(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
     scenario.time_limit_minutes_analysis = args.time_limit_minutes
@@ -43,6 +50,17 @@ def do_lint(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(DESCRIPTION)
     subparsers = parser.add_subparsers()
+
+    parser_rebuild = subparsers.add_parser(
+        "rebuild",
+        help="rebuilds the project from source",
+    )
+    parser_rebuild.add_argument(
+        "--prebuild",
+        help="enables a prebuild step",
+        dest="prebuild",
+        action="store_true",
+    )
 
     parser_repair = subparsers.add_parser(
         "repair",
