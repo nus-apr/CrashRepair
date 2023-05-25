@@ -1292,10 +1292,34 @@ def generate_memcpy_constraint(call_node, src_file):
     return constraint_expr
 
 
-def generate_memmove_constraint(call_node):
+def generate_memmove_constraint(call_node, src_file):
     source_ptr_node = call_node["inner"][1]
     target_ptr_node = call_node["inner"][2]
     size_node = call_node["inner"][3]
+    size_expr = generate_expr_for_ast(size_node)
+    size_arg_loc = generate_iterator_location(size_node, src_file)
+    for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
+        if size_arg_loc in taint_loc:
+            expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
+            if expr_list and "integer" in expr_list[0]:
+                last_expr = expr_list[-1].replace("integer:", "")
+                concrete_val_var_expr = int(last_expr.split(" ")[1].replace("bv", ""))
+                bit_size_var_expr = int(last_expr.split(" ")[-1].replace(")", ""))
+                last_value = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
+                if int(last_value) <= 0:
+                    less_than_op = build_op_symbol("<")
+                    # Generating second constraint of type
+                    # check if the size constraint is a diff operator
+                    if size_expr.get_type() == "OP_ARITH_MINUS":
+                        rhs_size_expr = size_expr.get_r_expr()
+                        lhs_size_expr = size_expr.get_l_expr()
+                        constraint_expr = make_binary_expression(less_than_op, rhs_size_expr, lhs_size_expr)
+                    # 0 < size
+                    else:
+                        zero_symbol = make_constraint_symbol("0", "CONST_INT")
+                        zero_expr = make_symbolic_expression(zero_symbol)
+                        constraint_expr = make_binary_expression(less_than_op, zero_expr, size_expr)
+                    return constraint_expr
 
     # Generating first constraint of type
     # target - source < size
@@ -1310,27 +1334,10 @@ def generate_memmove_constraint(call_node):
         simplified_diff_expr = generate_expr_for_str(simplified_diff_expr_str, "VAR_INT")
     except Exception as ex:
         simplified_diff_expr = diff_expr
-    size_expr = generate_expr_for_ast(size_node)
 
-    # last, concatenate both constraints into one
+
     less_than_op = build_op_symbol("<")
-    first_constraint = make_binary_expression(less_than_op, simplified_diff_expr, size_expr)
-
-    # Generating second constraint of type
-    # check if the size constraint is a diff operator
-    if size_expr.get_type() == "OP_ARITH_MINUS":
-        rhs_size_expr = size_expr.get_r_expr()
-        lhs_size_expr = size_expr.get_l_expr()
-        second_constraint = make_binary_expression(less_than_op, rhs_size_expr, lhs_size_expr)
-    # 0 < size
-    else:
-        zero_symbol = make_constraint_symbol("0", "CONST_INT")
-        zero_expr = make_symbolic_expression(zero_symbol)
-        second_constraint = make_binary_expression(less_than_op, zero_expr, size_expr)
-
-    # Final constraint is a concatenation
-    logical_and_op = build_op_symbol("&&")
-    constraint_expr = make_binary_expression(logical_and_op, second_constraint, first_constraint)
+    constraint_expr = make_binary_expression(less_than_op, simplified_diff_expr, size_expr)
 
     return constraint_expr
 

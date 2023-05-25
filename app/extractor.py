@@ -616,7 +616,7 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
             emitter.error("\t[error] unable to find call operator for memmove error")
             utilities.error_exit("Unable to generate crash free constraint")
         ast_var_list = extract_ast_var_list(crash_call_ast, src_file)
-        cfc = constraints.generate_memmove_constraint(crash_call_ast)
+        cfc = constraints.generate_memmove_constraint(crash_call_ast, src_file)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
     elif crash_type == definitions.CRASH_TYPE_MEMSET_ERROR:
         call_node_list = extract_call_node_list(func_ast, None, ["memset"])
