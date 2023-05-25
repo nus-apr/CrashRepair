@@ -166,11 +166,11 @@ class Test:
         if self.bad_output:
             if raw_outcome.stdout_contains_bad_output(self.bad_output):
                 logger.debug(f"test failed: stdout contains bad output substring ({self.bad_output})")
-                raw_outcome.failure = TestFailureReason.BAD_OUTPUT
+                raw_outcome.failure = raw_outcome.failure or TestFailureReason.BAD_OUTPUT
 
             if raw_outcome.stderr_contains_bad_output(self.bad_output):
                 logger.debug(f"test failed: stderr contains bad output substring ({self.bad_output})")
-                raw_outcome.failure = TestFailureReason.BAD_OUTPUT
+                raw_outcome.failure = raw_outcome.failure or TestFailureReason.BAD_OUTPUT
 
         # unexpected stdout?
         if self.expected_stdout is not None:
@@ -180,7 +180,7 @@ class Test:
                     f"test failed: unexpected stdout (actual: {actual_stdout},"
                     f" expected: {self.expected_stdout})",
                 )
-                raw_outcome.failure = TestFailureReason.INCORRECT_STDOUT
+                raw_outcome.failure = raw_outcome.failure or TestFailureReason.INCORRECT_STDOUT
 
         # unexpected exit code?
         if self.expected_exit_code is not None:
@@ -190,7 +190,7 @@ class Test:
                     f"test failed: unexpected exit code (actual: {actual_returncode},"
                     f" expected: {self.expected_exit_code})",
                 )
-                raw_outcome.failure = TestFailureReason.BAD_EXIT_CODE
+                raw_outcome.failure = raw_outcome.failure or TestFailureReason.BAD_EXIT_CODE
 
         return TestOutcome(
             name=self.name,

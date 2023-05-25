@@ -29,6 +29,14 @@ def do_rebuild(args: argparse.Namespace) -> None:
     )
 
 
+def do_test(args: argparse.Namespace) -> None:
+    scenario = Scenario.for_file(args.filename)
+    outcome = scenario.crash_test.run(
+        scenario.time_limit_seconds_single_test,
+    )
+    print(outcome)
+
+
 def do_analyze(args: argparse.Namespace) -> None:
     scenario = Scenario.for_file(args.filename)
     scenario.time_limit_minutes_analysis = args.time_limit_minutes
@@ -66,6 +74,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
     )
     parser_rebuild.set_defaults(func=do_rebuild)
+
+    parser_test = subparsers.add_parser(
+        "test",
+        help="runs the crashing test on the program",
+    )
+    parser_test.add_argument(
+        "filename",
+        help="the path to the bug.json file for the bug scenario",
+    )
+    parser_test.set_defaults(func=do_test)
 
     parser_repair = subparsers.add_parser(
         "repair",
