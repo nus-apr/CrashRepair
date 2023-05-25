@@ -508,7 +508,9 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         if dec_or_ref == "dec":
             for _range in compound_range:
                 if e_line in _range:
-                    var_scope_list[e_str] = _range
+                    if e_str not in var_scope_list:
+                        var_scope_list[e_str] = list()
+                    var_scope_list[e_str].append(_range)
     call_node_list = extractor.extract_call_node_list(function_ast)
     taint_src_loc = (src_file, int(taint_line), int(taint_col))
     if oracle.is_top_assertion(taint_src_loc, call_node_list) or \
@@ -574,7 +576,12 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     if selected_line > m_line:
                         continue
                     if m_expr in var_scope_list:
-                        if int(candidate_line) not in var_scope_list[m_expr]:
+                        in_scope = False
+                        for scope_range in var_scope_list[m_expr]:
+                            if int(candidate_line) in scope_range:
+                                in_scope = True
+                                break
+                        if not in_scope:
                             continue
 
                     selected_expr = m_expr
