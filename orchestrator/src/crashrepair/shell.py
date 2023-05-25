@@ -31,6 +31,7 @@ class Shell:
 
         additional_args: t.Dict[str, t.Any] = {}
         if capture_output:
+            additional_args["errors"] = "ignore"
             additional_args["stdout"] = subprocess.PIPE
             additional_args["stderr"] = subprocess.PIPE
             additional_args["universal_newlines"] = "\n"
