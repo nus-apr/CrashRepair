@@ -574,7 +574,7 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     if selected_line > m_line:
                         continue
                     if m_expr in var_scope_list:
-                        if int(taint_line) not in var_scope_list[m_expr]:
+                        if int(candidate_line) not in var_scope_list[m_expr]:
                             continue
 
                     selected_expr = m_expr
@@ -587,12 +587,14 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                         if c_t_lookup in localized_tokens:
                             # favors non-array access
                             mapped_expr = localized_tokens[c_t_lookup]
+                            if c_t_lookup == selected_expr:
+                                localized_tokens[c_t_lookup] = selected_expr
+                                break
                             if "(" in mapped_expr and "(" not in selected_expr:
                                 localized_tokens[c_t_lookup] = selected_expr
                             if "[" in mapped_expr and "[" not in selected_expr:
                                 localized_tokens[c_t_lookup] = selected_expr
-                            if c_t_lookup == selected_expr:
-                                localized_tokens[c_t_lookup] = selected_expr
+
                         if c_t_lookup not in localized_tokens:
                             localized_tokens[c_t_lookup] = selected_expr
                             used_candidates.append(selected_expr)
@@ -604,8 +606,6 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
             if "size " in c_t_lookup:
                 ptr_name = re.search(r'pointer, (.*)\)\)', c_t_lookup).group(1)
                 base_ptr = f"(base  @var(pointer, {ptr_name}))"
-
-
                 mapped_ptr = None
                 if base_ptr in localized_tokens:
                     mapped_ptr = localized_tokens[base_ptr]
