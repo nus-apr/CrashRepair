@@ -447,7 +447,7 @@ def collect_test_list():
                 concretized_arg_list.append(file_path)
             else:
                 concretized_arg_list.append(arg)
-        concretized_arg_str = ",".join(concretized_arg_list)
+        concretized_arg_str = " ".join(concretized_arg_list)
         concretized_test_input_list.append(concretized_arg_str)
     values.LIST_TEST_INPUT = concretized_test_input_list
 
@@ -605,9 +605,10 @@ def update_configuration():
 
 
 def extract_input_arg_list(argument_str):
-    if "," not in argument_str:
-        argument_list = str(argument_str).split(" ")
-    else:
-        # argument_str = argument_str.replace("[", "").replace("]", "")
-        argument_list = str(argument_str).split(",")
+    argument_list = str(argument_str).split(" ")
+    # if "," not in argument_str:
+    #     argument_list = str(argument_str).split(" ")
+    # else:
+    #     # argument_str = argument_str.replace("[", "").replace("]", "")
+    #     argument_list = str(argument_str).split(",")
     return argument_list
