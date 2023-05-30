@@ -371,11 +371,12 @@ def extract_var_ref_list(ast_node, file_path):
     #     return var_list
     if node_type in ["IfStmt"]:
         condition_node = ast_node['inner'][0]
-        body_node = ast_node['inner'][1]
         condition_node_var_list = extract_var_ref_list(condition_node, file_path)
         for var_name, line_number, col_number, var_type, _ in condition_node_var_list:
             var_list.append((str(var_name), line_number, col_number, var_type, "ref"))
-        var_list = var_list + extract_var_ref_list(body_node, file_path)
+        for child_node in ast_node['inner'][1:]:
+            child_var_list = list(set(extract_var_ref_list(child_node, file_path)))
+            var_list = var_list + child_var_list
         return var_list
     if node_type in ["SwitchStmt"]:
         condition_node = ast_node['inner'][0]
@@ -387,7 +388,8 @@ def extract_var_ref_list(ast_node, file_path):
         return var_list
     if child_count:
         for child_node in ast_node['inner']:
-            var_list = var_list + list(set(extract_var_ref_list(child_node, file_path)))
+            child_var_list = list(set(extract_var_ref_list(child_node, file_path)))
+            var_list = var_list + child_var_list
     sorted_var_list = sorted(list(set(var_list)), key=lambda x:x[1], reverse=True)
     return sorted_var_list
 
