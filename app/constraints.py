@@ -955,22 +955,48 @@ def generate_shift_overflow_constraint(shift_node):
 
 
 
-def generate_memset_constraint(call_node):
+def generate_memset_constraint(call_node, src_file):
     pointer_node = call_node["inner"][1]
-    # pointer_name = converter.convert_node_to_str(pointer_node)
-    # size_value = converter.convert_node_to_str(size_node)
 
-    # Generating a constraint of type size_value > 0 && pointer_name != 0
-    # first generate the expressions for the two operands
-    pointer_expr = generate_expr_for_ast(pointer_node)
+    # check if null pointer
+    ptr_val = get_pointer_value(pointer_node, src_file)
+    if ptr_val == "bv0":
+        pointer_expr = generate_expr_for_ast(pointer_node)
+        # next generate the second constraint pointer != 0
+        not_eq_op = build_op_symbol("!=")
+        null_symbol = make_constraint_symbol("NULL", "NULL_VAL")
+        null_expr = make_symbolic_expression(null_symbol)
+        constraint_expr = make_binary_expression(not_eq_op, null_expr, pointer_expr)
+        return constraint_expr
 
-    # next generate the second constraint pointer != 0
-    not_eq_op = build_op_symbol("!=")
-    null_symbol = make_constraint_symbol("NULL", "NULL_VAL")
-    null_expr = make_symbolic_expression(null_symbol)
-    constraint_expr = make_binary_expression(not_eq_op, null_expr, pointer_expr)
+    # check if the pointer is in bound
+    ptr_bound_constraint = generate_out_of_bound_ptr_constraint(pointer_node, src_file)
+    if ptr_bound_constraint:
+        return ptr_bound_constraint
 
+    ptr_expr = generate_expr_for_ast(pointer_node)
+    size_node = call_node["inner"][3]
+    size_expr = generate_expr_for_ast(size_node)
+    last_val_size = get_last_value(size_node, src_file)
+    less_than_op = build_op_symbol("<")
+    if last_val_size < 0:
+        zero_symbol = make_constraint_symbol("0", "CONST_INT")
+        zero_expr = make_symbolic_expression(zero_symbol)
+        constraint_expr = make_binary_expression(less_than_op, zero_expr, size_expr)
+        return constraint_expr
+
+    base_op = build_op_symbol("base ")
+    base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
+    arith_plus_op = build_op_symbol("+")
+    size_op = build_op_symbol("size ")
+    ptr_size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+
+    less_than_op = build_op_symbol("<")
+    lhs_expr = make_binary_expression(arith_plus_op, ptr_expr, size_expr)
+    rhs_expr = make_binary_expression(arith_plus_op, base_expr, ptr_size_expr)
+    constraint_expr = make_binary_expression(less_than_op, lhs_expr, rhs_expr)
     return constraint_expr
+
 
 ## Incomplete lifting of constraint from StringLiteral
 def generate_assertion_constraint(call_node, func_node, src_file):
@@ -995,14 +1021,14 @@ def generate_assertion_constraint(call_node, func_node, src_file):
         utilities.error_exit("Not implemented: handling more than 3 tokens in assertion constraint")
     return constraint_expr
 
-def generate_iterator_location(iterator_node, src_file):
+def get_node_loc(iterator_node, src_file):
     if iterator_node["kind"] == "BinaryOperator":
         iterator_range = iterator_node["inner"][1]["range"]["begin"]
         source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
         source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2] - 2}"
-    elif iterator_node["kind"] in ["ImplicitCastExpr", "ParenExpr"]:
+    elif iterator_node["kind"] in ["ImplicitCastExpr", "ParenExpr", "CStyleCastExpr"]:
         child_node = iterator_node["inner"][0]
-        source_ptr_loc_str = generate_iterator_location(child_node, src_file)
+        source_ptr_loc_str = get_node_loc(child_node, src_file)
     else:
         iterator_range = iterator_node["range"]["begin"]
         source_ptr_loc = extractor.extract_loc(src_file, iterator_range)
@@ -1041,14 +1067,9 @@ def generate_iterator_offset_constraint(iterator_node, ptr_node, src_file):
 
     return constraint_expr
 
-
-def generate_iterator_constraint(iterator_node, src_file, ptr_node):
-    source_ptr_loc_str = generate_iterator_location(iterator_node, src_file)
-    constraint_expr = None
-    result_iterator_type = extractor.extract_data_type(iterator_node)
-    result_ptr_type = extractor.extract_data_type(ptr_node)
-    result_ptr_width = get_type_width(result_ptr_type)
-    is_signed = "unsigned" not in result_iterator_type
+def get_last_value(ast_node, src_file):
+    last_value = -1
+    source_ptr_loc_str = get_node_loc(ast_node, src_file)
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if source_ptr_loc_str in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
@@ -1057,43 +1078,54 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
                 concrete_val_var_expr = int(last_expr.split(" ")[1].replace("bv", ""))
                 bit_size_var_expr = int(last_expr.split(" ")[-1].replace(")", ""))
                 last_value = solver.solve_sign(concrete_val_var_expr, bit_size_var_expr)
-                if int(last_value) < 0 and is_signed:
-                    iterator_expr = generate_expr_for_ast(iterator_node)
-                    lte_op = build_op_symbol("<=")
-                    zero_symbol = make_constraint_symbol("0", "CONST_INT")
-                    zero_expr = make_symbolic_expression(zero_symbol)
-                    constraint_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
-                else:
-                    alloc_size, is_static = get_pointer_size(ptr_node, src_file)
-                    if alloc_size.isnumeric():
-                        if (0 < int(alloc_size) <= (int(last_value + 1) * result_ptr_width)) or \
-                                (int(last_value) < 0 and not is_signed):
-                            lt_op = build_op_symbol("<")
-                            if is_static:
-                                size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
-                                size_expr = make_symbolic_expression(size_symbol)
-                            else:
-                                size_op = build_op_symbol("size ")
-                                ptr_expr = generate_expr_for_ast(ptr_node)
-                                size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
-                            iterator_expr = generate_expr_for_ast(iterator_node)
-                            ptr_width_bytes = int(result_ptr_width / 8)
-                            if ptr_width_bytes > 1:
-                                width_symbol = make_constraint_symbol(str(ptr_width_bytes), "CONST_INT")
-                                width_expr = make_symbolic_expression(width_symbol)
-                                arith_mul_op = build_op_symbol("*")
-                                lhs_expr = make_binary_expression(arith_mul_op, width_expr, iterator_expr)
-                            else:
+    return last_value
 
-                                lhs_expr = iterator_expr
-                            constraint_expr = make_binary_expression(lt_op, lhs_expr, size_expr)
-                    else:
-                        iterator_expr = generate_expr_for_ast(iterator_node)
-                        lt_op = build_op_symbol("<")
-                        size_op = build_op_symbol("size ")
-                        ptr_expr = generate_expr_for_ast(ptr_node)
-                        size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
-                        constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
+
+def generate_iterator_constraint(iterator_node, src_file, ptr_node):
+    constraint_expr = None
+    result_iterator_type = extractor.extract_data_type(iterator_node)
+    result_ptr_type = extractor.extract_data_type(ptr_node)
+    result_ptr_width = get_type_width(result_ptr_type)
+    is_signed = "unsigned" not in result_iterator_type
+
+    last_value = get_last_value(iterator_node, src_file)
+    if int(last_value) < 0 and is_signed:
+        iterator_expr = generate_expr_for_ast(iterator_node)
+        lte_op = build_op_symbol("<=")
+        zero_symbol = make_constraint_symbol("0", "CONST_INT")
+        zero_expr = make_symbolic_expression(zero_symbol)
+        constraint_expr = make_binary_expression(lte_op, zero_expr, iterator_expr)
+    else:
+        alloc_size, is_static = get_pointer_size(ptr_node, src_file)
+        if alloc_size.isnumeric():
+            if (0 < int(alloc_size) <= (int(last_value + 1) * result_ptr_width)) or \
+                    (int(last_value) < 0 and not is_signed):
+                lt_op = build_op_symbol("<")
+                if is_static:
+                    size_symbol = make_constraint_symbol(str(alloc_size), "CONST_INT")
+                    size_expr = make_symbolic_expression(size_symbol)
+                else:
+                    size_op = build_op_symbol("size ")
+                    ptr_expr = generate_expr_for_ast(ptr_node)
+                    size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+                iterator_expr = generate_expr_for_ast(iterator_node)
+                ptr_width_bytes = int(result_ptr_width / 8)
+                if ptr_width_bytes > 1:
+                    width_symbol = make_constraint_symbol(str(ptr_width_bytes), "CONST_INT")
+                    width_expr = make_symbolic_expression(width_symbol)
+                    arith_mul_op = build_op_symbol("*")
+                    lhs_expr = make_binary_expression(arith_mul_op, width_expr, iterator_expr)
+                else:
+
+                    lhs_expr = iterator_expr
+                constraint_expr = make_binary_expression(lt_op, lhs_expr, size_expr)
+        else:
+            iterator_expr = generate_expr_for_ast(iterator_node)
+            lt_op = build_op_symbol("<")
+            size_op = build_op_symbol("size ")
+            ptr_expr = generate_expr_for_ast(ptr_node)
+            size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+            constraint_expr = make_binary_expression(lt_op, iterator_expr, size_expr)
     return constraint_expr
 
 
@@ -1194,7 +1226,7 @@ def get_pointer_diff(ptr_node, src_file, iterator_node=None):
             return 0
     if iterator_node is not None:
         iterator_node_kind = iterator_node["kind"]
-        iterator_loc = generate_iterator_location(iterator_node, src_file)
+        iterator_loc = get_node_loc(iterator_node, src_file)
         if iterator_node_kind == "IntegerLiteral":
             iterator_loc = None
 
@@ -1297,7 +1329,7 @@ def generate_memmove_constraint(call_node, src_file):
     target_ptr_node = call_node["inner"][2]
     size_node = call_node["inner"][3]
     size_expr = generate_expr_for_ast(size_node)
-    size_arg_loc = generate_iterator_location(size_node, src_file)
+    size_arg_loc = get_node_loc(size_node, src_file)
     for taint_loc in reversed(values.VALUE_TRACK_CONCRETE):
         if size_arg_loc in taint_loc:
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]

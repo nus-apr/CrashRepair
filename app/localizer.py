@@ -978,11 +978,10 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
             abs_output_filepath = os.path.join(values_directory, rel_output_filename)
             writer.write_as_csv(fieldnames, rows, abs_output_filepath)
             localization_obj["values-file"] = rel_output_filename
-
             localization_list.append(localization_obj)
+            writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     if not localization_list:
         utilities.normal_exit("Unable to Localize a Crash Free Constraint")
     values.COUNT_FIX_LOC = len(localization_list)
-    writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
     emitter.success("\n\tlocalization information saved at {}".format(definitions.FILE_LOCALIZATION_INFO))
     emitter.success("\n\tstate values saved at {}{}".format(definitions.DIRECTORY_OUTPUT, '/values/'))
