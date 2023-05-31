@@ -476,6 +476,25 @@ def extract_crash_free_constraint(func_ast, crash_type, crash_loc_str, crash_add
         ast_var_list = extract_ast_var_list(crash_op_ast, src_file)
         cfc = constraints.generate_type_underflow_constraint(crash_op_ast)
         var_list = get_var_list(ast_var_list, cfc, crash_loc)
+    elif crash_type in [definitions.CRASH_TYPE_KLEE_CHECK_MEMORY]:
+        target_ast = None
+        function_name = "klee_check_memory_access"
+        call_node_list = extract_call_node_list(func_ast, white_list=[function_name])
+        call_node = None
+        for c_node in call_node_list:
+            if oracle.is_loc_in_range(crash_loc, c_node["range"]):
+                call_node = c_node
+                break
+        if call_node:
+            ptr_operand_node = call_node['inner'][1]
+            target_ast = extract_reference_node_list(ptr_operand_node)[0]
+        cfc = constraints.generate_memory_overflow_constraint(target_ast, crash_loc, crash_address, src_file)
+        if not cfc:
+            utilities.error_exit("Unable to generate crash free constraint")
+        ast_var_list = []
+        if target_ast:
+            ast_var_list = extract_ast_var_list(target_ast, src_file)
+        var_list = get_var_list(ast_var_list, cfc, crash_loc)
     elif crash_type in [definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW, definitions.CRASH_TYPE_MEMORY_WRITE_OVERFLOW]:
         # check for memory write nodes if not found check for memory access nodes
         target_ast = None
@@ -1223,6 +1242,8 @@ def extract_crash_type(crash_reason):
         crash_type = definitions.CRASH_TYPE_INT_ADD_OVERFLOW
     elif "overflow on subtraction" in crash_reason:
         crash_type = definitions.CRASH_TYPE_INT_SUB_OVERFLOW
+    elif "check_memory_access" in crash_reason:
+        crash_type = definitions.CRASH_TYPE_KLEE_CHECK_MEMORY
     elif "memory error" in crash_reason:
         crash_type = definitions.CRASH_TYPE_MEMORY_READ_OVERFLOW
     elif "out of bound pointer" in crash_reason:

@@ -84,7 +84,9 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
                         fix_locations[source_loc] = func_name
     logger.track_localization("found {} fix locations".format(len(fix_locations)))
     logger.track_localization("sorting fix location based on trace")
-    sorted_fix_locations = [(cfc_info["function"], cfc_info["loc"])]
+    sorted_fix_locations = []
+    if values.CONF_DIR_SRC in cfc_info["loc"]:
+        sorted_fix_locations = [(cfc_info["function"], cfc_info["loc"])]
     cached_list = []
     emitter.normal("\tgenerating possible fix locations")
     for taint_info in reversed(taint_symbolic.keys()):
@@ -747,10 +749,10 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
         top_level_loc = (top_level_line, top_level_col)
         taint_loc = (int(taint_line), int(taint_col))
         if top_level_line == -1:
-            emitter.warning(f"[warning] skipping assertion for top-level statement for {crash_loc}")
+            emitter.warning(f"\t[warning] skipping assertion for top-level statement for {candidate_loc}")
             continue
         if top_level_line == 0 and top_level_col == 0:
-            emitter.warning(f"[warning] did not find top-level for {crash_loc}")
+            emitter.warning(f"\t[warning] did not find top-level for {candidate_loc}")
             continue
         if "@result" in candidate_cfc.to_string():
             # if not is_declaration:

@@ -66,7 +66,7 @@ def generate_taint_sink_info(taint_symbolic, taint_memory_list, is_taint_influen
     count = 0
     for taint_info in reversed(taint_symbolic.keys()):
         source_path, line_number, col_number, inst_addr = taint_info.split(":")
-        if "/opt/zlib" in source_path or "/klee-uclibc/" in source_path:
+        if "/opt/zlib" in source_path or "/klee" in source_path:
             continue
         count = count + 1
         if count >= values.DEFAULT_MAX_TAINT_LOCATIONS:
