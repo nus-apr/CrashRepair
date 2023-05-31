@@ -737,6 +737,10 @@ def extract_call_node_list(ast_node, black_list=None, white_list=None):
                 call_expr_list.append(ast_node)
         else:
             call_expr_list.append(ast_node)
+
+        for child_node in ast_node['inner'][1:]:
+            child_call_list = extract_call_node_list(child_node, black_list, white_list)
+            call_expr_list = call_expr_list + child_call_list
     else:
         if "inner" in ast_node and len(ast_node['inner']) > 0:
             for child_node in ast_node['inner']:
@@ -1099,6 +1103,7 @@ def extract_expression_list(ast_node, src_file):
     binary_op_list = extract_binaryop_node_list(ast_node, src_file, white_list=["+", "-", "*", "/", "=", "+=", "-=", "*=", "/="])
     initialize_op_list = extract_initialization_node_list(ast_node)
     unary_op_list = extract_unaryop_node_list(ast_node, src_file)
+    call_expr_list = extract_call_node_list(ast_node, src_file)
     for subscript_node in array_access_list:
         index_node = subscript_node["inner"][1]
         # expression_str = converter.convert_node_to_str(index_node)
@@ -1107,6 +1112,15 @@ def extract_expression_list(ast_node, src_file):
         if expression_loc is None:
             continue
         # expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
+    for call_expr in call_expr_list:
+        expression_str = converter.get_node_value(call_expr)
+        expression_loc = extract_loc(src_file, call_expr["range"]["begin"])
+        data_type = extract_data_type(call_expr)
+        if expression_loc is None:
+            continue
+        if data_type == "void":
+            continue
+        expression_list.append((expression_str, expression_loc[1], expression_loc[2], data_type, "ref"))
 
     for op_node in (binary_op_list + unary_op_list + initialize_op_list):
         op_code = None
