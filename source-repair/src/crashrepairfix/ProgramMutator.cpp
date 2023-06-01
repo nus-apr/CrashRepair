@@ -244,6 +244,7 @@ void ProgramMutator::addConditionalExit(AstLinkedFixLocation &location) {
   spdlog::info("inserting conditional exit before statement: {}", location.getSource());
   // FIXME implement sophisticated version of this operator (see #106)
   addConditional(location, "exit(1);");
+  addConditional(location, "exit(0);");
 }
 
 void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location) {
