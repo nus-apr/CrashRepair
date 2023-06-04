@@ -285,7 +285,7 @@ void ProgramMutator::addConditionalNonVoidReturn(AstLinkedFixLocation &location)
   }
 
   if (returnTypeInfo->isPointerType()) {
-    returnValues.insert("NULL");
+    returnValues.insert("0");
 
     if (returnTypeInfo->getPointeeType().getTypePtr()->isCharType()) {
       returnValues.insert("\"\"");
