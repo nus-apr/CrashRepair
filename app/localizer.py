@@ -578,6 +578,8 @@ def localize_cfc(taint_loc_str, cfc_info, taint_symbolic, taint_concrete):
                     m_expr, m_line, m_col, _, is_dec = mapping
                     if ptr_name and m_expr in [ptr_name, f"{ptr_name}++", f"{ptr_name}--", f"++{ptr_name}", f"--{ptr_name}"]:
                         continue
+                    if "base" in c_t_lookup and "(" in m_expr:
+                        continue
                     if m_line > candidate_line:
                         continue
                     if selected_line > m_line:
