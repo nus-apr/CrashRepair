@@ -377,12 +377,15 @@ def generate_z3_code_for_equivalence(sym_expr_code_a, sym_expr_code_b):
     var_name_a, sym_expr_a, var_dec_a = def_a
     var_name_b, sym_expr_b, var_dec_b = def_b
     code = "(set-logic QF_AUFBV )\n"
-    code += generate_source_declarations(sym_expr_code_a, sym_expr_code_b)
+    pc_formula_str = str(values.LAST_PPC_FORMULA.serialize())
+    code += generate_source_declarations(sym_expr_code_a + sym_expr_code_b, pc_formula_str)
     code += var_dec_a + "\n"
     code += var_dec_b + "\n"
     code += sym_expr_a + "\n"
     code += sym_expr_b + "\n"
     code += "(assert (not (= " + var_name_a + " " + var_name_b + ")))\n"
+    if values.LAST_PPC_FORMULA:
+        code += f"(assert {pc_formula_str})\n"
     code += "(check-sat)\n"
     return code
 
