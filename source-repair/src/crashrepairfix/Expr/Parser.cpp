@@ -44,9 +44,10 @@ struct basic_var_expr : sor<
   seq<basic_var_name, star<space>, sign, star<space>, basic_var_name>,
   basic_var_name
 > {};
+struct call_strlen : seq<string<'s', 't', 'r', 'l', 'e', 'n', '('>, basic_var_expr, one<')'>> {};
 struct crepair_base : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 'b', 'a', 's', 'e', '('>, basic_var_expr, one<')'>> {};
 struct crepair_size : seq<string<'c', 'r', 'e', 'p', 'a', 'i', 'r', '_', 's', 'i', 'z', 'e', '('>, sor<crepair_base, basic_var_name>, one<')'>> {};
-struct var_name : sor<crepair_size, crepair_base, basic_var_name> {};
+struct var_name : sor<crepair_size, crepair_base, call_strlen, basic_var_name> {};
 struct integer : seq<opt<sign>, plus<digit>> {};
 struct variable : seq<string<'@', 'v', 'a', 'r'>, open_bracket, type_name, comma, star<space>, var_name, close_bracket> {};
 struct result : seq<string<'@', 'r', 'e', 's', 'u', 'l', 't'>, open_bracket, type_name, close_bracket> {};
@@ -142,6 +143,7 @@ using selector = parse_tree::selector<
     basic_var_expr,
     result,
     null,
+    call_strlen,
     crepair_size,
     crepair_base,
     uint_max,

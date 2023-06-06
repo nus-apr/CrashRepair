@@ -82,6 +82,14 @@ TEST(ParserTest, VarLessEqLongMin) {
   ASSERT_NE(parse("@var(integer, compinfo->height) <= LONG_MIN"), nullptr);
 }
 
+TEST(ParserTest, RedTeamParserIssue) {
+  ASSERT_NE(parse("(@var(integer, strlen(inknames)))"), nullptr);
+  ASSERT_NE(parse("(@var(pointer, inknames))"), nullptr);
+  ASSERT_NE(parse("(1 + @var(integer, strlen(inknames)))"), nullptr);
+  ASSERT_NE(parse("((@var(pointer, inknames) + (1 + @var(integer, strlen(inknames)))))"), nullptr);
+  ASSERT_NE(parse("((@result(integer)) < (@var(pointer, inknames) + (1 + @var(integer, strlen(inknames)))))"), nullptr);
+}
+
 TEST(ParserTest, Issue16) {
   ASSERT_NE(parse("((@var(integer, compinfo->width) * @var(integer, compinfo->height)) <= (LONG_MAX / (@var(integer, cmptparm->prec) + 7)))"), nullptr);
 }
