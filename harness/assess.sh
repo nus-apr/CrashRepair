@@ -17,6 +17,12 @@ function test_libxml2 {
   echo "$(./runsuite 2>1 | tail -1 | cut -d"," -f2 | cut -d" " -f2 | xargs)"
 }
 
+function test_libtiff {
+  pushd "${FULL_SCENARIO_PATH}/src/test" &> /dev/null
+  make clean &> /dev/null
+  echo "$(make check 2>1 | grep "# FAIL: " | tail -1 | cut -d":" -f2 | xargs)"
+}
+
 function test_jasper {
   pushd "${FULL_SCENARIO_PATH}/src/test/bin" &> /dev/null
 
@@ -63,7 +69,7 @@ function evaluate_patch {
   # run the appropriate test harness
   case ${PROGRAM} in
     libxml2) test_libxml2 > "${HELDOUT_FILENAME}";;
-    libtiff) echo "FIXME! libtiff";;
+    libtiff) test_libtiff > "${HELDOUT_FILENAME}";;
     jasper) test_jasper > "${HELDOUT_FILENAME}";;
   esac
 
