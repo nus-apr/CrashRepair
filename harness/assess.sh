@@ -17,6 +17,20 @@ function test_libxml2 {
   echo "$(./runsuite 2>1 | tail -1 | cut -d"," -f2 | cut -d" " -f2 | xargs)"
 }
 
+function test_jasper {
+  pushd "${FULL_SCENARIO_PATH}/src/test/bin" &> /dev/null
+
+  TESTS=("./run_test_1" "./run_test_2" "./run_test_3" "./run_test_4")
+  errors=0
+  for test_file in ${!TESTS[@]}; do
+    test_file="${TESTS[$i]}"
+    test_errors="$(${test_file} 2>1 | grep "Number of errors: " | tail -1 | cut -d":" -f2 | xargs)"
+    errors=$((errors + test_errors))
+  done
+
+  echo "${errors}"
+}
+
 function evaluate_patch {
   pushd / &> /dev/null
   PATCH="$(realpath "$1")"
@@ -47,8 +61,11 @@ function evaluate_patch {
   echo "compiled program"
 
   # run the appropriate test harness
-  # FIXME
-  test_libxml2 "${PATCH}" > "${HELDOUT_FILENAME}"
+  case ${PROGRAM} in
+    libxml2) test_libxml2 > "${HELDOUT_FILENAME}";;
+    libtiff) echo "FIXME! libtiff";;
+    jasper) test_jasper > "${HELDOUT_FILENAME}";;
+  esac
 
   # revert the patch
   echo "reverting patch..."
