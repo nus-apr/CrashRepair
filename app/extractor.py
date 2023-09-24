@@ -325,7 +325,8 @@ def extract_var_ref_list(ast_node, file_path):
                     var_list.append((var_name, op_line_number, op_col_number, var_type, "ref"))
             elif node_value in ["&"]:
                 var_name = node_value + str(var_name)
-                var_list.append((var_name, op_line_number, op_col_number, var_type, "ref"))
+                data_type = extract_data_type(ast_node)
+                var_list.append((var_name, op_line_number, col_number, data_type, "ref"))
             else:
                 var_list.append((var_name, line_number, col_number, var_type, "ref"))
         return var_list
@@ -1336,3 +1337,17 @@ def get_var_list(ast_var_list, cfc, crash_loc):
                         f"{symbol}++" == var_name or f"{symbol}--" == var_name :
                     var_list.append((symbol, var_node[1], var_node[2], var_node[3], var_node[4]))
     return list(set(var_list))
+
+
+def extract_pointer_node(ast_node):
+    node_kind = ast_node["kind"]
+    if node_kind == "ImplicitCastExpr":
+        child_node = ast_node["inner"][0]
+        return extract_pointer_node(child_node)
+    if node_kind == "UnaryOperator":
+        op_code = ast_node["opcode"]
+        if op_code in ["&"]:
+            child_node = ast_node["inner"][0]
+            return extract_pointer_node(child_node)
+    return ast_node
+

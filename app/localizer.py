@@ -301,6 +301,8 @@ def get_candidate_map_for_func(function_name, taint_symbolic, taint_concrete, sr
                             found_mapping = True
                             if crash_var_name not in candidate_mapping:
                                 candidate_mapping[crash_var_name] = set()
+                            if str(expr_str).isnumeric():
+                                continue
                             logger.track_localization("MAPPING {} with {}".format(crash_var_name, expr_str))
                             logger.track_localization("{}->[{}]".format(crash_var_name, crash_var_expr_list))
                             logger.track_localization("{}->[{}]".format(expr_str, var_expr_list))

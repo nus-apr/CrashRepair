@@ -621,6 +621,12 @@ def generate_expr_for_ast(ast_node)->ConstraintExpression:
         constraint_symbol = make_constraint_symbol(symbol_str, op_type)
         constraint_expr = make_symbolic_expression(constraint_symbol)
         return constraint_expr
+    elif node_type == "UnaryExprOrTypeTraitExpr":
+        symbol_str = converter.convert_unaryexprortypetraitexpr_to_expr(ast_node, True)
+        op_type = "CONST_INT"
+        constraint_symbol = make_constraint_symbol(symbol_str, op_type)
+        constraint_expr = make_symbolic_expression(constraint_symbol)
+        return constraint_expr
     elif node_type == "FloatingLiteral":
         symbol_str = str(ast_node["value"])
         op_type = "CONST_REAL"
@@ -1130,6 +1136,7 @@ def generate_iterator_constraint(iterator_node, src_file, ptr_node):
 
 
 def get_pointer_size(ptr_node, src_file):
+    ptr_node = extractor.extract_pointer_node(ptr_node)
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     alloc_size = -1
@@ -1157,6 +1164,7 @@ def get_pointer_size(ptr_node, src_file):
     return alloc_size, is_static
 
 def get_pointer_value(ptr_node, src_file):
+    ptr_node = extractor.extract_pointer_node(ptr_node)
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     last_pointer = None
@@ -1165,10 +1173,12 @@ def get_pointer_value(ptr_node, src_file):
             expr_list = values.VALUE_TRACK_CONCRETE[taint_loc]
             if expr_list and "pointer" in expr_list[0]:
                 last_pointer = expr_list[-1].replace("pointer:", "")
+                last_pointer = last_pointer.split(" ")[1].replace("bv", "")
     return last_pointer
 
 
 def get_pointer_base(ptr_node, src_file):
+    ptr_node = extractor.extract_pointer_node(ptr_node)
     source_ptr_loc = extractor.extract_loc(src_file, ptr_node["range"]["begin"])
     source_ptr_loc_str = f"{source_ptr_loc[0]}:{source_ptr_loc[1]}:{source_ptr_loc[2]}"
     base_pointer = None
@@ -1213,6 +1223,7 @@ def generate_pointer_loc(ptr_node, src_file):
     return source_ptr_loc_str
 
 def get_pointer_diff(ptr_node, src_file, iterator_node=None):
+    ptr_node = extractor.extract_pointer_node(ptr_node)
     source_ptr_loc_str = generate_pointer_loc(ptr_node, src_file)
     pointer_diff = None
     iterator_loc = None
@@ -1260,7 +1271,7 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file, iterator_node=None)
         constraint_expr = make_binary_expression(lte_op, base_expr, ptr_expr)
 
     alloc_size, is_static = get_pointer_size(ptr_node, src_file)
-    if alloc_size.isnumeric():
+    if str(alloc_size).isnumeric():
         if alloc_size is not None and int(alloc_size) <= int(pointer_diff):
             ptr_expr = generate_expr_for_ast(ptr_node)
             if is_static:
@@ -1279,13 +1290,47 @@ def generate_out_of_bound_ptr_constraint(ptr_node, src_file, iterator_node=None)
             constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
     return constraint_expr
 
+def generate_access_range_node_constraint(ptr_node, limit_expr):
+    ptr_expr = generate_expr_for_ast(ptr_node)
+    base_op = build_op_symbol("base ")
+    base_expr = make_unary_expression(base_op, copy.deepcopy(ptr_expr))
+    size_op = build_op_symbol("size ")
+    size_expr = make_unary_expression(size_op, copy.deepcopy(ptr_expr))
+    arith_plus_op = build_op_symbol("+")
+    lt_op = build_op_symbol("<")
+    lhs_constraint = make_binary_expression(arith_plus_op, ptr_expr, limit_expr)
+    rhs_constraint = make_binary_expression(arith_plus_op, base_expr, size_expr)
+    constraint_expr = make_binary_expression(lt_op, lhs_constraint, rhs_constraint)
+    return constraint_expr
+
+def generate_access_range_expr_constraint(start_node_expr, end_node_expr, size_expr):
+    arithmetic_op = build_op_symbol("-")
+    diff_expr = make_binary_expression(arithmetic_op, end_node_expr, start_node_expr)
+    less_than_op = build_op_symbol("<")
+    constraint_expr = make_binary_expression(less_than_op, diff_expr, size_expr)
+    return constraint_expr
+
+
+def generate_overlap_constraint(source_ptr_node, target_ptr_node, size_node, src_file):
+    size_expr = generate_expr_for_ast(size_node)
+    source_ptr_expr = generate_expr_for_ast(source_ptr_node)
+    target_ptr_expr = generate_expr_for_ast(target_ptr_node)
+    source_ptr_val = get_pointer_value(source_ptr_node, src_file)
+    target_ptr_val = get_pointer_value(target_ptr_node, src_file)
+    if target_ptr_val < source_ptr_val:
+        constraint_expr = generate_access_range_expr_constraint(target_ptr_expr, source_ptr_expr, size_expr)
+    else:
+        constraint_expr = generate_access_range_expr_constraint(source_ptr_expr, target_ptr_expr, size_expr)
+    return constraint_expr
+
 
 def generate_memcpy_constraint(call_node, src_file):
     source_ptr_node = call_node["inner"][1]
     target_ptr_node = call_node["inner"][2]
     size_node = call_node["inner"][3]
+    constraint_expr = None
 
-    # first check if the pointers are in bound
+    # first check if the pointers are valid and in bound
     source_ptr_bound_constraint = generate_out_of_bound_ptr_constraint(source_ptr_node, src_file)
     if source_ptr_bound_constraint:
         return source_ptr_bound_constraint
@@ -1293,34 +1338,32 @@ def generate_memcpy_constraint(call_node, src_file):
     if target_ptr_bound_constraint:
         return target_ptr_bound_constraint
 
-    # source_name = converter.convert_node_to_str(source_ptr_node)
-    # target_name = converter.convert_node_to_str(target_ptr_node)
-    # size_value = converter.convert_node_to_str(size_node)
-
-    # Generating a constraint of type
-    # target - source < size
-    # first generate the expressions for the arithmetic expression
-    source_expr = generate_expr_for_ast(source_ptr_node)
-    target_expr = generate_expr_for_ast(target_ptr_node)
-    arithmetic_op = build_op_symbol("-")
-    diff_expr_1 = make_binary_expression(arithmetic_op, target_expr, source_expr)
-    diff_expr_2 = make_binary_expression(arithmetic_op, source_expr, target_expr)
-    less_than_op = build_op_symbol("<")
-    size_expr = generate_expr_for_ast(size_node)
-    first_constraint = make_binary_expression(less_than_op, diff_expr_1, size_expr)
-    second_constraint = make_binary_expression(less_than_op, diff_expr_2, size_expr)
-
     source_ptr_val = get_pointer_value(source_ptr_node, src_file)
     target_ptr_val = get_pointer_value(target_ptr_node, src_file)
+    size_val = get_last_value(size_node, src_file)
 
-    if target_ptr_val < source_ptr_val:
-        constraint_expr = second_constraint
-    else:
-        constraint_expr = first_constraint
+    # check if source is in range to read
+    source_base = get_pointer_base(source_ptr_node, src_file)
+    source_size, _ = get_pointer_size(source_ptr_node, src_file)
+    source_end = int(source_base) + int(source_size)
+    if int(source_ptr_val) + int(size_val) > source_end:
+        limit_expr = generate_expr_for_ast(size_node)
+        constraint_expr = generate_access_range_node_constraint(source_ptr_node, limit_expr)
 
-    # # last, concatenate both constraints into one
-    # logical_and_op = build_op_symbol("&&")
-    # constraint_expr = make_binary_expression(logical_and_op, first_constraint, second_constraint)
+
+    # check if target is in range to write
+    target_base = get_pointer_base(target_ptr_node, src_file)
+    target_size, _ = get_pointer_size(target_ptr_node, src_file)
+    target_end = int(target_base) + int(target_size)
+    if int(target_ptr_val) + int(size_val) > target_end:
+        limit_expr = generate_expr_for_ast(size_node)
+        constraint_expr = generate_access_range_node_constraint(target_ptr_node, limit_expr)
+
+    # check if param overlaps
+    if source_ptr_val and target_ptr_val:
+        if abs(int(source_ptr_val) - int(target_ptr_val)) < int(size_val):
+            constraint_expr = generate_overlap_constraint(source_ptr_node, target_ptr_node, size_node, src_file)
+
     return constraint_expr
 
 
