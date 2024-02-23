@@ -558,6 +558,8 @@ def read_state_values(taint_log_path):
             for line in list(taint_file)[crop_index:]:
                 if "no debug info" in line:
                     continue
+                if "/klee/source" in line:
+                    continue
                 if 'KLEE: TaintTrack:' in line:
                     line = line.split("KLEE: TaintTrack: ")[-1]
                     source_loc, data_type, taint_str = line.split(": ")
