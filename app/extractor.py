@@ -197,6 +197,7 @@ def extract_crash_information(binary_path, argument_list, klee_log_path):
     cfc, var_list = extract_crash_free_constraint(crash_func_ast, c_type, c_loc, c_address)
     var_name_list = sorted([x[0] for x in var_list])
     c_details = definitions.CRASH_TYPE_MESSAGE[c_type]
+    values.CRASH_TYPE = c_details
     emitter.highlight("\t\t[info] crash type: {}".format(c_details))
     emitter.highlight("\t\t[info] crash location: {}".format(c_loc))
     emitter.highlight("\t\t[info] crash function: {}".format(c_func_name))

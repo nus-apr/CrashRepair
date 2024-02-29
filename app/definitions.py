@@ -33,6 +33,7 @@ FILE_PATCH_SET = ""
 FILE_PATCH_RANK_MATRIX = ""
 FILE_PATCH_RANK_INDEX = ""
 FILE_LOCALIZATION_INFO = ""
+FILE_ANALYSIS_INFO = ""
 
 
 # ------------------- Configuration --------------------

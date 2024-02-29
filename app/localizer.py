@@ -895,7 +895,16 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
     emitter.title("Fix Localization")
     tainted_fix_locations = generate_fix_locations(taint_byte_list, taint_memory_list, taint_symbolic, cfc_info)
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
+    definitions.FILE_ANALYSIS_INFO = definitions.DIRECTORY_OUTPUT + "/analysis.json"
     localization_list = list()
+    analysis_info = {
+        "analysis_output": [
+            {
+                "bug_type": values.CRASH_TYPE,
+                "localization": []
+            }
+        ],
+    }
     localized_loc_list = list()
     trace_list = []
     for taint_loc in reversed(values.TRACE_CONCRETE):
@@ -988,7 +997,16 @@ def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_inf
             writer.write_as_csv(fieldnames, rows, abs_output_filepath)
             localization_obj["values-file"] = rel_output_filename
             localization_list.append(localization_obj)
+            analysis_info["analysis_output"][0]["localization"].append(
+                {
+                    "score": "1.0",
+                    "source_file": src_file,
+                    "function": func_name,
+                    "line_numbers": [localized_line]
+                }
+            )
             writer.write_as_json(localization_list, definitions.FILE_LOCALIZATION_INFO)
+            writer.write_as_json(analysis_info, definitions.FILE_ANALYSIS_INFO)
     if not localization_list:
         utilities.normal_exit("Unable to Localize a Crash Free Constraint")
     values.COUNT_FIX_LOC = len(localization_list)
