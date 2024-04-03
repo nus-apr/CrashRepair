@@ -60,13 +60,6 @@ ENV LD_LIBRARY_PATH "/opt/crashrepair/lib:/CrashRepair/lib:/klee/build/lib:${LD_
 
 COPY compiler ./compiler
 
-# creates a minimal image that contains only the benchmark
-FROM common AS benchmark
-COPY benchmark/setup ./experiments/vulnloc
-ARG BENCHMARK_WORKERS=8
-RUN find ./experiments -name setup.sh | xargs -I {} -n 1 -P ${BENCHMARK_WORKERS} bash -c "{} &> {}.log && echo {} || exit 0"
-COPY benchmark/configurations /data/vulnloc
-
 # creates a minimal image that contains only the tool
 FROM common AS tool
 COPY app ./app
@@ -81,6 +74,13 @@ RUN crepair --help
 COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
 RUN rm /opt/crashrepair/lib/libz3.so
 COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
+
+# creates a minimal image that contains only the benchmark
+FROM common AS benchmark
+COPY benchmark/setup ./experiments/vulnloc
+ARG BENCHMARK_WORKERS=8
+RUN find ./experiments -name setup.sh | xargs -I {} -n 1 -P ${BENCHMARK_WORKERS} bash -c "{} &> {}.log && echo {} || exit 0"
+COPY benchmark/configurations /data/vulnloc
 
 # creates an all-in-one image with the tool and benchmark
 FROM benchmark AS aio
