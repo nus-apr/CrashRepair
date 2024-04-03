@@ -910,9 +910,9 @@ def localize_state_info(fix_loc, taint_concrete):
 
 def fix_localization(taint_byte_list, taint_memory_list, taint_symbolic, cfc_info, taint_concrete):
     emitter.title("Fix Localization")
-    tainted_fix_locations = generate_fix_locations(taint_byte_list, taint_memory_list, taint_symbolic, cfc_info)
     definitions.FILE_LOCALIZATION_INFO = definitions.DIRECTORY_OUTPUT + "/localization.json"
     definitions.FILE_ANALYSIS_INFO = definitions.DIRECTORY_OUTPUT + "/analysis.json"
+    tainted_fix_locations = generate_fix_locations(taint_byte_list, taint_memory_list, taint_symbolic, cfc_info)
     localization_list = list()
     analysis_info = {
         "analysis_output": [
