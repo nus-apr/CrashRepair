@@ -100,10 +100,26 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     unique_fix_files = []
     unique_fix_functons = []
     unique_fix_lines = []
+    analysis_info = {
+        "analysis_output": [
+            {
+                "bug_type": values.CRASH_TYPE,
+                "localization": []
+            }
+        ],
+    }
     for function_name, loc in sorted_fix_locations:
         src_file = loc.split(":")[0]
         src_line = loc.split(":")[1]
         fix_line = f"{src_file}:{src_line}"
+        analysis_info["analysis_output"][0]["localization"].append(
+            {
+                "score": "1.0",
+                "source_file": src_file,
+                "function": function_name,
+                "line_numbers": [src_line]
+            }
+        )
         if src_file not in unique_fix_files:
             unique_fix_files.append(src_file)
         if fix_line not in unique_fix_lines:
@@ -119,6 +135,7 @@ def generate_fix_locations(marked_byte_list, taint_memory_list, taint_symbolic, 
     taint_analysis_summary["fix-func-list"] = unique_fix_functons
     taint_analysis_summary["fix-line-list"] = unique_fix_lines
     taint_analysis_summary["fix-loc-list"] = list(fix_locations.keys())
+    writer.write_as_json(analysis_info, definitions.FILE_ANALYSIS_INFO)
     writer.write_as_json(taint_analysis_summary, definitions.DIRECTORY_OUTPUT + "/taint-analysis-summary.json")
     return sorted_fix_locations
 
