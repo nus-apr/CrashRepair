@@ -6,4 +6,4 @@ CREPAIR_RUNTIME_H="$SCRIPT_DIR/../lib/crepair_runtime.h"
 CREPAIR_RUNTIME_LIB="$SCRIPT_DIR/../lib/"
 KLEE_LIB="/klee/build/lib/"
 
-wllvm -g -O0 -include "$CREPAIR_RUNTIME_H" "$@" -L"$CREPAIR_RUNTIME_LIB" -L"$KLEE_LIB" -lcrepair_runtime -lcrepair_proxy -lkleeRuntest
+wllvm -g -O0 -include "$CREPAIR_RUNTIME_H" "$@" -L"$CREPAIR_RUNTIME_LIB" -L"$KLEE_LIB" -lcrepair_runtime -lcrepair_proxy -lkleeRuntest -fno-sanitize=address
