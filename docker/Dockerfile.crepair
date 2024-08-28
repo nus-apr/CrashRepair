@@ -60,8 +60,8 @@ ENV LD_LIBRARY_PATH "/opt/crashrepair/lib:/CrashRepair/lib:/klee/build/lib:${LD_
 
 COPY compiler ./compiler
 
-# creates a minimal image that contains only the tool
-FROM common AS tool
+# creates a minimal image that contains only the analysis
+FROM common AS analysis
 COPY app ./app
 COPY bin ./bin
 COPY tests ./tests
@@ -83,13 +83,27 @@ RUN find ./experiments -name setup.sh | xargs -I {} -n 1 -P ${BENCHMARK_WORKERS}
 COPY benchmark/configurations /data/vulnloc
 
 # creates an all-in-one image with the tool and benchmark
+FROM common AS tool
+COPY --from=crepair:fuzzer /opt/fuzzer /opt/fuzzer
+COPY --from=analysis /CrashRepair/app /CrashRepair/app
+COPY --from=analysis /CrashRepair/bin /CrashRepair/bin
+COPY --from=analysis /CrashRepair/tests /CrashRepair/tests
+COPY --from=analysis /CrashRepair/lib /CrashRepair/lib
+COPY --from=analysis /CrashRepair/Repair.py /CrashRepair/Repair.py
+COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
+COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
+RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
+RUN crepair --help
+
+
+# creates an all-in-one image with the tool and benchmark
 FROM benchmark AS aio
 COPY --from=crepair:fuzzer /opt/fuzzer /opt/fuzzer
-COPY --from=tool /CrashRepair/app /CrashRepair/app
-COPY --from=tool /CrashRepair/bin /CrashRepair/bin
-COPY --from=tool /CrashRepair/tests /CrashRepair/tests
-COPY --from=tool /CrashRepair/lib /CrashRepair/lib
-COPY --from=tool /CrashRepair/Repair.py /CrashRepair/Repair.py
+COPY --from=analysis /CrashRepair/app /CrashRepair/app
+COPY --from=analysis /CrashRepair/bin /CrashRepair/bin
+COPY --from=analysis /CrashRepair/tests /CrashRepair/tests
+COPY --from=analysis /CrashRepair/lib /CrashRepair/lib
+COPY --from=analysis /CrashRepair/Repair.py /CrashRepair/Repair.py
 COPY --from=crepair:sourcerepair /opt/crashrepair /opt/crashrepair
 COPY --from=crepair:orchestrator /opt/crashrepair /opt/crashrepair
 RUN ln -s /CrashRepair/bin/crepair /usr/bin/crepair
