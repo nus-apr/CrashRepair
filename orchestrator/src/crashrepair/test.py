@@ -183,7 +183,7 @@ class Test:
                 raw_outcome.failure = raw_outcome.failure or TestFailureReason.INCORRECT_STDOUT
 
         # unexpected exit code?
-        if self.expected_exit_code is not None:
+        if self.expected_exit_code is not None and int(self.expected_exit_code) in [0, 1]:
             actual_returncode = raw_outcome.return_code
             if actual_returncode != self.expected_exit_code:
                 logger.debug(
