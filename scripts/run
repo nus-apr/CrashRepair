@@ -18,9 +18,10 @@ ROOT_DIR="${HERE_DIR}/.."
 
 PROGRAM=$1
 SCENARIO=$2
+REPETITION=$3
 
 DOCKER_IMAGE=crepair:aio
-DOCKER_CONTAINER_NAME="crepair_${PROGRAM}_${SCENARIO}"
+DOCKER_CONTAINER_NAME="crepair_${PROGRAM}_${SCENARIO}_${REPETITION}"
 docker run \
   --name ${DOCKER_CONTAINER_NAME} \
   -v "${ROOT_DIR}/results:/results" \
@@ -35,4 +36,4 @@ docker run \
   --cpus ${CPU_LIMIT} \
   --rm \
   -t ${DOCKER_IMAGE} \
-  bash /.runner.sh ${PROGRAM} ${SCENARIO}
+  bash /.runner.sh ${PROGRAM} ${SCENARIO} ${REPETITION}
